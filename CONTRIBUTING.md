@@ -1,8 +1,24 @@
 # Contributing to Kindling
 
-Thank you for your interest in contributing to Kindling! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Kindling!
 
-> **Note:** Kindling is currently in the planning and documentation phase. Code contribution guidelines will be added once implementation begins.
+## Development Setup
+
+```bash
+git clone https://github.com/eddacraft/kindling.git
+cd kindling
+pnpm install
+pnpm test
+pnpm build
+```
+
+## Code Style
+
+- TypeScript for all source code
+- Explicit types for public APIs
+- Descriptive names — clarity over brevity
+- Small, focused functions
+- Tests alongside implementation
 
 ## Pull Request Process
 
