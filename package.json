@@ -1,0 +1,25 @@
+{
+  "name": "kindling",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local memory and continuity engine for AI-assisted development",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EddaCraft/kindling.git"
+  },
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "typecheck": "tsc --build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}
