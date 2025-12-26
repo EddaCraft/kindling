@@ -5,3 +5,5 @@
  */
 
 export * from './types/index.js';
+export { KindlingService } from './service/kindling-service.js';
+export type { KindlingServiceConfig, RetrievalResult } from './service/kindling-service.js';

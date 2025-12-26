@@ -19,9 +19,7 @@
     { "path": "./packages/kindling-store-sqlite" },
     { "path": "./packages/kindling-provider-local" },
     { "path": "./packages/kindling-core" },
-    { "path": "./packages/kindling-adapter-opencode" },
-    { "path": "./packages/kindling-adapter-pocketflow" },
-    { "path": "./packages/kindling-cli" }
+    { "path": "./packages/kindling-adapter-opencode" }
   ],
   "exclude": ["node_modules", "dist"]
 }
