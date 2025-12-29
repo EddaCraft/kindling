@@ -1,0 +1,25 @@
+{
+  "name": "@kindling/core",
+  "version": "0.1.0",
+  "description": "Core domain model and orchestration for Kindling",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@kindling/store-sqlite": "workspace:*"
+  },
+  "devDependencies": {}
+}

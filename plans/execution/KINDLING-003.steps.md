@@ -5,13 +5,13 @@
 | Source | [../modules/kindling-core.aps.md](../modules/kindling-core.aps.md) |
 | Task(s) | KINDLING-003 — Observation ingestion API |
 | Created by | @aneki / AI |
-| Status | Draft |
+| Status | Complete |
 
 ## Prerequisites
 
-- [ ] KINDLING-001 complete (Observation type exists)
-- [ ] KINDLING-002 complete (CapsuleManager available)
-- [ ] STORAGE-002 complete (store write path available)
+- [x] KINDLING-001 complete (Observation type exists)
+- [x] KINDLING-002 complete (CapsuleManager available)
+- [x] STORAGE-002 complete (store write path available)
 
 ## Steps
 
@@ -89,7 +89,7 @@
 
 ## Completion
 
-- [ ] All checkpoints validated
-- [ ] Task(s) marked complete in source module
+- [x] All checkpoints validated
+- [x] Task(s) marked complete in source module
 
-**Completed by:** ___
+**Completed by:** Claude (AI) on 2024-12-29
