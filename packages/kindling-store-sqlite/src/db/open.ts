@@ -58,7 +58,7 @@ export function openDatabase(options: DatabaseOptions = {}): Database.Database {
   // Open database
   const db = new Database(dbPath, {
     verbose: options.verbose ? console.log : undefined,
-    readonly: options.readonly,
+    readonly: options.readonly ?? false,
   });
 
   // Enable WAL mode for better concurrency

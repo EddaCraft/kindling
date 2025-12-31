@@ -4,4 +4,4 @@
  * FTS + recency-based retrieval provider.
  */
 
-export { };
+export { LocalFtsProvider } from './provider/local-fts.js';

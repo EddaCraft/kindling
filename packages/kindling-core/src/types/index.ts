@@ -67,3 +67,15 @@ export {
   isPinTargetType,
   isPinActive,
 } from './pin.js';
+
+// Retrieval types
+export type {
+  RetrieveOptions,
+  PinResult,
+  CandidateResult,
+  RetrieveProvenance,
+  RetrieveResult,
+  ProviderSearchOptions,
+  ProviderSearchResult,
+  RetrievalProvider,
+} from './retrieval.js';

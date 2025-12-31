@@ -90,10 +90,16 @@ importers:
 
   packages/kindling-provider-local:
     dependencies:
+      '@kindling/core':
+        specifier: workspace:*
+        version: link:../kindling-core
       '@kindling/store-sqlite':
         specifier: workspace:*
         version: link:../kindling-store-sqlite
     devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.8
+        version: 7.6.13
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.27

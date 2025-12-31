@@ -5,13 +5,24 @@
  */
 
 import type Database from 'better-sqlite3';
-import type { Observation, Capsule, Summary, Pin } from '@kindling/core';
+import type { Observation, Capsule, Summary, Pin, ScopeIds } from '@kindling/core';
+
+/**
+ * Evidence snippet with context
+ */
+export interface EvidenceSnippet {
+  observationId: string;
+  snippet: string;
+  kind: string;
+}
 
 /**
  * SQLite-based Kindling store implementation
  */
 export class SqliteKindlingStore {
   constructor(private db: Database.Database) {}
+
+  // ===== WRITE PATH =====
 
   /**
    * Insert an observation
@@ -291,5 +302,270 @@ export class SqliteKindlingStore {
     if (result.changes === 0) {
       throw new Error(`Observation ${observationId} not found`);
     }
+  }
+
+  // ===== READ PATH =====
+
+  /**
+   * Get open capsule for a session
+   *
+   * @param sessionId - Session ID to search for
+   * @returns Open capsule or undefined if none exists
+   */
+  getOpenCapsuleForSession(sessionId: string): Capsule | undefined {
+    const row = this.db.prepare(`
+      SELECT id, type, intent, status, opened_at, closed_at, scope_ids
+      FROM capsules
+      WHERE status = 'open'
+        AND json_extract(scope_ids, '$.sessionId') = ?
+      ORDER BY opened_at DESC
+      LIMIT 1
+    `).get(sessionId) as {
+      id: string;
+      type: string;
+      intent: string;
+      status: string;
+      opened_at: number;
+      closed_at: number | null;
+      scope_ids: string;
+    } | undefined;
+
+    if (!row) {
+      return undefined;
+    }
+
+    // Get observation IDs for this capsule
+    const obsRows = this.db.prepare(`
+      SELECT observation_id
+      FROM capsule_observations
+      WHERE capsule_id = ?
+      ORDER BY seq
+    `).all(row.id) as Array<{ observation_id: string }>;
+
+    return {
+      id: row.id,
+      type: row.type as Capsule['type'],
+      intent: row.intent,
+      status: row.status as Capsule['status'],
+      openedAt: row.opened_at,
+      closedAt: row.closed_at ?? undefined,
+      scopeIds: JSON.parse(row.scope_ids),
+      observationIds: obsRows.map(r => r.observation_id),
+      summaryId: undefined, // Will be set if summary exists
+    };
+  }
+
+  /**
+   * Get latest summary for a capsule
+   *
+   * @param capsuleId - Capsule ID
+   * @returns Summary or undefined if none exists
+   */
+  getLatestSummaryForCapsule(capsuleId: string): Summary | undefined {
+    const row = this.db.prepare(`
+      SELECT id, capsule_id, content, confidence, created_at, evidence_refs
+      FROM summaries
+      WHERE capsule_id = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(capsuleId) as {
+      id: string;
+      capsule_id: string;
+      content: string;
+      confidence: number;
+      created_at: number;
+      evidence_refs: string;
+    } | undefined;
+
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      id: row.id,
+      capsuleId: row.capsule_id,
+      content: row.content,
+      confidence: row.confidence,
+      createdAt: row.created_at,
+      evidenceRefs: JSON.parse(row.evidence_refs),
+    };
+  }
+
+  /**
+   * Get evidence snippets for observation IDs
+   *
+   * Truncates content to maxChars per observation
+   *
+   * @param observationIds - IDs of observations to retrieve
+   * @param maxChars - Maximum characters per snippet (default: 200)
+   * @returns Array of evidence snippets
+   */
+  getEvidenceSnippets(observationIds: string[], maxChars: number = 200): EvidenceSnippet[] {
+    if (observationIds.length === 0) {
+      return [];
+    }
+
+    const placeholders = observationIds.map(() => '?').join(',');
+    const rows = this.db.prepare(`
+      SELECT id, kind, content
+      FROM observations
+      WHERE id IN (${placeholders})
+    `).all(...observationIds) as Array<{
+      id: string;
+      kind: string;
+      content: string;
+    }>;
+
+    return rows.map(row => ({
+      observationId: row.id,
+      kind: row.kind,
+      snippet: row.content.length > maxChars
+        ? row.content.substring(0, maxChars) + '...'
+        : row.content,
+    }));
+  }
+
+  /**
+   * Get observation by ID
+   *
+   * @param observationId - Observation ID
+   * @returns Observation or undefined
+   */
+  getObservationById(observationId: string): Observation | undefined {
+    const row = this.db.prepare(`
+      SELECT id, kind, content, provenance, ts, scope_ids, redacted
+      FROM observations
+      WHERE id = ?
+    `).get(observationId) as {
+      id: string;
+      kind: string;
+      content: string;
+      provenance: string;
+      ts: number;
+      scope_ids: string;
+      redacted: number;
+    } | undefined;
+
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      id: row.id,
+      kind: row.kind as Observation['kind'],
+      content: row.content,
+      provenance: JSON.parse(row.provenance),
+      ts: row.ts,
+      scopeIds: JSON.parse(row.scope_ids),
+      redacted: row.redacted === 1,
+    };
+  }
+
+  /**
+   * Get summary by ID
+   *
+   * @param summaryId - Summary ID
+   * @returns Summary or undefined
+   */
+  getSummaryById(summaryId: string): Summary | undefined {
+    const row = this.db.prepare(`
+      SELECT id, capsule_id, content, confidence, created_at, evidence_refs
+      FROM summaries
+      WHERE id = ?
+    `).get(summaryId) as {
+      id: string;
+      capsule_id: string;
+      content: string;
+      confidence: number;
+      created_at: number;
+      evidence_refs: string;
+    } | undefined;
+
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      id: row.id,
+      capsuleId: row.capsule_id,
+      content: row.content,
+      confidence: row.confidence,
+      createdAt: row.created_at,
+      evidenceRefs: JSON.parse(row.evidence_refs),
+    };
+  }
+
+  /**
+   * Query observations by scope and time range
+   *
+   * @param scopeIds - Optional scope filter
+   * @param fromTs - Optional start timestamp
+   * @param toTs - Optional end timestamp
+   * @param limit - Maximum results to return
+   * @returns Array of observations
+   */
+  queryObservations(
+    scopeIds?: Partial<ScopeIds>,
+    fromTs?: number,
+    toTs?: number,
+    limit: number = 100
+  ): Observation[] {
+    let query = `
+      SELECT id, kind, content, provenance, ts, scope_ids, redacted
+      FROM observations
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    // Add scope filtering
+    if (scopeIds?.sessionId) {
+      query += ` AND json_extract(scope_ids, '$.sessionId') = ?`;
+      params.push(scopeIds.sessionId);
+    }
+    if (scopeIds?.repoId) {
+      query += ` AND json_extract(scope_ids, '$.repoId') = ?`;
+      params.push(scopeIds.repoId);
+    }
+    if (scopeIds?.agentId) {
+      query += ` AND json_extract(scope_ids, '$.agentId') = ?`;
+      params.push(scopeIds.agentId);
+    }
+    if (scopeIds?.userId) {
+      query += ` AND json_extract(scope_ids, '$.userId') = ?`;
+      params.push(scopeIds.userId);
+    }
+
+    // Add time range filtering
+    if (fromTs !== undefined) {
+      query += ` AND ts >= ?`;
+      params.push(fromTs);
+    }
+    if (toTs !== undefined) {
+      query += ` AND ts <= ?`;
+      params.push(toTs);
+    }
+
+    query += ` ORDER BY ts DESC LIMIT ?`;
+    params.push(limit);
+
+    const rows = this.db.prepare(query).all(...params) as Array<{
+      id: string;
+      kind: string;
+      content: string;
+      provenance: string;
+      ts: number;
+      scope_ids: string;
+      redacted: number;
+    }>;
+
+    return rows.map(row => ({
+      id: row.id,
+      kind: row.kind as Observation['kind'],
+      content: row.content,
+      provenance: JSON.parse(row.provenance),
+      ts: row.ts,
+      scopeIds: JSON.parse(row.scope_ids),
+      redacted: row.redacted === 1,
+    }));
   }
 }
