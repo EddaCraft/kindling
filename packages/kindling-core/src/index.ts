@@ -4,4 +4,8 @@
  * Domain model, capsule lifecycle, and retrieval orchestration.
  */
 
-export { };
+// Re-export all types
+export * from './types/index.js';
+
+// Re-export all validation functions
+export * from './validation/index.js';
