@@ -302,6 +302,9 @@ export class SqliteKindlingStore {
     if (result.changes === 0) {
       throw new Error(`Observation ${observationId} not found`);
     }
+
+    // Note: FTS cleanup is handled by the observations_fts_update trigger
+    // in migration 002_fts.sql
   }
 
   // ===== READ PATH =====
@@ -513,7 +516,7 @@ export class SqliteKindlingStore {
     let query = `
       SELECT id, kind, content, provenance, ts, scope_ids, redacted
       FROM observations
-      WHERE 1=1
+      WHERE redacted = 0
     `;
     const params: any[] = [];
 
