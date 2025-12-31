@@ -4,4 +4,5 @@
  * SQLite-based system of record for Kindling.
  */
 
-export { };
+// Re-export database infrastructure
+export * from './db/index.js';
