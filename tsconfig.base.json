@@ -21,7 +21,10 @@
     "sourceMap": true,
     "composite": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {
+      "@kindling/*": ["./packages/*/src"]
+    }
   },
   "exclude": ["node_modules", "dist", "test"]
 }
