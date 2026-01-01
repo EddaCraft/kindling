@@ -34,7 +34,7 @@ pnpm build
 Use clear, descriptive commit messages:
 
 ```
-Feat: Add capsule auto-close on session timeout
+feat: Add capsule auto-close on session timeout
 
 Capsules now auto-close when the source provides a natural end signal
 or after a configurable inactivity timeout. This prevents orphaned

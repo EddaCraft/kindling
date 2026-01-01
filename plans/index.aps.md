@@ -1,6 +1,6 @@
-# PLAN_NEXT.md
+# Kindling OSS v0.1 – Project Plan
 
-## Kindling OSS v0.1 – Local Memory & Continuity Engine
+## Local Memory & Continuity Engine
 
 ### Problem & Success Criteria
 
@@ -8,13 +8,13 @@
 AI-assisted development produces large volumes of transient activity (tool calls, diffs, agent runs) but loses context between sessions. Developers and local agents repeatedly re-discover the same information, leading to wasted time, architectural drift, and brittle workflows.
 
 **Why this work matters**
-Kindling provides *continuity without judgement*. It captures what happened, preserves provenance, and makes context retrievable in a deterministic, explainable way, without asserting organisational truth or governance.
+Kindling provides *continuity without judgement*. It captures what happened, preserves provenance, and makes context retrievable in a deterministic, explainable way, without asserting organizational truth or governance.
 
 **Non-goals (explicit)**
 
 * Kindling does **not** decide what memory is authoritative
 * Kindling does **not** promote or curate institutional memory
-* Kindling does **not** manage organisational lifecycle, conflict resolution, or approval workflows
+* Kindling does **not** manage organizational lifecycle, conflict resolution, or approval workflows
 
 Those concerns belong to downstream systems (e.g. Edda) and are intentionally out of scope for OSS v0.1.
 

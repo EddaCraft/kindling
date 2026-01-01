@@ -7,7 +7,7 @@ A lightweight, open-source library for adding durable memory and contextual cont
 ## What Kindling Does
 
 - **Captures observations** — tool calls, diffs, commands, errors, messages
-- **Organises into capsules** — bounded units of meaning (sessions, workflow nodes)
+- **Organizes into capsules** — bounded units of meaning (sessions, workflow nodes)
 - **Retrieves with provenance** — deterministic, scoped, explainable results
 - **Runs locally** — embedded SQLite, no external services required
 
