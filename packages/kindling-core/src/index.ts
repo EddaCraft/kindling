@@ -12,3 +12,6 @@ export * from './validation/index.js';
 
 // Re-export capsule lifecycle
 export * from './capsule/index.js';
+
+// Re-export retrieval orchestration
+export * from './retrieval/index.js';
