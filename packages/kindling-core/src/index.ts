@@ -15,3 +15,6 @@ export * from './capsule/index.js';
 
 // Re-export retrieval orchestration
 export * from './retrieval/index.js';
+
+// Re-export export/import coordination
+export * from './export/index.js';
