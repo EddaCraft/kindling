@@ -1,7 +1,7 @@
 /**
  * Kindling OpenCode Adapter
  *
- * OpenCode integration for observation ingestion.
+ * Captures observations from OpenCode development sessions.
  */
 
-export { };
+export * from './opencode/index.js';
