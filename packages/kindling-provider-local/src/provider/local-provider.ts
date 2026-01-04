@@ -9,14 +9,13 @@ import type {
   RetrievalProvider,
   ProviderRequest,
   ProviderHit,
-  ProviderHitTargetType,
 } from './types.js';
+import { ProviderHitTargetType } from './types.js';
 import {
   compareHits,
   normalizeScore,
   applyRecencyDecay,
   applyScopeBoost,
-  applyIntentBoost,
 } from './scoring.js';
 
 export class LocalRetrievalProvider implements RetrievalProvider {

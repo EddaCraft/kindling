@@ -4,7 +4,6 @@ import {
   validateObservationKind,
   generateObservationId,
   CapsuleType,
-  CapsuleStatus,
   CapsuleIntent,
   validateCapsuleType,
   validateCapsuleStatus,

@@ -18,6 +18,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@kindling/core": "workspace:*",
     "better-sqlite3": "^9.2.0"
   },
   "devDependencies": {
