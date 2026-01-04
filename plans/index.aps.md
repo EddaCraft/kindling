@@ -139,16 +139,6 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Tags:** cli, tooling, debugging
 * **Dependencies:** kindling-core
 
-### edda-core
-
-* **Path:** ./modules/edda-core.aps.md
-* **Scope:** EDDA
-* **Owner:** @josh
-* **Status:** Draft
-* **Priority:** medium
-* **Tags:** governance, curation, lifecycle
-* **Dependencies:** kindling-core
-
 ---
 
 ## Decisions
@@ -169,17 +159,3 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 ## Open Questions
 
 *No open questions at this time.*
-
----
-
-## Module Documentation
-
-The detailed module specifications have been extracted into separate files:
-
-* [kindling-core](./modules/kindling-core.aps.md) - Domain model and orchestration
-* [kindling-store-sqlite](./modules/kindling-store-sqlite.aps.md) - SQLite persistence layer
-* [kindling-provider-local](./modules/kindling-provider-local.aps.md) - Local retrieval provider
-* [kindling-adapter-opencode](./modules/kindling-adapter-opencode.aps.md) - OpenCode integration
-* [kindling-adapter-pocketflow](./modules/kindling-adapter-pocketflow.aps.md) - PocketFlow integration
-* [kindling-cli](./modules/kindling-cli.aps.md) - Command-line interface
-* [edda-core](./modules/edda-core.aps.md) - Curation and governance layer
