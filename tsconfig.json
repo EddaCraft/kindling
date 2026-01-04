@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "references": [
+    { "path": "./packages/kindling-store-sqlite" },
+    { "path": "./packages/kindling-provider-local" },
+    { "path": "./packages/kindling-core" },
+    { "path": "./packages/kindling-adapter-opencode" },
+    { "path": "./packages/kindling-adapter-pocketflow" },
+    { "path": "./packages/kindling-cli" }
+  ],
+  "exclude": ["node_modules", "dist"]
+}
