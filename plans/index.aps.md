@@ -1,26 +1,16 @@
-# Kindling OSS v0.1 — Local Memory & Continuity Engine
+# PLAN_NEXT.md
 
-**Status:** Draft
+## Kindling OSS v0.1 – Local Memory & Continuity Engine
 
----
+### Problem & Success Criteria
 
-## Overview
-
-Kindling provides durable memory and contextual continuity to agentic and AI-assisted workflows. It captures what happened, preserves provenance, and makes context retrievable in a deterministic, explainable way — without asserting organisational truth or governance.
-
----
-
-## Problem & Success Criteria
-
-### Problem
-
+**Problem**
 AI-assisted development produces large volumes of transient activity (tool calls, diffs, agent runs) but loses context between sessions. Developers and local agents repeatedly re-discover the same information, leading to wasted time, architectural drift, and brittle workflows.
 
-### Why this work matters
-
+**Why this work matters**
 Kindling provides *continuity without judgement*. It captures what happened, preserves provenance, and makes context retrievable in a deterministic, explainable way, without asserting organisational truth or governance.
 
-### Non-goals (explicit)
+**Non-goals (explicit)**
 
 * Kindling does **not** decide what memory is authoritative
 * Kindling does **not** promote or curate institutional memory
@@ -28,7 +18,7 @@ Kindling provides *continuity without judgement*. It captures what happened, pre
 
 Those concerns belong to downstream systems (e.g. Edda) and are intentionally out of scope for OSS v0.1.
 
-### Success Criteria
+**Success Criteria**
 
 * A developer can resume work without re-explaining repo context
 * Retrieval results are deterministic, scoped, and explainable
@@ -40,45 +30,23 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 
 ## System Map
 
-```mermaid
-graph TD
-    Core[kindling-core]
-    Store[kindling-store-sqlite]
-    Provider[kindling-provider-local]
-    OpenCode[kindling-adapter-opencode]
-    PocketFlow[kindling-adapter-pocketflow]
-    CLI[kindling-cli]
-
-    Core -->|depends on| Store
-    Core -->|depends on| Provider
-    OpenCode -->|depends on| Core
-    PocketFlow -->|depends on| Core
-    CLI -->|depends on| Core
-```
-
-**Dependencies:**
-
-* `kindling-core` → `kindling-store-sqlite`
-* `kindling-core` → `kindling-provider-local`
-* `kindling-adapter-opencode` → `kindling-core`
-* `kindling-adapter-pocketflow` → `kindling-core`
-* `kindling-cli` → `kindling-core`
+* `kindling-core` → depends on → `kindling-store-sqlite`
+* `kindling-core` → depends on → `kindling-provider-local`
+* `kindling-adapter-opencode` → depends on → `kindling-core`
+* `kindling-adapter-pocketflow` → depends on → `kindling-core`
+* `kindling-cli` → depends on → `kindling-core`
 
 ---
 
 ## Milestones
 
-### M1: Kindling OSS Scaffolding ✓
+### M1: Kindling OSS Scaffolding
 
 * Public repository created (`kindling`)
 * Package boundaries enforced (core / store / provider / adapters)
 * Architecture, data model, and retrieval contract docs published
 
 **Target:** Repo builds, types compile, no runtime behaviour required
-
-**Status:** Complete
-
----
 
 ### M2: Local Capture + Continuity (OpenCode)
 
@@ -90,10 +58,6 @@ graph TD
 
 **Target:** End-to-end local memory works in OpenCode
 
-**Status:** In Progress
-
----
-
 ### M3: High-Signal Workflows (PocketFlow)
 
 * PocketFlow adapter (vendored or dependency)
@@ -101,10 +65,6 @@ graph TD
 * Structured evidence capture
 
 **Target:** Workflow-driven capsules outperform heuristic session summaries
-
-**Status:** Not Started
-
----
 
 ### M4: OSS Hardening
 
@@ -115,20 +75,69 @@ graph TD
 
 **Target:** Safe, understandable OSS v0.1 release
 
-**Status:** Not Started
-
 ---
 
 ## Modules
 
-| Module | Scope | Owner | Priority | Status | Path |
-|--------|-------|-------|----------|--------|------|
-| **kindling-core** | KINDLING | @aneki | high | Draft | [modules/kindling-core.aps.md](./modules/kindling-core.aps.md) |
-| **kindling-store-sqlite** | STORAGE | @aneki | high | Draft | [modules/kindling-store-sqlite.aps.md](./modules/kindling-store-sqlite.aps.md) |
-| **kindling-provider-local** | RETRIEVAL | @aneki | high | Draft | [modules/kindling-provider-local.aps.md](./modules/kindling-provider-local.aps.md) |
-| **kindling-adapter-opencode** | ADAPTER | @aneki | high | Draft | [modules/kindling-adapter-opencode.aps.md](./modules/kindling-adapter-opencode.aps.md) |
-| **kindling-adapter-pocketflow** | ADAPTER | @aneki | medium | Draft | [modules/kindling-adapter-pocketflow.aps.md](./modules/kindling-adapter-pocketflow.aps.md) |
-| **kindling-cli** | CLI | @aneki | medium | Draft | [modules/kindling-cli.aps.md](./modules/kindling-cli.aps.md) |
+### kindling-core
+
+* **Path:** ./modules/kindling-core.aps.md
+* **Scope:** KINDLING
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** high
+* **Tags:** memory, domain, core
+* **Dependencies:** kindling-store-sqlite, kindling-provider-local
+
+### kindling-store-sqlite
+
+* **Path:** ./modules/kindling-store-sqlite.aps.md
+* **Scope:** STORAGE
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** high
+* **Tags:** sqlite, persistence
+* **Dependencies:** (none)
+
+### kindling-provider-local
+
+* **Path:** ./modules/kindling-provider-local.aps.md
+* **Scope:** RETRIEVAL
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** high
+* **Tags:** search, fts
+* **Dependencies:** kindling-store-sqlite
+
+### kindling-adapter-opencode
+
+* **Path:** ./modules/kindling-adapter-opencode.aps.md
+* **Scope:** ADAPTER
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** high
+* **Tags:** opencode, ingestion
+* **Dependencies:** kindling-core
+
+### kindling-adapter-pocketflow
+
+* **Path:** ./modules/kindling-adapter-pocketflow.aps.md
+* **Scope:** ADAPTER
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** medium
+* **Tags:** pocketflow, workflows
+* **Dependencies:** kindling-core
+
+### kindling-cli
+
+* **Path:** ./modules/kindling-cli.aps.md
+* **Scope:** CLI
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** medium
+* **Tags:** cli, tooling, debugging
+* **Dependencies:** kindling-core
 
 ---
 
@@ -147,25 +156,6 @@ graph TD
 
 ---
 
-## Risks
-
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| SQLite FTS performance degrades with large datasets | High | Medium | Implement benchmarks early; add pagination and time-window filters; consider partitioning strategy if needed |
-| Adapter event mappings miss critical context | High | Medium | Start with comprehensive logging; iterate based on dogfooding feedback; maintain mapping table for easy updates |
-| Redaction implementation leaks sensitive data | High | Low | Design redaction-first; add tests for edge cases; document what gets captured in README |
-| Module boundaries become unclear during implementation | Medium | Medium | Enforce dependency rules via package.json; regular architecture review checkpoints |
-
----
-
 ## Open Questions
 
 *No open questions at this time.*
-
----
-
-## Next Steps
-
-**Immediate:** Begin STORAGE-001 — SQLite schema and initial migrations
-
-See [execution/STORAGE-001.steps.md](./execution/STORAGE-001.steps.md) for detailed implementation steps.

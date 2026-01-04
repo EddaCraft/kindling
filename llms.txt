@@ -1,0 +1,19 @@
+# Kindling
+
+> A lightweight library for adding durable memory and contextual continuity to AI-assisted workflows. Captures observations, organises into capsules, retrieves with provenance. Local-first, embedded SQLite, no external services.
+
+Kindling is infrastructure — it captures context but does not assert truth. Governance and promotion belong to downstream systems (Edda).
+
+## Docs
+
+- [Architecture](docs/architecture.md): System design and package boundaries
+- [Data Model](docs/data-model.md): Core types (Observation, Capsule, Summary, Pin)
+- [Retrieval Contract](docs/retrieval-contract.md): Query behaviour and determinism guarantees
+
+## Plan
+
+- [Project Plan](plans/index.aps.md): Roadmap, modules, tasks, and decisions
+
+## Optional
+
+- [Contributing](CONTRIBUTING.md): PR process and scope guardrails

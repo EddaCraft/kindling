@@ -57,6 +57,21 @@ Out of scope for this repository:
 - Multi-user access control
 - Cloud/server deployment modes
 
+## For LLMs
+
+If you're an AI assistant working with this codebase:
+
+- **Architecture**: See [docs/architecture.md](docs/architecture.md) for system design
+- **Data model**: See [docs/data-model.md](docs/data-model.md) for core types
+- **Retrieval**: See [docs/retrieval-contract.md](docs/retrieval-contract.md) for query behaviour
+- **Plan**: See [plans/index.aps.md](plans/index.aps.md) for roadmap, modules, and decisions
+
+**Key constraints:**
+- Kindling captures context but does not assert truth
+- Retrieval must be deterministic and explainable
+- Governance/promotion is out of scope (belongs to Edda)
+- Local-first, embedded SQLite, no external services
+
 ## License
 
 [Apache-2.0](LICENSE) — Copyright 2025 EddaCraft
