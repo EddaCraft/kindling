@@ -1,0 +1,28 @@
+{
+  "name": "@kindling/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for Kindling memory inspection and management",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "kindling": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@kindling/core": "workspace:*",
+    "@kindling/store-sqlite": "workspace:*",
+    "@kindling/provider-local": "workspace:*"
+  }
+}

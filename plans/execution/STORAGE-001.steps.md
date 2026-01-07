@@ -1,97 +1,264 @@
-# Steps: STORAGE-001
+# STORAGE-001: Create SQLite schema + initial migrations
 
-| Field | Value |
-|-------|-------|
-| Source | [../modules/kindling-store-sqlite.aps.md](../modules/kindling-store-sqlite.aps.md) |
-| Task(s) | STORAGE-001 — Create SQLite schema + initial migrations |
-| Created by | @aneki / AI |
-| Status | Draft |
+| Module | Task ID | Owner | Status |
+|--------|---------|-------|--------|
+| [kindling-store-sqlite](../modules/kindling-store-sqlite.aps.md) | STORAGE-001 | @aneki | Draft |
 
-## Why This Matters
-
-The SQLite schema is the foundation of Kindling's system of record. Without a stable, well-designed schema, all downstream functionality (capture, retrieval, export) will be unreliable. This task establishes the data layer that everything else depends on.
-
-## What We're Building
-
-A migration-based SQLite schema that supports:
-- High-volume observation writes
-- Capsule-observation relationships
-- Full-text search indexing
-- Safe evolution over time
+---
 
 ## Prerequisites
 
-- [ ] Package structure exists (`packages/kindling-store-sqlite/`)
-- [ ] better-sqlite3 or equivalent driver available
+- [ ] Package structure for `kindling-store-sqlite` exists
+- [ ] Build tooling configured (TypeScript, tests)
+- [ ] Domain types from `kindling-core` are defined (or stubs exist)
+- [ ] Decision D-002 reviewed: SQLite is the system of record
+
+---
 
 ## Steps
 
-### 1. Create migration infrastructure
+### 1. Create package structure for kindling-store-sqlite
 
-- **Why:** Migrations enable safe schema evolution without data loss
-- **What:** Migration runner that tracks applied migrations
-- **Checkpoint:** `src/db/migrate.ts` exists with `runMigrations()` function
-- **Validate:** `pnpm tsc --noEmit`
+**Checkpoint:** Package directory exists with package.json configured
 
-### 2. Create initial schema migration
+**Validate:**
+```bash
+ls -la packages/kindling-store-sqlite/
+cat packages/kindling-store-sqlite/package.json
+```
 
-- **Why:** Establishes the core tables for observations, capsules, and their relationship
-- **What:** SQL migration defining tables with proper constraints
-- **Checkpoint:** `migrations/001_init.sql` creates:
-  - `observations` (id, kind, content, provenance, ts, scope_ids, redacted)
-  - `capsules` (id, type, intent, status, opened_at, closed_at, scope_ids)
-  - `capsule_observations` (capsule_id, observation_id, seq)
-  - `summaries` (id, capsule_id, content, confidence, created_at, evidence_refs)
-  - `pins` (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
-  - `schema_migrations` (version, applied_at)
-- **Validate:** Migration applies without error
+**Pattern:** Monorepo package setup; follow existing conventions from scaffolding
 
-### 3. Create FTS migration
+---
 
-- **Why:** Full-text search is essential for retrieval performance
-- **What:** FTS5 virtual tables for observations and summaries
-- **Checkpoint:** `migrations/002_fts.sql` creates:
-  - `observations_fts` (FTS5 on content)
-  - `summaries_fts` (FTS5 on content)
-  - Triggers to sync FTS on insert/update/delete
-- **Validate:** Migration applies without error
+### 2. Create migrations directory and schema_migrations tracking
 
-### 4. Create indexes migration
+**Checkpoint:** `migrations/` directory exists; versioning strategy documented
 
-- **Why:** Query performance depends on proper indexing
-- **What:** Indexes for common query patterns
-- **Checkpoint:** `migrations/003_indexes.sql` creates indexes on:
-  - `observations(scope_ids->>'sessionId', ts)`
-  - `observations(scope_ids->>'repoId', ts)`
-  - `capsules(status, scope_ids->>'sessionId')`
-  - `pins(expires_at)` for TTL queries
-- **Validate:** Migration applies without error
+**Validate:**
+```bash
+ls -la packages/kindling-store-sqlite/migrations/
+cat packages/kindling-store-sqlite/migrations/README.md
+```
 
-### 5. Implement database open with defaults
+**Pattern:** Migrations are sequential, immutable SQL files with clear naming (001_init.sql, 002_fts.sql)
 
-- **Why:** Consistent DB configuration prevents subtle bugs
-- **What:** Database opener with WAL mode, FK enforcement, busy timeout
-- **Checkpoint:** `src/db/open.ts` exports `openDatabase(path)`:
-  - Enables WAL mode
-  - Enables foreign key enforcement
-  - Sets busy timeout (5000ms default)
-  - Runs pending migrations
-- **Validate:** `pnpm tsc --noEmit`
+---
 
-### 6. Add migration tests
+### 3. Write migration 001_init.sql with core tables
 
-- **Why:** Schema correctness must be verified before use
-- **What:** Tests that verify migration idempotency and table structure
-- **Checkpoint:** `test/storage.migrations.spec.ts` covers:
-  - Fresh DB migrates successfully
-  - Migrations are idempotent
-  - All expected tables exist
-  - FTS tables populated on insert
-- **Validate:** `pnpm test -- migrations`
+**Checkpoint:** Initial schema SQL file exists with all core tables defined
 
-## Completion
+**Deliverables:**
 
-- [ ] All checkpoints validated
-- [ ] Task marked complete in source module
+Tables to create:
+- `schema_migrations` — track applied migrations (version, applied_at)
+- `observations` — raw captured events with type, content, provenance, timestamp
+- `capsules` — bounded units of meaning with type, intent, open/close timestamps, scope identifiers
+- `capsule_observations` — junction table linking observations to capsules with deterministic ordering
+- `summaries` — capsule summaries with content, confidence, evidence references
+- `pins` — explicit context pins with TTL support
 
-**Completed by:** ___
+Indexes to create:
+- Observations: `(session_id, ts)`, `(repo_id, ts)`, `(agent_id, ts)`, `(ts)` for time-window queries
+- Capsules: `(session_id)`, `(repo_id)`, `(agent_id)`, `(closed_at)` for retrieval scoping
+- Capsule_observations: `(capsule_id, seq)` for ordered retrieval
+- Summaries: `(capsule_id)`, `(ts)` for latest summary lookups
+- Pins: `(scope_id, expires_at)` for TTL-aware listing
+
+**Validate:**
+```bash
+cat packages/kindling-store-sqlite/migrations/001_init.sql
+```
+
+**Schema Requirements:**
+- Foreign keys enforced where appropriate (capsule_observations → observations, summaries → capsules)
+- Timestamps stored as INTEGER (Unix epoch ms) for SQLite portability
+- Scope identifiers: session_id, repo_id, agent_id, user_id as TEXT
+- Observation content as TEXT (JSON serialized)
+- Redaction support: `redacted_at` timestamp, `redacted_reason` text
+
+**Pattern:** Follow SQLite best practices; use INTEGER PRIMARY KEY for rowid optimization
+
+---
+
+### 4. Write migration 002_fts.sql with FTS5 tables
+
+**Checkpoint:** FTS schema SQL file exists with indexed content tables
+
+**Deliverables:**
+
+FTS tables to create:
+- `observations_fts` — FTS5 virtual table over observation content and provenance
+- `summaries_fts` — FTS5 virtual table over summary content (optional but recommended)
+
+Triggers to create (if using trigger-based sync):
+- INSERT/UPDATE/DELETE triggers to keep FTS tables synchronized
+- OR document explicit write strategy if not using triggers
+
+**Validate:**
+```bash
+cat packages/kindling-store-sqlite/migrations/002_fts.sql
+grep -i "CREATE VIRTUAL TABLE" packages/kindling-store-sqlite/migrations/002_fts.sql
+```
+
+**FTS Requirements:**
+- FTS5 (not FTS4) for better performance and features
+- Include observation_id as rowid reference for joins
+- Index: kind, content, provenance JSON fields (flattened)
+- Redacted observations must not appear in FTS results
+
+**Pattern:** FTS5 with content='' external content pattern OR direct content storage; document choice
+
+---
+
+### 5. Implement DB initialization with PRAGMAs
+
+**Checkpoint:** Database opens with correct configuration; PRAGMAs verified
+
+**Deliverables:**
+
+Create `src/db/open.ts` with:
+- Function to open/create SQLite database
+- Apply PRAGMAs:
+  - `PRAGMA journal_mode=WAL` — better concurrency
+  - `PRAGMA foreign_keys=ON` — enforce referential integrity
+  - `PRAGMA busy_timeout=5000` — sane timeout for concurrent writes
+  - `PRAGMA synchronous=NORMAL` — balance safety and performance (WAL mode)
+- Create tables if not exist (run migrations)
+- Verify schema_migrations table exists
+
+**Validate:**
+```bash
+node --input-type=module -e "
+  const { openDatabase } = await import('./packages/kindling-store-sqlite/dist/db/open.js');
+  const db = openDatabase({ dbPath: ':memory:' });
+  console.log('journal_mode:', db.pragma('journal_mode'));
+  console.log('foreign_keys:', db.pragma('foreign_keys'));
+"
+```
+
+**Pattern:** Use better-sqlite3 or node-sqlite for Node.js; ensure sync API available for simplicity
+
+---
+
+### 6. Implement migration runner
+
+**Checkpoint:** Migrations can be applied programmatically; idempotent execution
+
+**Deliverables:**
+
+Create `src/db/migrate.ts` with:
+- Function to read migration files from `migrations/` directory
+- Check `schema_migrations` to determine which migrations have been applied
+- Apply pending migrations in order
+- Record applied migrations in `schema_migrations` table
+- Fail fast on SQL errors with clear messages
+
+**Validate:**
+```bash
+# Create fresh DB (migrations run automatically on open)
+node --input-type=module -e "
+  const { openDatabase } = await import('./packages/kindling-store-sqlite/dist/db/open.js');
+  openDatabase({ dbPath: '/tmp/test-kindling.db' });
+  console.log('OK');
+"
+
+# Verify tables exist
+sqlite3 /tmp/test-kindling.db ".tables"
+```
+
+**Expected Output:** observations, capsules, capsule_observations, summaries, pins, schema_migrations, observations_fts, summaries_fts
+
+**Pattern:** Migrations are immutable; never modify an applied migration; always add new ones
+
+---
+
+### 7. Write smoke tests for schema verification
+
+**Checkpoint:** Tests pass; all required tables and indexes exist
+
+**Deliverables:**
+
+Create `test/storage.migrations.spec.ts` with:
+- Test: Fresh DB initialization creates all tables
+- Test: Migrations are idempotent (running twice is safe)
+- Test: Foreign key constraints are enforced
+- Test: FTS tables are queryable
+- Test: Indexes exist (verify via sqlite_master)
+
+**Validate:**
+```bash
+npm test --workspace=kindling-store-sqlite -- test/storage.migrations.spec.ts
+```
+
+**Test Cases:**
+```typescript
+// Test: Tables exist
+const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
+expect(tables.map(t => t.name)).toContain('observations');
+
+// Test: FKs enforced
+await expect(
+  db.run("INSERT INTO capsule_observations (capsule_id, observation_id) VALUES (999, 999)")
+).rejects.toThrow();
+
+// Test: FTS queryable
+await db.run("INSERT INTO observations_fts (observation_id, content) VALUES (1, 'test')");
+const results = await db.all("SELECT * FROM observations_fts WHERE content MATCH 'test'");
+expect(results.length).toBe(1);
+```
+
+**Pattern:** Use test DB in :memory: or temp file; clean up after each test
+
+---
+
+### 8. Document schema and migration strategy
+
+**Checkpoint:** Schema documentation exists; migration strategy clear for future changes
+
+**Deliverables:**
+
+Create `packages/kindling-store-sqlite/SCHEMA.md` with:
+- Entity-relationship diagram (Mermaid or ASCII)
+- Table descriptions and key fields
+- Index strategy and rationale
+- Migration workflow for future changes
+- Redaction strategy
+
+Update `packages/kindling-store-sqlite/README.md` with:
+- Overview of store responsibilities
+- How to run migrations
+- How to add new migrations
+
+**Validate:**
+```bash
+cat packages/kindling-store-sqlite/SCHEMA.md
+cat packages/kindling-store-sqlite/README.md
+```
+
+**Pattern:** Keep schema docs in sync with actual schema; use migration version references
+
+---
+
+## Completion Checklist
+
+- [ ] All steps completed with passing checkpoints
+- [ ] Tests pass: `npm test --workspace=kindling-store-sqlite`
+- [ ] Schema verified: Tables, indexes, FKs, FTS all correct
+- [ ] Documentation complete: SCHEMA.md and README.md updated
+- [ ] STORAGE-001 task marked complete in module file
+- [ ] Ready for STORAGE-002: Implement write path
+
+**Completed by:** _____________
+
+**Date:** _____________
+
+---
+
+## Notes
+
+* SQLite version requirement: ≥3.35 (for modern FTS5 features)
+* Use parameterized queries everywhere; never string concatenation
+* Consider tooling: `sqlite3` CLI for manual inspection during development
+* FTS indexing strategy: Start simple with trigger-based sync; optimize later if needed

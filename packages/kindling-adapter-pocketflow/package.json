@@ -1,0 +1,23 @@
+{
+  "name": "@kindling/adapter-pocketflow",
+  "version": "0.1.0",
+  "description": "PocketFlow workflow adapter for Kindling",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@kindling/core": "workspace:*"
+  }
+}
