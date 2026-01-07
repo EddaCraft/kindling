@@ -143,6 +143,7 @@ export class NodeAdapter {
 
     const capsuleId = this.activeNodes.get(node.id);
     if (!capsuleId) {
+      console.warn(`[NodeAdapter] onNodeEnd: no active capsule for node "${node.name}" (${node.id})`);
       return null;
     }
 
