@@ -20,6 +20,10 @@ pnpm build
 - Small, focused functions
 - Tests alongside implementation
 
+## Planning (APS)
+
+We track roadmap and module design in APS docs under `plans/`. If your change impacts scope or architecture, please review the relevant plan and consider updating it in the same PR.
+
 ## Pull Request Process
 
 1. **Open an issue first** for significant changes to discuss approach
