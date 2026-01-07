@@ -130,11 +130,12 @@ Create `src/db/open.ts` with:
 
 **Validate:**
 ```bash
-node -e "const { openDb } = require('./packages/kindling-store-sqlite/dist/db/open.js'); \
-         openDb(':memory:').then(db => { \
-           db.get('PRAGMA journal_mode').then(r => console.log('journal_mode:', r)); \
-           db.get('PRAGMA foreign_keys').then(r => console.log('foreign_keys:', r)); \
-         })"
+node --input-type=module -e "
+  const { openDatabase } = await import('./packages/kindling-store-sqlite/dist/db/open.js');
+  const db = openDatabase({ dbPath: ':memory:' });
+  console.log('journal_mode:', db.pragma('journal_mode'));
+  console.log('foreign_keys:', db.pragma('foreign_keys'));
+"
 ```
 
 **Pattern:** Use better-sqlite3 or node-sqlite for Node.js; ensure sync API available for simplicity
@@ -156,9 +157,12 @@ Create `src/db/migrate.ts` with:
 
 **Validate:**
 ```bash
-# Create fresh DB
-node -e "const { openDb, migrate } = require('./packages/kindling-store-sqlite/dist/db'); \
-         openDb('/tmp/test-kindling.db').then(db => migrate(db)).then(() => console.log('OK'))"
+# Create fresh DB (migrations run automatically on open)
+node --input-type=module -e "
+  const { openDatabase } = await import('./packages/kindling-store-sqlite/dist/db/open.js');
+  openDatabase({ dbPath: '/tmp/test-kindling.db' });
+  console.log('OK');
+"
 
 # Verify tables exist
 sqlite3 /tmp/test-kindling.db ".tables"

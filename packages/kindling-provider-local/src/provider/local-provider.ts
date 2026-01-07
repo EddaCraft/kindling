@@ -5,7 +5,7 @@
  */
 
 import type { KindlingStore } from '@kindling/store-sqlite';
-import type { ObservationScope } from '@kindling/core';
+import type { Observation, Summary, ObservationScope } from '@kindling/core';
 import type {
   RetrievalProvider,
   ProviderRequest,
@@ -61,11 +61,11 @@ export class LocalRetrievalProvider implements RetrievalProvider {
     const nowMs = Date.now();
 
     return observations
-      .filter(obs => {
+      .filter((obs: Observation) => {
         const content = (obs.content ?? '').toLowerCase();
         return content.includes(query);
       })
-      .map(obs => {
+      .map((obs: Observation) => {
         const baseScore = this.calculateFtsScore(obs.content ?? '', query);
         const matchLevel = this.determineScopeMatchLevel(obs.scope, request.scope);
         const ageMs = nowMs - obs.tsMs;
@@ -93,11 +93,11 @@ export class LocalRetrievalProvider implements RetrievalProvider {
     const nowMs = Date.now();
 
     return summaries
-      .filter(sum => {
+      .filter((sum: Summary) => {
         const content = sum.content.toLowerCase();
         return content.includes(query);
       })
-      .map(sum => {
+      .map((sum: Summary) => {
         const baseScore = this.calculateFtsScore(sum.content, query);
         const ageMs = nowMs - sum.tsMs;
 
@@ -131,7 +131,7 @@ export class LocalRetrievalProvider implements RetrievalProvider {
 
     const nowMs = Date.now();
 
-    return observations.map(obs => {
+    return observations.map((obs: Observation) => {
       const matchLevel = this.determineScopeMatchLevel(obs.scope, request.scope);
       const ageMs = nowMs - obs.tsMs;
 
