@@ -15,7 +15,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",

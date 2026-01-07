@@ -1,43 +1,31 @@
-/**
- * Status command
- *
- * Displays database location, counts, and health information.
- */
-
-import type { KindlingStore } from '@kindling/store-sqlite';
-import { getSchemaVersion } from '@kindling/store-sqlite';
+import type { SqliteKindlingStore } from '@kindling/store-sqlite';
+import { getMigrationStatus } from '@kindling/store-sqlite';
 
 export interface StatusResult {
   dbPath: string;
   schemaVersion: number;
-  counts: {
-    observations: number;
-    capsules: number;
-    summaries: number;
-    pins: number;
+  migrationStatus: {
+    current: number;
+    latest: number;
+    pending: string[];
   };
-  openCapsules: number;
 }
 
-export function statusCommand(store: KindlingStore, dbPath: string, db: any): StatusResult {
-  const schemaVersion = getSchemaVersion(db);
-
-  const observations = store.countObservations();
-  const capsules = store.countCapsules();
-  const summaries = store.countSummaries();
-  const pins = store.countPins();
-  const openCapsules = store.countCapsules({ status: 'open' });
+export function statusCommand(
+  _store: SqliteKindlingStore,
+  dbPath: string,
+  db: unknown
+): StatusResult {
+  const status = getMigrationStatus(db as Parameters<typeof getMigrationStatus>[0]);
 
   return {
     dbPath,
-    schemaVersion,
-    counts: {
-      observations,
-      capsules,
-      summaries,
-      pins,
+    schemaVersion: status.currentVersion,
+    migrationStatus: {
+      current: status.currentVersion,
+      latest: status.latestVersion,
+      pending: status.pendingMigrations,
     },
-    openCapsules,
   };
 }
 
@@ -49,11 +37,10 @@ export function formatStatus(result: StatusResult): string {
     `Database: ${result.dbPath}`,
     `Schema Version: ${result.schemaVersion}`,
     '',
-    'Counts:',
-    `  Observations: ${result.counts.observations}`,
-    `  Capsules: ${result.counts.capsules} (${result.openCapsules} open)`,
-    `  Summaries: ${result.counts.summaries}`,
-    `  Pins: ${result.counts.pins}`,
+    'Migration Status:',
+    `  Current: ${result.migrationStatus.current}`,
+    `  Latest: ${result.migrationStatus.latest}`,
+    `  Pending: ${result.migrationStatus.pending.length > 0 ? result.migrationStatus.pending.join(', ') : 'none'}`,
   ];
 
   return lines.join('\n');

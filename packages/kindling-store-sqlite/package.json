@@ -16,7 +16,7 @@
     "migrations"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
