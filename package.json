@@ -1,25 +1,28 @@
 {
-  "name": "kindling",
+  "name": "kindling-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "Local memory and continuity engine for AI-assisted development",
+  "description": "Lightweight local memory and contextual continuity for agentic workflows",
   "repository": {
     "type": "git",
     "url": "https://github.com/EddaCraft/kindling.git"
   },
   "license": "Apache-2.0",
-  "workspaces": [
-    "packages/*"
-  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "clean": "pnpm -r clean && rm -rf node_modules",
-    "typecheck": "tsc --build"
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "type-check": "pnpm -r run type-check",
+    "clean": "pnpm -r run clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
+    "@types/node": "^20.11.0",
     "typescript": "^5.3.0",
-    "vitest": "^1.0.0"
+    "vitest": "^1.2.0"
   }
 }

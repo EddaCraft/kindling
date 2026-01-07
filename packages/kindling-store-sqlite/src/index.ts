@@ -1,4 +1,11 @@
-export { openDatabase, getSchemaVersion } from './db/open.js';
-export type { OpenDbOptions } from './db/open.js';
-export { SqliteKindlingStore } from './store/sqlite-store.js';
-export type { KindlingStore, ObservationFilters, CapsuleFilters, SummaryFilters, PinFilters, EvidenceSnippet } from './store/interface.js';
+/**
+ * Kindling SQLite Store
+ *
+ * SQLite-based system of record for Kindling.
+ */
+
+// Re-export database infrastructure
+export * from './db/index.js';
+
+// Re-export store implementation
+export * from './store/index.js';

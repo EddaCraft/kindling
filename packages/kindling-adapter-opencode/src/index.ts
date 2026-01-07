@@ -1,10 +1,7 @@
 /**
- * @kindling/adapter-opencode
+ * Kindling OpenCode Adapter
  *
- * OpenCode adapter for Kindling memory ingestion.
+ * Captures observations from OpenCode development sessions.
  */
 
-export { SessionAdapter } from './adapter/session-adapter.js';
-export type { SessionAdapterConfig } from './adapter/session-adapter.js';
-export { mapEventToObservation, OpenCodeEventType } from './adapter/event-mapping.js';
-export type { OpenCodeEvent } from './adapter/event-mapping.js';
+export * from './opencode/index.js';

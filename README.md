@@ -364,6 +364,10 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 - [Data Model](docs/data-model.md) (coming soon)
 - [Retrieval Contract](docs/retrieval-contract.md) (coming soon)
 
+## Planning (APS)
+
+FYI: Kindling uses APS docs for roadmap and module planning. If you want the longer-form planning context, start at [plans/index.aps.md](plans/index.aps.md).
+
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/EddaCraft/kindling/issues)
