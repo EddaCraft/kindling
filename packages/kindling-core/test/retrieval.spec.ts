@@ -165,8 +165,6 @@ describe('Retrieval Orchestration', () => {
 
       store.pins.push(pin);
 
-      // Current time is past expiry
-      const now = Date.now();
       const result = await retrieve(store, provider, {
         query: 'test',
         scopeIds: { sessionId: 's1' },
