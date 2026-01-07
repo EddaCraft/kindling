@@ -1,17 +1,11 @@
-/**
- * @kindling/provider-local
- *
- * Local FTS-based retrieval provider for Kindling.
- */
-
 export { LocalRetrievalProvider } from './provider/local-provider.js';
+export { ProviderHitTargetType } from '@kindling/core';
 export type {
   RetrievalProvider,
   ProviderRequest,
   ProviderHit,
-  ProviderHitTargetType,
   RetrievalScope,
-} from './provider/types.js';
+} from '@kindling/core';
 export {
   compareHits,
   normalizeScore,

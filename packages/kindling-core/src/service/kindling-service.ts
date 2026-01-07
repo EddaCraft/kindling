@@ -7,8 +7,6 @@
  * - Retrieval orchestration
  */
 
-import type { KindlingStore, EvidenceSnippet } from '@kindling/store-sqlite';
-import type { RetrievalProvider, ProviderRequest, ProviderHit } from '@kindling/provider-local';
 import type {
   Observation,
   CreateObservationInput,
@@ -19,6 +17,11 @@ import type {
   CreateSummaryInput,
   Pin,
   CreatePinInput,
+  KindlingStore,
+  EvidenceSnippet,
+  RetrievalProvider,
+  ProviderRequest,
+  ProviderHit,
 } from '../types/index.js';
 
 export interface KindlingServiceConfig {

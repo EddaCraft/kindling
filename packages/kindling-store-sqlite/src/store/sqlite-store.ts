@@ -29,7 +29,7 @@ import type {
   SummaryFilters,
   PinFilters,
   EvidenceSnippet,
-} from './interface.js';
+} from '@kindling/core';
 
 export class SqliteKindlingStore implements KindlingStore {
   constructor(private db: Database.Database) {}

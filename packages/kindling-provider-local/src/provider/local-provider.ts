@@ -4,15 +4,17 @@
  * Implements deterministic retrieval over Kindling's SQLite store.
  */
 
-import type { KindlingStore } from '@kindling/store-sqlite';
-import type { Observation, Summary, ObservationScope } from '@kindling/core';
 import type {
+  KindlingStore,
+  Observation,
+  Summary,
+  ObservationScope,
   RetrievalProvider,
   ProviderRequest,
   ProviderHit,
   RetrievalScope,
-} from './types.js';
-import { ProviderHitTargetType } from './types.js';
+} from '@kindling/core';
+import { ProviderHitTargetType } from '@kindling/core';
 import {
   compareHits,
   normalizeScore,

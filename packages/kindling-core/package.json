@@ -16,9 +16,5 @@
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest"
-  },
-  "dependencies": {
-    "@kindling/store-sqlite": "workspace:*",
-    "@kindling/provider-local": "workspace:*"
   }
 }

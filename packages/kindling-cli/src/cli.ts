@@ -87,81 +87,82 @@ async function main() {
   }
 
   try {
-    // Open database
     const db = openDatabase({ dbPath });
-    const store = new SqliteKindlingStore(db);
-    const provider = new LocalRetrievalProvider(store);
-    const service = new KindlingService({ store, provider });
+    try {
+      const store = new SqliteKindlingStore(db);
+      const provider = new LocalRetrievalProvider(store);
+      const service = new KindlingService({ store, provider });
 
-    const options = parseOptions(args.slice(1));
+      const options = parseOptions(args.slice(1));
 
-    switch (command) {
-      case 'status': {
-        const result = statusCommand(store, dbPath, db);
-        console.log(formatStatus(result));
-        break;
-      }
-
-      case 'search': {
-        const query = args[1];
-        const result = searchCommand(service, {
-          query,
-          sessionId: options.session,
-          repoId: options.repo,
-          limit: options.limit ? parseInt(options.limit) : undefined,
-        });
-        console.log(formatSearchResults(result));
-        break;
-      }
-
-      case 'list': {
-        const target = args[1] as any;
-        if (!target || !['capsules', 'pins', 'observations'].includes(target)) {
-          console.error('Error: list command requires a target (capsules, pins, or observations)');
-          process.exit(1);
+      switch (command) {
+        case 'status': {
+          const result = statusCommand(store, dbPath, db);
+          console.log(formatStatus(result));
+          break;
         }
-        const items = listCommand(store, target, {
-          sessionId: options.session,
-          status: options.status,
-          limit: options.limit ? parseInt(options.limit) : undefined,
-        });
-        console.log(formatList(target, items));
-        break;
-      }
 
-      case 'pin': {
-        const targetType = args[1];
-        const targetId = args[2];
-        if (!targetType || !targetId) {
-          console.error('Error: pin command requires <type> and <id>');
-          process.exit(1);
+        case 'search': {
+          const query = args[1];
+          const result = searchCommand(service, {
+            query,
+            sessionId: options.session,
+            repoId: options.repo,
+            limit: options.limit ? parseInt(options.limit) : undefined,
+          });
+          console.log(formatSearchResults(result));
+          break;
         }
-        const message = pinCommand(service, targetType, targetId, {
-          note: options.note,
-          ttl: options.ttl ? parseInt(options.ttl) : undefined,
-        });
-        console.log(message);
-        break;
-      }
 
-      case 'unpin': {
-        const pinId = args[1];
-        if (!pinId) {
-          console.error('Error: unpin command requires <pin-id>');
-          process.exit(1);
+        case 'list': {
+          const target = args[1] as any;
+          if (!target || !['capsules', 'pins', 'observations'].includes(target)) {
+            console.error('Error: list command requires a target (capsules, pins, or observations)');
+            process.exit(1);
+          }
+          const items = listCommand(store, target, {
+            sessionId: options.session,
+            status: options.status,
+            limit: options.limit ? parseInt(options.limit) : undefined,
+          });
+          console.log(formatList(target, items));
+          break;
         }
-        const message = unpinCommand(service, pinId);
-        console.log(message);
-        break;
-      }
 
-      default:
-        console.error(`Unknown command: ${command}`);
-        console.log('Run "kindling help" for usage information');
-        process.exit(1);
+        case 'pin': {
+          const targetType = args[1];
+          const targetId = args[2];
+          if (!targetType || !targetId) {
+            console.error('Error: pin command requires <type> and <id>');
+            process.exit(1);
+          }
+          const message = pinCommand(service, targetType, targetId, {
+            note: options.note,
+            ttl: options.ttl ? parseInt(options.ttl) : undefined,
+          });
+          console.log(message);
+          break;
+        }
+
+        case 'unpin': {
+          const pinId = args[1];
+          if (!pinId) {
+            console.error('Error: unpin command requires <pin-id>');
+            process.exit(1);
+          }
+          const message = unpinCommand(service, pinId);
+          console.log(message);
+          break;
+        }
+
+        default:
+          console.error(`Unknown command: ${command}`);
+          console.log('Run "kindling help" for usage information');
+          process.exit(1);
+      }
+    } finally {
+      db.close();
     }
-
-    db.close();
   } catch (error: any) {
     console.error('Error:', error.message);
     process.exit(1);
