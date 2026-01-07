@@ -419,13 +419,18 @@ export class SqliteKindlingStore {
       content: string;
     }>;
 
-    return rows.map(row => ({
-      observationId: row.id,
-      kind: row.kind,
-      snippet: row.content.length > maxChars
-        ? row.content.substring(0, maxChars) + '...'
-        : row.content,
-    }));
+    const rowMap = new Map(rows.map(row => [row.id, row]));
+
+    return observationIds
+      .map(id => rowMap.get(id))
+      .filter((row): row is NonNullable<typeof row> => row !== undefined)
+      .map(row => ({
+        observationId: row.id,
+        kind: row.kind,
+        snippet: row.content.length > maxChars
+          ? row.content.substring(0, maxChars) + '...'
+          : row.content,
+      }));
   }
 
   /**

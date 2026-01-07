@@ -64,6 +64,7 @@ export interface ExportBundle {
   /** Dataset with entities */
   dataset: {
     version: string;
+    exportedAt: number;
     scope?: Partial<ScopeIds>;
     observations: any[];
     capsules: any[];

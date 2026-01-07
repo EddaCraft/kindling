@@ -26,8 +26,8 @@ END;
 CREATE TRIGGER IF NOT EXISTS observations_fts_update
 AFTER UPDATE ON observations
 BEGIN
-  -- Remove old entry
-  DELETE FROM observations_fts WHERE rowid = OLD.rowid;
+  -- Remove old entry (FTS5 external content tables require special delete syntax)
+  INSERT INTO observations_fts(observations_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);
   -- Add new entry only if not redacted
   INSERT INTO observations_fts(rowid, content)
   SELECT NEW.rowid, NEW.content WHERE NEW.redacted = 0;
@@ -37,7 +37,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS observations_fts_delete
 AFTER DELETE ON observations
 BEGIN
-  DELETE FROM observations_fts WHERE rowid = OLD.rowid;
+  INSERT INTO observations_fts(observations_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);
 END;
 
 -- FTS table for summaries content
@@ -64,7 +64,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS summaries_fts_update
 AFTER UPDATE ON summaries
 BEGIN
-  DELETE FROM summaries_fts WHERE rowid = OLD.rowid;
+  INSERT INTO summaries_fts(summaries_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);
   INSERT INTO summaries_fts(rowid, content)
   VALUES (NEW.rowid, NEW.content);
 END;
@@ -73,7 +73,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS summaries_fts_delete
 AFTER DELETE ON summaries
 BEGIN
-  DELETE FROM summaries_fts WHERE rowid = OLD.rowid;
+  INSERT INTO summaries_fts(summaries_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);
 END;
 
 -- Record this migration

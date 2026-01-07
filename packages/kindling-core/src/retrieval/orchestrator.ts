@@ -71,7 +71,7 @@ export async function retrieve(
   const now = Date.now();
 
   // Step 1: Fetch active pins for scope
-  const pins = store.listActivePins(scopeIds, now);
+  const pins = store.listActivePins(scopeIds as Partial<Record<string, string>>, now);
 
   // Step 2: Resolve pins to their targets
   const pinResults: PinResult[] = [];

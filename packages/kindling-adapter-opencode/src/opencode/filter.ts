@@ -180,7 +180,7 @@ export function isExcludedPath(path: string): boolean {
  * @returns Filtered result
  */
 export function filterToolResult(
-  toolName: string,
+  _toolName: string,
   result: unknown
 ): unknown {
   // For now, return as-is

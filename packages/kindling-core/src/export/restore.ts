@@ -169,6 +169,7 @@ export function mergeBundles(
     },
     dataset: {
       version: '1.0',
+      exportedAt: Date.now(),
       ...deduped,
     },
   };

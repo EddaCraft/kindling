@@ -72,7 +72,7 @@ export class LocalFtsProvider implements RetrievalProvider {
     }
 
     // 3. Calculate scores (FTS + recency)
-    const scoredResults = this.calculateScores(entities, ftsMatches);
+    const scoredResults = this.calculateScores(entities);
 
     // 4. Sort by score (descending) and limit
     scoredResults.sort((a, b) => b.score - a.score);
@@ -283,11 +283,10 @@ export class LocalFtsProvider implements RetrievalProvider {
    * Calculate combined score: FTS relevance + recency
    */
   private calculateScores(
-    entities: Array<{ entity: Observation | Summary; ftsMatch: FtsMatch }>,
-    allMatches: FtsMatch[]
+    entities: Array<{ entity: Observation | Summary; ftsMatch: FtsMatch }>
   ): ProviderSearchResult[] {
-    // Find max/min FTS ranks for normalization
-    const ftsRanks = allMatches.map(m => m.rank);
+    // Find max/min FTS ranks for normalization (from returned entities only)
+    const ftsRanks = entities.map(e => e.ftsMatch.rank);
     const minRank = Math.min(...ftsRanks); // Most negative (best)
     const maxRank = Math.max(...ftsRanks); // Closest to 0 (worst)
     const rankRange = maxRank - minRank;

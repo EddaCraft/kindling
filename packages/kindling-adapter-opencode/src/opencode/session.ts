@@ -169,6 +169,7 @@ export class SessionManager {
       id: randomUUID(),
       ts: event.timestamp,
       redacted: false,
+      provenance: {},
       ...mapResult.observation,
     };
 
