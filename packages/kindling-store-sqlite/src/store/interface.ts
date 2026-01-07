@@ -21,6 +21,7 @@ export interface KindlingStore {
   insertObservation(input: CreateObservationInput): Observation;
   getObservation(id: string): Observation | null;
   listObservations(filters?: ObservationFilters): Observation[];
+  countObservations(filters?: ObservationFilters): number;
 
   // Capsule operations
   createCapsule(input: OpenCapsuleInput): Capsule;
@@ -28,6 +29,7 @@ export interface KindlingStore {
   closeCapsule(id: string, input: CloseCapsuleInput): Capsule;
   getOpenCapsuleForSession(sessionId: string): Capsule | null;
   listCapsules(filters?: CapsuleFilters): Capsule[];
+  countCapsules(filters?: CapsuleFilters): number;
 
   // Capsule-observation linking
   attachObservationToCapsule(capsuleId: string, observationId: string): void;
@@ -38,11 +40,13 @@ export interface KindlingStore {
   getSummary(id: string): Summary | null;
   getLatestSummaryForCapsule(capsuleId: string): Summary | null;
   listSummaries(filters?: SummaryFilters): Summary[];
+  countSummaries(filters?: SummaryFilters): number;
 
   // Pin operations
   insertPin(input: CreatePinInput): Pin;
   deletePin(id: string): void;
   listPins(filters?: PinFilters): Pin[];
+  countPins(filters?: PinFilters): number;
 
   // Redaction
   redactObservation(id: string): void;

@@ -5,10 +5,12 @@
  */
 
 import type { KindlingStore } from '@kindling/store-sqlite';
+import type { ObservationScope } from '@kindling/core';
 import type {
   RetrievalProvider,
   ProviderRequest,
   ProviderHit,
+  RetrievalScope,
 } from './types.js';
 import { ProviderHitTargetType } from './types.js';
 import {
@@ -167,8 +169,8 @@ export class LocalRetrievalProvider implements RetrievalProvider {
   }
 
   private determineScopeMatchLevel(
-    targetScope: any,
-    requestScope: any
+    targetScope: ObservationScope | undefined,
+    requestScope: RetrievalScope | undefined
   ): 'session' | 'repo' | 'agent' | 'user' | 'none' {
     if (requestScope?.sessionId && targetScope?.sessionId === requestScope.sessionId) {
       return 'session';

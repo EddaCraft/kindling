@@ -128,6 +128,36 @@ export class SqliteKindlingStore implements KindlingStore {
     return rows.map(row => this.rowToObservation(row));
   }
 
+  countObservations(filters?: ObservationFilters): number {
+    let query = 'SELECT COUNT(*) as count FROM observations WHERE 1=1';
+    const params: any[] = [];
+
+    if (filters?.sessionId) {
+      query += ' AND session_id = ?';
+      params.push(filters.sessionId);
+    }
+    if (filters?.repoId) {
+      query += ' AND repo_id = ?';
+      params.push(filters.repoId);
+    }
+    if (filters?.agentId) {
+      query += ' AND agent_id = ?';
+      params.push(filters.agentId);
+    }
+    if (filters?.userId) {
+      query += ' AND user_id = ?';
+      params.push(filters.userId);
+    }
+    if (filters?.kind) {
+      query += ' AND kind = ?';
+      params.push(filters.kind);
+    }
+
+    const stmt = this.db.prepare(query);
+    const row = stmt.get(...params) as { count: number };
+    return row.count;
+  }
+
   // === Capsule Operations ===
 
   createCapsule(input: OpenCapsuleInput): Capsule {
@@ -250,6 +280,36 @@ export class SqliteKindlingStore implements KindlingStore {
     return rows.map(row => this.rowToCapsule(row));
   }
 
+  countCapsules(filters?: CapsuleFilters): number {
+    let query = 'SELECT COUNT(*) as count FROM capsules WHERE 1=1';
+    const params: any[] = [];
+
+    if (filters?.sessionId) {
+      query += ' AND session_id = ?';
+      params.push(filters.sessionId);
+    }
+    if (filters?.repoId) {
+      query += ' AND repo_id = ?';
+      params.push(filters.repoId);
+    }
+    if (filters?.agentId) {
+      query += ' AND agent_id = ?';
+      params.push(filters.agentId);
+    }
+    if (filters?.userId) {
+      query += ' AND user_id = ?';
+      params.push(filters.userId);
+    }
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+
+    const stmt = this.db.prepare(query);
+    const row = stmt.get(...params) as { count: number };
+    return row.count;
+  }
+
   // === Capsule-Observation Linking ===
 
   attachObservationToCapsule(capsuleId: string, observationId: string): void {
@@ -363,6 +423,20 @@ export class SqliteKindlingStore implements KindlingStore {
     return rows.map(row => this.rowToSummary(row));
   }
 
+  countSummaries(filters?: SummaryFilters): number {
+    let query = 'SELECT COUNT(*) as count FROM summaries WHERE 1=1';
+    const params: any[] = [];
+
+    if (filters?.capsuleId) {
+      query += ' AND capsule_id = ?';
+      params.push(filters.capsuleId);
+    }
+
+    const stmt = this.db.prepare(query);
+    const row = stmt.get(...params) as { count: number };
+    return row.count;
+  }
+
   // === Pin Operations ===
 
   insertPin(input: CreatePinInput): Pin {
@@ -428,6 +502,32 @@ export class SqliteKindlingStore implements KindlingStore {
     }
 
     return pins;
+  }
+
+  countPins(filters?: PinFilters): number {
+    let query = 'SELECT COUNT(*) as count FROM pins WHERE 1=1';
+    const params: any[] = [];
+
+    if (filters?.targetType) {
+      query += ' AND target_type = ?';
+      params.push(filters.targetType);
+    }
+    if (filters?.targetId) {
+      query += ' AND target_id = ?';
+      params.push(filters.targetId);
+    }
+
+    // Filter out expired pins unless includeExpired is set
+    if (!filters?.includeExpired) {
+      const nowMs = filters?.nowMs ?? Date.now();
+      // Pin is expired if ttl_ms is set AND (pinned_at_ms + ttl_ms) < nowMs
+      query += ' AND (ttl_ms IS NULL OR (pinned_at_ms + ttl_ms) >= ?)';
+      params.push(nowMs);
+    }
+
+    const stmt = this.db.prepare(query);
+    const row = stmt.get(...params) as { count: number };
+    return row.count;
   }
 
   // === Redaction ===

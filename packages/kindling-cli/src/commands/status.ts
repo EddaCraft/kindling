@@ -22,12 +22,11 @@ export interface StatusResult {
 export function statusCommand(store: KindlingStore, dbPath: string, db: any): StatusResult {
   const schemaVersion = getSchemaVersion(db);
 
-  // Get counts
-  const observations = store.listObservations({ limit: 999999 }).length;
-  const capsules = store.listCapsules({ limit: 999999 }).length;
-  const summaries = store.listSummaries({ limit: 999999 }).length;
-  const pins = store.listPins({}).length;
-  const openCapsules = store.listCapsules({ status: 'open', limit: 999999 }).length;
+  const observations = store.countObservations();
+  const capsules = store.countCapsules();
+  const summaries = store.countSummaries();
+  const pins = store.countPins();
+  const openCapsules = store.countCapsules({ status: 'open' });
 
   return {
     dbPath,
