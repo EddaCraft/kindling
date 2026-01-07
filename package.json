@@ -12,9 +12,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean && rm -rf node_modules",
     "typecheck": "tsc --build"
   },
   "devDependencies": {
