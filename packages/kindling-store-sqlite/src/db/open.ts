@@ -1,99 +1,92 @@
+/**
+ * Database connection and initialization
+ */
+
 import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { runMigrations } from './migrate.js';
+import { homedir } from 'os';
+import { join } from 'path';
+import { mkdirSync } from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+/**
+ * Database configuration options
+ */
+export interface DatabaseOptions {
+  /** Path to database file (defaults to ~/.kindling/kindling.db) */
+  path?: string;
 
-export interface OpenDbOptions {
-  /**
-   * Path to the SQLite database file.
-   * Defaults to ':memory:' for in-memory database.
-   */
-  dbPath?: string;
+  /** Enable verbose logging (defaults to false) */
+  verbose?: boolean;
 
-  /**
-   * Whether to run migrations on open.
-   * Defaults to true.
-   */
-  runMigrations?: boolean;
+  /** Read-only mode (defaults to false) */
+  readonly?: boolean;
 }
 
 /**
- * Opens a Kindling SQLite database with recommended settings.
- *
- * - Enables WAL mode for better concurrency
- * - Enables foreign key enforcement
- * - Sets a reasonable busy timeout (5 seconds)
- * - Optionally runs migrations
+ * Get the default database path
  */
-export function openDatabase(options: OpenDbOptions = {}): Database.Database {
-  const { dbPath = ':memory:', runMigrations = true } = options;
+function getDefaultDbPath(): string {
+  const kindlingDir = join(homedir(), '.kindling');
 
-  const db = new Database(dbPath);
+  // Ensure directory exists
+  try {
+    mkdirSync(kindlingDir, { recursive: true });
+  } catch (err) {
+    // Ignore if directory already exists
+  }
 
-  // Enable Write-Ahead Logging for better concurrency
+  return join(kindlingDir, 'kindling.db');
+}
+
+/**
+ * Open and initialize a Kindling database
+ *
+ * Opens database with:
+ * - WAL mode (write-ahead logging) for better concurrency
+ * - Foreign key enforcement
+ * - Busy timeout (5 seconds) for handling concurrent writes
+ * - Runs pending migrations
+ *
+ * @param options - Database configuration options
+ * @returns Database instance
+ */
+export function openDatabase(options: DatabaseOptions = {}): Database.Database {
+  const dbPath = options.path ?? getDefaultDbPath();
+
+  console.log(`Opening database: ${dbPath}`);
+
+  // Open database
+  const db = new Database(dbPath, {
+    verbose: options.verbose ? console.log : undefined,
+    readonly: options.readonly ?? false,
+  });
+
+  // Enable WAL mode for better concurrency
+  // WAL allows readers to not block writers and vice versa
   db.pragma('journal_mode = WAL');
 
   // Enable foreign key enforcement
   db.pragma('foreign_keys = ON');
 
-  // Set busy timeout to 5 seconds
+  // Set busy timeout (5 seconds)
+  // If database is locked, wait up to 5 seconds before failing
   db.pragma('busy_timeout = 5000');
 
-  if (runMigrations) {
-    applyMigrations(db);
+  // Optimize for performance
+  db.pragma('synchronous = NORMAL'); // Safe with WAL mode
+  db.pragma('cache_size = -64000'); // 64MB cache
+
+  // Run migrations (unless in readonly mode)
+  if (!options.readonly) {
+    runMigrations(db);
   }
 
   return db;
 }
 
 /**
- * Applies all pending migrations to the database.
+ * Close a database connection
  */
-function applyMigrations(db: Database.Database): void {
-  // Ensure schema_migrations table exists
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      version INTEGER PRIMARY KEY,
-      applied_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-    )
-  `);
-
-  const migrations = [
-    { version: 1, file: '001_init.sql' },
-    { version: 2, file: '002_fts.sql' }
-  ];
-
-  const getVersion = db.prepare('SELECT version FROM schema_migrations WHERE version = ?');
-  const recordMigration = db.prepare('INSERT INTO schema_migrations (version) VALUES (?)');
-
-  for (const migration of migrations) {
-    const exists = getVersion.get(migration.version);
-
-    if (!exists) {
-      console.log(`Applying migration ${migration.version}: ${migration.file}`);
-
-      const migrationPath = join(__dirname, '..', 'migrations', migration.file);
-      const sql = readFileSync(migrationPath, 'utf-8');
-
-      db.exec(sql);
-      recordMigration.run(migration.version);
-
-      console.log(`Migration ${migration.version} applied successfully`);
-    }
-  }
-}
-
-/**
- * Gets the current schema version of the database.
- */
-export function getSchemaVersion(db: Database.Database): number {
-  try {
-    const result = db.prepare('SELECT MAX(version) as version FROM schema_migrations').get() as { version: number | null };
-    return result.version ?? 0;
-  } catch {
-    return 0;
-  }
+export function closeDatabase(db: Database.Database): void {
+  db.close();
 }

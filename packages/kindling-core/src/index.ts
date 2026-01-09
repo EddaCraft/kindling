@@ -1,9 +1,20 @@
 /**
- * @kindling/core
+ * Kindling Core
  *
- * Core domain model and orchestration for Kindling memory system.
+ * Domain model, capsule lifecycle, and retrieval orchestration.
  */
 
+// Re-export all types
 export * from './types/index.js';
-export { KindlingService } from './service/kindling-service.js';
-export type { KindlingServiceConfig, RetrievalResult } from './service/kindling-service.js';
+
+// Re-export all validation functions
+export * from './validation/index.js';
+
+// Re-export capsule lifecycle
+export * from './capsule/index.js';
+
+// Re-export retrieval orchestration
+export * from './retrieval/index.js';
+
+// Re-export export/import coordination
+export * from './export/index.js';

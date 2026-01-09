@@ -1,98 +1,110 @@
 /**
- * Domain types for Capsules
+ * Capsule types and definitions
  *
- * Capsules are bounded units of meaning: sessions, workflow nodes, or other
- * coherent groupings of observations.
+ * A Capsule is a bounded unit of meaning that groups related observations
+ * (e.g., a session, a workflow node)
  */
 
-/**
- * Capsule types
- */
-export enum CapsuleType {
-  Session = 'session',
-  PocketFlowNode = 'pocketflow_node',
-  Custom = 'custom',
-}
+import type { ID, Timestamp, ScopeIds } from './common.js';
 
 /**
- * Capsule status
+ * Types of capsules
  */
-export enum CapsuleStatus {
-  Open = 'open',
-  Closed = 'closed',
-}
+export type CapsuleType =
+  | 'session'          // OpenCode session
+  | 'pocketflow_node'; // PocketFlow workflow node
 
 /**
- * Capsule intent hints
+ * Capsule lifecycle status
  */
-export enum CapsuleIntent {
-  General = 'general',
-  Debug = 'debug',
-  Implement = 'implement',
-  Refactor = 'refactor',
-  Document = 'document',
-  Test = 'test',
-}
-
-/**
- * Capsule scope identifiers
- */
-export interface CapsuleScope {
-  sessionId?: string;
-  repoId?: string;
-  agentId?: string;
-  userId?: string;
-}
+export type CapsuleStatus =
+  | 'open'    // Accepting observations
+  | 'closed'; // Finalized
 
 /**
  * Capsule entity
+ *
+ * Immutable except for:
+ * - status (transitions from 'open' to 'closed')
+ * - closedAt (set when status changes to 'closed')
  */
 export interface Capsule {
-  id: string;
+  /** Unique identifier (UUIDv4) */
+  id: ID;
+
+  /** Type of capsule */
   type: CapsuleType;
-  intent: CapsuleIntent | string;
+
+  /**
+   * Human-readable description of capsule purpose
+   * e.g., "Fix authentication bug"
+   */
+  intent: string;
+
+  /** Lifecycle state */
   status: CapsuleStatus;
-  scope: CapsuleScope;
-  openedAtMs: number;
-  closedAtMs: number | null;
-  createdAt: number;
+
+  /** Timestamp when capsule was opened (epoch milliseconds) */
+  openedAt: Timestamp;
+
+  /** Timestamp when capsule was closed (epoch milliseconds, undefined if open) */
+  closedAt?: Timestamp;
+
+  /** Isolation dimensions for scoped queries */
+  scopeIds: ScopeIds;
+
+  /**
+   * Ordered list of observation IDs attached to this capsule
+   * Order is deterministic (insertion order)
+   */
+  observationIds: ID[];
+
+  /** Optional reference to summary for this capsule */
+  summaryId?: ID;
 }
 
 /**
- * Input for creating/opening a new capsule
+ * Input for creating a new capsule
+ * Makes id, openedAt, status, observationIds, and summaryId optional
  */
-export interface OpenCapsuleInput {
-  id?: string;
+export interface CapsuleInput {
+  id?: ID;
   type: CapsuleType;
-  intent?: CapsuleIntent | string;
-  scope?: CapsuleScope;
-  openedAtMs?: number;
+  intent: string;
+  status?: CapsuleStatus;
+  openedAt?: Timestamp;
+  closedAt?: Timestamp;
+  scopeIds: ScopeIds;
+  observationIds?: ID[];
+  summaryId?: ID;
 }
 
 /**
- * Input for closing a capsule
+ * All valid capsule types
  */
-export interface CloseCapsuleInput {
-  closedAtMs?: number;
+export const CAPSULE_TYPES: readonly CapsuleType[] = [
+  'session',
+  'pocketflow_node',
+] as const;
+
+/**
+ * All valid capsule statuses
+ */
+export const CAPSULE_STATUSES: readonly CapsuleStatus[] = [
+  'open',
+  'closed',
+] as const;
+
+/**
+ * Type guard to check if a string is a valid CapsuleType
+ */
+export function isCapsuleType(value: unknown): value is CapsuleType {
+  return typeof value === 'string' && CAPSULE_TYPES.includes(value as CapsuleType);
 }
 
 /**
- * Validates a capsule type
+ * Type guard to check if a string is a valid CapsuleStatus
  */
-export function validateCapsuleType(type: string): type is CapsuleType {
-  return Object.values(CapsuleType).includes(type as CapsuleType);
-}
-
-/**
- * Validates a capsule status
- */
-export function validateCapsuleStatus(status: string): status is CapsuleStatus {
-  return Object.values(CapsuleStatus).includes(status as CapsuleStatus);
-}
-
-/**
- * Generates a unique capsule ID
- */
-export function generateCapsuleId(): string {
-  return `cap_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+export function isCapsuleStatus(value: unknown): value is CapsuleStatus {
+  return typeof value === 'string' && CAPSULE_STATUSES.includes(value as CapsuleStatus);
 }

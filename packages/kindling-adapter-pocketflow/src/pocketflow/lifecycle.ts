@@ -1,16 +1,33 @@
 import { randomUUID } from 'node:crypto';
 import type {
-  CapsuleStore,
   Observation,
-  ObservationInput,
-  CapsuleInput,
+  ObservationKind,
+  Capsule,
   ScopeIds,
-  ID,
 } from '@kindling/core';
 
-export interface PocketFlowStore extends CapsuleStore {
-  insertObservation(observation: ObservationInput): Observation;
-  attachObservationToCapsule(capsuleId: ID, observationId: ID): void;
+export interface PocketFlowStore {
+  insertObservation(observation: Observation): void;
+  createCapsule(capsule: Capsule): void;
+  closeCapsule(capsuleId: string, closedAt?: number): void;
+  attachObservationToCapsule(capsuleId: string, observationId: string): void;
+}
+
+function createObservation(
+  kind: ObservationKind,
+  content: string,
+  provenance: Record<string, unknown>,
+  scopeIds: ScopeIds,
+): Observation {
+  return {
+    id: randomUUID(),
+    kind,
+    content,
+    provenance,
+    ts: Date.now(),
+    scopeIds,
+    redacted: false,
+  };
 }
 
 export interface KindlingNodeContext {
@@ -194,22 +211,16 @@ export class KindlingNode<
     this.nodeStartTime = Date.now();
     this.sharedContext = shared;
 
-    const capsuleInput: CapsuleInput = {
-      type: 'pocketflow_node',
-      intent: this.metadata.intent || 'general',
-      scopeIds: shared.scopeIds,
-    };
-
     const capsuleId = randomUUID();
     const now = Date.now();
 
-    const capsule = {
+    const capsule: Capsule = {
       id: capsuleId,
-      type: capsuleInput.type,
-      intent: capsuleInput.intent,
-      status: 'open' as const,
+      type: 'pocketflow_node',
+      intent: this.metadata.intent || 'general',
+      status: 'open',
       openedAt: now,
-      scopeIds: capsuleInput.scopeIds,
+      scopeIds: shared.scopeIds,
       observationIds: [],
     };
 
@@ -217,18 +228,18 @@ export class KindlingNode<
     this.capsuleId = capsuleId;
     shared.capsuleId = capsuleId;
 
-    const observation: ObservationInput = {
-      kind: 'node_start',
-      content: `Node "${this.metadata.name}" started`,
-      provenance: {
+    const obs = createObservation(
+      'node_start',
+      `Node "${this.metadata.name}" started`,
+      {
         nodeName: this.metadata.name,
         intent: this.metadata.intent,
         params: this._params,
       },
-      scopeIds: shared.scopeIds,
-    };
+      shared.scopeIds,
+    );
 
-    const obs = shared.store.insertObservation(observation);
+    shared.store.insertObservation(obs);
     shared.store.attachObservationToCapsule(this.capsuleId, obs.id);
 
     return undefined;
@@ -238,33 +249,33 @@ export class KindlingNode<
     const duration = this.nodeStartTime ? Date.now() - this.nodeStartTime : 0;
 
     if (this.capsuleId) {
-      const outputObs: ObservationInput = {
-        kind: 'node_output',
-        content: truncateOutput(execRes),
-        provenance: {
+      const outputObs = createObservation(
+        'node_output',
+        truncateOutput(execRes),
+        {
           nodeName: this.metadata.name,
           outputType: typeof execRes,
           duration,
         },
-        scopeIds: shared.scopeIds,
-      };
+        shared.scopeIds,
+      );
 
-      const obs = shared.store.insertObservation(outputObs);
-      shared.store.attachObservationToCapsule(this.capsuleId, obs.id);
+      shared.store.insertObservation(outputObs);
+      shared.store.attachObservationToCapsule(this.capsuleId, outputObs.id);
 
-      const endObs: ObservationInput = {
-        kind: 'node_end',
-        content: `Node "${this.metadata.name}" completed successfully`,
-        provenance: {
+      const endObs = createObservation(
+        'node_end',
+        `Node "${this.metadata.name}" completed successfully`,
+        {
           nodeName: this.metadata.name,
           duration,
           status: 'success',
         },
-        scopeIds: shared.scopeIds,
-      };
+        shared.scopeIds,
+      );
 
-      const endObsResult = shared.store.insertObservation(endObs);
-      shared.store.attachObservationToCapsule(this.capsuleId, endObsResult.id);
+      shared.store.insertObservation(endObs);
+      shared.store.attachObservationToCapsule(this.capsuleId, endObs.id);
 
       shared.store.closeCapsule(this.capsuleId, Date.now());
     }
@@ -277,35 +288,35 @@ export class KindlingNode<
       const duration = this.nodeStartTime ? Date.now() - this.nodeStartTime : 0;
       const shared = this.sharedContext;
 
-      const errorObs: ObservationInput = {
-        kind: 'node_error',
-        content: `Node "${this.metadata.name}" failed: ${error.message}`,
-        provenance: {
+      const errorObs = createObservation(
+        'node_error',
+        `Node "${this.metadata.name}" failed: ${error.message}`,
+        {
           nodeName: this.metadata.name,
           errorType: error.name,
           errorMessage: error.message,
           stack: error.stack,
           retryCount: this.currentRetry,
         },
-        scopeIds: shared.scopeIds,
-      };
+        shared.scopeIds,
+      );
 
-      const obs = shared.store.insertObservation(errorObs);
-      shared.store.attachObservationToCapsule(this.capsuleId, obs.id);
+      shared.store.insertObservation(errorObs);
+      shared.store.attachObservationToCapsule(this.capsuleId, errorObs.id);
 
-      const endObs: ObservationInput = {
-        kind: 'node_end',
-        content: `Node "${this.metadata.name}" failed after ${this.currentRetry + 1} attempt(s)`,
-        provenance: {
+      const endObs = createObservation(
+        'node_end',
+        `Node "${this.metadata.name}" failed after ${this.currentRetry + 1} attempt(s)`,
+        {
           nodeName: this.metadata.name,
           duration,
           status: 'error',
         },
-        scopeIds: shared.scopeIds,
-      };
+        shared.scopeIds,
+      );
 
-      const endObsResult = shared.store.insertObservation(endObs);
-      shared.store.attachObservationToCapsule(this.capsuleId, endObsResult.id);
+      shared.store.insertObservation(endObs);
+      shared.store.attachObservationToCapsule(this.capsuleId, endObs.id);
 
       shared.store.closeCapsule(this.capsuleId, Date.now());
     }
@@ -333,11 +344,11 @@ export class KindlingFlow<
     const capsuleId = randomUUID();
     const now = Date.now();
 
-    const capsule = {
+    const capsule: Capsule = {
       id: capsuleId,
-      type: 'pocketflow_node' as const,
+      type: 'pocketflow_node',
       intent: this.flowMetadata.intent || 'workflow',
-      status: 'open' as const,
+      status: 'open',
       openedAt: now,
       scopeIds: shared.scopeIds,
       observationIds: [],
@@ -346,18 +357,18 @@ export class KindlingFlow<
     shared.store.createCapsule(capsule);
     this.flowCapsuleId = capsuleId;
 
-    const observation: ObservationInput = {
-      kind: 'node_start',
-      content: `Flow "${this.flowMetadata.name}" started`,
-      provenance: {
+    const obs = createObservation(
+      'node_start',
+      `Flow "${this.flowMetadata.name}" started`,
+      {
         nodeName: this.flowMetadata.name,
         nodeType: 'flow',
         intent: this.flowMetadata.intent,
       },
-      scopeIds: shared.scopeIds,
-    };
+      shared.scopeIds,
+    );
 
-    const obs = shared.store.insertObservation(observation);
+    shared.store.insertObservation(obs);
     shared.store.attachObservationToCapsule(this.flowCapsuleId, obs.id);
 
     return undefined;
@@ -367,20 +378,20 @@ export class KindlingFlow<
     const duration = this.flowStartTime ? Date.now() - this.flowStartTime : 0;
 
     if (this.flowCapsuleId) {
-      const endObs: ObservationInput = {
-        kind: 'node_end',
-        content: `Flow "${this.flowMetadata.name}" completed`,
-        provenance: {
+      const endObs = createObservation(
+        'node_end',
+        `Flow "${this.flowMetadata.name}" completed`,
+        {
           nodeName: this.flowMetadata.name,
           nodeType: 'flow',
           duration,
           status: 'success',
         },
-        scopeIds: shared.scopeIds,
-      };
+        shared.scopeIds,
+      );
 
-      const obs = shared.store.insertObservation(endObs);
-      shared.store.attachObservationToCapsule(this.flowCapsuleId, obs.id);
+      shared.store.insertObservation(endObs);
+      shared.store.attachObservationToCapsule(this.flowCapsuleId, endObs.id);
 
       shared.store.closeCapsule(this.flowCapsuleId, Date.now());
     }

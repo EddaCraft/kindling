@@ -1,12 +1,7 @@
 /**
- * @kindling/adapter-pocketflow
+ * Kindling PocketFlow Adapter
  *
- * PocketFlow workflow adapter for high-signal memory capsules.
+ * PocketFlow workflow integration for node-level capsules.
  */
 
-export { NodeAdapter, NodeStatus } from './adapter/node-adapter.js';
-export type {
-  NodeAdapterConfig,
-  WorkflowNode,
-  NodeExecutionEvent,
-} from './adapter/node-adapter.js';
+export { };
