@@ -1,0 +1,39 @@
+===================================================
+         IMAGE PROCESSING COMPLETION REPORT        
+===================================================
+
+Report generated on: 30/3/2025 上午9:31:46
+Total images processed: 3
+
+PROCESSING TIME SUMMARY:
+Total processing time: 0.07 seconds
+Theoretical sequential time: 0.39 seconds
+Speedup factor (parallel vs sequential): 5.43x
+Average processing time per task: 0.043 seconds
+
+PROCESSED IMAGES:
+
+- bird.jpg
+  Filters applied: blur, grayscale, sepia
+  Processing times:
+    - blur: 0.037 seconds
+    - grayscale: 0.032 seconds
+    - sepia: 0.031 seconds
+
+- cat.jpg
+  Filters applied: blur, grayscale, sepia
+  Processing times:
+    - blur: 0.032 seconds
+    - grayscale: 0.043 seconds
+    - sepia: 0.043 seconds
+
+- dog.jpg
+  Filters applied: blur, grayscale, sepia
+  Processing times:
+    - blur: 0.066 seconds
+    - grayscale: 0.052 seconds
+    - sepia: 0.055 seconds
+
+===================================================
+                 END OF REPORT                     
+===================================================
