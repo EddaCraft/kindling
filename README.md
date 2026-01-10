@@ -171,6 +171,368 @@ kindling export my-backup.json --pretty
 kindling import my-backup.json
 ```
 
+## LLM Integration Guide
+
+**For AI Assistants (Claude, GPT-4, etc.)**: This section explains how to integrate Kindling into your conversation flow to provide continuity across sessions.
+
+### When to Use Kindling
+
+**Use Kindling when:**
+- Working on multi-session tasks (debugging, feature implementation across days)
+- User explicitly asks to "remember this" or "save this for later"
+- Encountering patterns that might recur (error messages, configuration issues)
+- User switches between multiple projects/repos
+- Completing a significant task that should be searchable later
+
+**Don't use for:**
+- Trivial one-line fixes
+- User explicitly requests a "fresh start"
+- Sensitive data unless explicitly approved by user
+
+### Integration Pattern
+
+#### 1. Session Start (Retrieve Context)
+
+At the beginning of each session, retrieve relevant context:
+
+```typescript
+import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
+import { LocalFtsProvider } from '@kindling/provider-local';
+import { KindlingService } from '@kindling/core';
+
+// Initialize once per session
+const db = openDatabase({ path: '~/.kindling/project.db' });
+const store = new SqliteKindlingStore(db);
+const provider = new LocalFtsProvider(db);
+const service = new KindlingService({ store, provider });
+
+// Retrieve context based on user's query or session scope
+const context = await service.retrieve({
+  query: 'authentication bug debugging', // User's current focus
+  scopeIds: {
+    sessionId: 'current-session-id',
+    repoId: 'user-project',
+    userId: 'user-123'
+  },
+  maxCandidates: 10,
+});
+
+// Use context to inform your responses
+if (context.pins.length > 0) {
+  console.log('📌 Previously pinned important findings:');
+  context.pins.forEach(pin => {
+    console.log(`- ${pin.target.content}`);
+    console.log(`  Note: ${pin.pin.reason}`);
+  });
+}
+
+if (context.currentSummary) {
+  console.log('\n📝 Recent session summary:');
+  console.log(context.currentSummary.content);
+}
+
+if (context.candidates.length > 0) {
+  console.log('\n🔍 Relevant past work:');
+  context.candidates.slice(0, 3).forEach(c => {
+    console.log(`- [${c.score.toFixed(2)}] ${c.entity.content.substring(0, 100)}...`);
+  });
+}
+```
+
+#### 2. During Session (Capture Observations)
+
+As you work with the user, capture significant events:
+
+```typescript
+// Open a capsule for this work session
+const capsule = service.openCapsule({
+  type: 'session',
+  intent: 'debug', // or 'implement', 'refactor', 'test', 'explore'
+  scopeIds: {
+    sessionId: 'session-2026-01-10-1400',
+    repoId: 'my-app',
+    userId: 'alice'
+  },
+});
+
+// Capture commands you run
+service.appendObservation({
+  id: `obs-${Date.now()}-1`,
+  kind: 'command',
+  content: 'npm test -- auth.test.js',
+  provenance: {
+    command: 'npm test -- auth.test.js',
+    exitCode: 1,
+    output: 'Test failed: Expected 200, got 401'
+  },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'session-2026-01-10-1400' },
+  redacted: false,
+}, { capsuleId: capsule.id });
+
+// Capture errors encountered
+service.appendObservation({
+  id: `obs-${Date.now()}-2`,
+  kind: 'error',
+  content: 'JWT verification failed: invalid signature',
+  provenance: {
+    stack: 'Error: invalid signature\n  at verify (jsonwebtoken:234)\n  at validateToken (auth.ts:42)',
+    file: 'src/auth.ts',
+    line: 42
+  },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'session-2026-01-10-1400' },
+  redacted: false,
+}, { capsuleId: capsule.id });
+
+// Capture file changes you made
+service.appendObservation({
+  id: `obs-${Date.now()}-3`,
+  kind: 'file_diff',
+  content: 'Changed JWT algorithm from RS256 to HS256 in auth.ts',
+  provenance: {
+    file: 'src/auth.ts',
+    linesChanged: 3,
+    hunks: ['- algorithm: "RS256"', '+ algorithm: "HS256"']
+  },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'session-2026-01-10-1400' },
+  redacted: false,
+}, { capsuleId: capsule.id });
+
+// Capture important user messages
+service.appendObservation({
+  id: `obs-${Date.now()}-4`,
+  kind: 'message',
+  content: 'User: The issue was that we were using RS256 but our secret was configured for HS256. Need to document this.',
+  provenance: {
+    role: 'user',
+    messageId: 'msg-456'
+  },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'session-2026-01-10-1400' },
+  redacted: false,
+}, { capsuleId: capsule.id });
+```
+
+#### 3. Mark Critical Findings (Use Pins)
+
+When you identify root causes or important patterns:
+
+```typescript
+// Pin the root cause so it's always retrieved first in future sessions
+service.pin({
+  targetType: 'observation',
+  targetId: 'obs-1736512800000-2', // The error observation
+  note: 'Root cause: JWT algorithm mismatch (RS256 vs HS256). Always verify algorithm matches secret type.',
+  scopeIds: {
+    repoId: 'my-app', // Make it available across all sessions for this repo
+  },
+  ttlMs: 30 * 24 * 60 * 60 * 1000, // Keep for 30 days
+});
+```
+
+**When to pin:**
+- Root causes of bugs
+- Solutions that worked after many attempts
+- Patterns the user explicitly says "remember this"
+- Configuration gotchas or non-obvious fixes
+
+#### 4. Session End (Generate Summary)
+
+When the user completes a task or ends the session:
+
+```typescript
+// Close capsule with a summary
+service.closeCapsule(capsule.id, {
+  generateSummary: true,
+  summaryContent: 'Fixed JWT authentication by switching from RS256 to HS256 algorithm. Root cause was algorithm mismatch between token generation and verification. Updated auth.ts:42. All tests now passing.',
+  confidence: 0.9, // How confident you are in the solution (0.0 - 1.0)
+  evidenceRefs: ['obs-1736512800000-2', 'obs-1736512800000-3'], // Reference key observations
+});
+
+// Clean up
+db.close();
+```
+
+**Summary best practices:**
+- Include what was accomplished
+- Mention the root cause if debugging
+- Reference specific files/functions changed
+- Note if issue is fully resolved or partially addressed
+- Keep it concise (2-3 sentences max)
+
+### Observation Kind Reference
+
+Use the appropriate `kind` for each observation:
+
+| Kind | When to Use | Example |
+|------|-------------|---------|
+| `command` | Shell commands executed | `npm test`, `docker-compose up`, `git status` |
+| `error` | Errors encountered | Stack traces, test failures, compilation errors |
+| `file_diff` | File changes made | Edits, new files, deletions |
+| `tool_call` | LLM tool invocations | Read file, Grep, Bash commands |
+| `message` | Important user/assistant exchanges | Root cause discoveries, decisions made |
+| `node_start` | Workflow node begins | CI job starts, automated task begins |
+| `node_output` | Workflow produces output | Test results, build artifacts |
+| `node_error` | Workflow error | CI failure, timeout |
+| `node_end` | Workflow completes | Final status, summary |
+
+### Best Practices for LLMs
+
+#### ✅ **Do:**
+
+1. **Retrieve context early**: Check for relevant past work at session start
+2. **Capture failed attempts**: Document what didn't work (saves time later)
+3. **Pin root causes**: Use pins for discoveries that should always be found
+4. **Use specific queries**: `"JWT HS256 algorithm error"` > `"authentication"`
+5. **Scope appropriately**: Use `repoId` for repo-wide patterns, `sessionId` for session-specific
+6. **Redact secrets**: Set `redacted: true` for observations containing credentials
+7. **Close capsules**: Always generate summaries when work is complete
+
+#### ❌ **Don't:**
+
+1. **Don't capture every single action**: Only significant events
+2. **Don't duplicate context**: If something is already captured, don't re-capture
+3. **Don't use vague summaries**: "Fixed bugs" → "Fixed JWT algorithm mismatch (RS256→HS256)"
+4. **Don't pin trivial things**: Pins are for important, recurring patterns
+5. **Don't forget to close capsules**: Open capsules without summaries are wasted context
+6. **Don't capture user's sensitive data**: Check for API keys, passwords, tokens
+
+### Example: Complete Session Flow
+
+```typescript
+// 1. SESSION START - Retrieve context
+const context = await service.retrieve({
+  query: 'database connection errors postgres',
+  scopeIds: { repoId: 'my-app' },
+});
+
+// Show user what you remember
+console.log(`I found ${context.pins.length} pinned notes and ${context.candidates.length} relevant past work on this topic.`);
+
+// 2. DURING WORK - Open capsule and capture
+const capsule = service.openCapsule({
+  type: 'session',
+  intent: 'debug',
+  scopeIds: { sessionId: 'sess-123', repoId: 'my-app' },
+});
+
+// User reports error
+service.appendObservation({
+  id: 'obs-1',
+  kind: 'error',
+  content: 'Error: connect ECONNREFUSED 127.0.0.1:5432',
+  provenance: { stack: '...' },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'sess-123' },
+  redacted: false,
+}, { capsuleId: capsule.id });
+
+// You run diagnostic command
+service.appendObservation({
+  id: 'obs-2',
+  kind: 'command',
+  content: 'docker ps | grep postgres',
+  provenance: { exitCode: 0, output: '(no postgres containers)' },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'sess-123' },
+  redacted: false,
+}, { capsuleId: capsule.id });
+
+// 3. ROOT CAUSE FOUND - Pin it
+service.pin({
+  targetType: 'observation',
+  targetId: 'obs-2',
+  note: 'Postgres not running. Always run `docker-compose up -d` before tests.',
+  scopeIds: { repoId: 'my-app' },
+  ttlMs: 90 * 24 * 60 * 60 * 1000, // 90 days
+});
+
+// 4. SOLUTION APPLIED - Capture
+service.appendObservation({
+  id: 'obs-3',
+  kind: 'command',
+  content: 'docker-compose up -d',
+  provenance: { exitCode: 0, output: 'Started postgres' },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'sess-123' },
+  redacted: false,
+}, { capsuleId: capsule.id });
+
+// 5. SESSION END - Close with summary
+service.closeCapsule(capsule.id, {
+  generateSummary: true,
+  summaryContent: 'Fixed database connection error. Root cause: Postgres Docker container was not running. Started with docker-compose up -d. Tests now passing.',
+  confidence: 1.0,
+});
+
+db.close();
+```
+
+### Handling Multiple Projects
+
+Use `repoId` to keep projects separate:
+
+```typescript
+// User switches projects
+const context = await service.retrieve({
+  query: 'how did I handle authentication',
+  scopeIds: {
+    repoId: 'new-project', // Different repo
+    userId: 'alice'
+  },
+});
+
+// No results? Try broader search across all projects
+if (context.candidates.length === 0) {
+  const crossProjectContext = await service.retrieve({
+    query: 'authentication JWT implementation',
+    scopeIds: { userId: 'alice' }, // Search all user's repos
+  });
+}
+```
+
+### Privacy & Redaction
+
+Always redact sensitive data:
+
+```typescript
+service.appendObservation({
+  id: 'obs-sensitive',
+  kind: 'error',
+  content: 'API call failed: 401 Unauthorized',
+  provenance: {
+    endpoint: 'https://api.example.com/users',
+    // API key is NOT included
+  },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'sess-123' },
+  redacted: true, // Mark as redacted
+}, { capsuleId: capsule.id });
+```
+
+**Redact:**
+- API keys, tokens, passwords
+- User PII (emails, names in logs)
+- Database connection strings with credentials
+- Private repository content (if uncertain about sharing)
+
+### Testing Your Integration
+
+```bash
+# After capturing a session, verify it worked:
+kindling status
+kindling list capsules --limit 5
+kindling search "your test query"
+
+# Check if pins were created:
+kindling list pins
+
+# Verify export works:
+kindling export test-export.json --pretty
+```
+
 ## Use Cases
 
 ### 1. Session Continuity
