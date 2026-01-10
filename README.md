@@ -603,91 +603,110 @@ const results = await client.retrieve({
 - Built-in request queuing
 - Still local-first (server on localhost, data never leaves machine)
 
-### Web Agents (Claude Code Web, Cursor Web)
+### Web Agents (Claude Code Web)
 
-**Challenge:** Web-based agents run in browser sandbox and can't access local filesystem.
+**Challenge:** Claude Code Web runs in **remote sandboxes** on Anthropic's infrastructure, not in your browser. It cannot:
+- Access your local filesystem
+- Connect to local MCP servers
+- Make requests to `localhost`
 
-**Solution:** Use API server as bridge:
+**Why?** Security and isolation - Claude Code Web executes in Google Gvisor containers on Anthropic's servers, with only GitHub OAuth access.
 
-#### 1. Start API Server Locally
+#### ✅ Solution: GitHub as Communication Bridge
+
+Since Claude Code Web has native GitHub integration, use a **private GitHub repo** as a bridge:
 
 ```bash
-kindling serve --port 8080
+# Setup (one time)
+kindling sync init --repo username/kindling-memory --private
+
+# Continuous sync
+kindling sync start --interval 60s
+
+# Manual sync
+kindling sync push
 ```
 
-#### 2. Option A: Browser Extension (Recommended)
+**How it works:**
 
-Create a browser extension that:
-- Runs in browser context with web agent
-- Makes fetch() calls to `http://localhost:8080`
-- Forwards all Kindling operations through API
+```
+┌──────────────┐                          ┌─────────────────┐
+│ Local        │                          │ Claude Code Web │
+│ Kindling DB  │                          │ (Remote Sandbox)│
+└──────┬───────┘                          └────────┬────────┘
+       │                                           │
+       │ Push summaries,                           │ Read via
+       │ pins, capsules                            │ file access
+       ▼                                           ▼
+┌──────────────────────────────────────────────────────────┐
+│  Private GitHub Repo: username/kindling-memory           │
+│                                                           │
+│  .kindling/                                               │
+│    ├── index.json          # Memory index                │
+│    ├── capsules/           # Recent capsules             │
+│    ├── pins/               # Active pins                 │
+│    └── observations/       # Recent observations         │
+└──────────────────────────────────────────────────────────┘
+```
+
+**What Claude Code Web can do:**
 
 ```javascript
-// Extension content script
-async function kindlingRetrieve(query, scopeIds) {
-  const response = await fetch('http://localhost:8080/api/retrieve', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, scopeIds })
-  });
-  return await response.json();
-}
+// Read memory index (automatically available in repo)
+const memory = JSON.parse(fs.readFileSync('.kindling/index.json', 'utf8'));
 
-// Expose to web agent
-window.kindlingBridge = {
-  retrieve: kindlingRetrieve,
-  appendObservation: kindlingAppendObservation,
-  // ... other methods
-};
+// Find relevant pins
+const pins = memory.pins.filter(pin =>
+  pin.scopeIds.repoId === currentRepo
+);
+
+// Read capsule summaries
+const summaries = memory.summaries.filter(s =>
+  s.content.includes(searchTerm)
+);
+
+console.log(`Found ${pins.length} pinned items for this repo`);
 ```
 
-#### 2. Option B: MCP Server (If Supported)
+**Benefits:**
+- ✅ No servers to expose publicly
+- ✅ Works with Claude Code Web's existing GitHub OAuth
+- ✅ Still "local-first" (you control the private repo)
+- ✅ Selective sync (redacted items excluded)
+- ✅ Read-only by default (safe)
 
-If your web agent supports Model Context Protocol, wrap Kindling as MCP tools:
+**Security:**
+- Repo MUST be private
+- Redacted observations never synced
+- Configurable scope (last 7 days, specific repos, etc.)
 
-```typescript
-import { Server } from '@modelcontextprotocol/sdk';
-import { KindlingApiClient } from '@kindling/api-server/client';
+#### 🔒 Alternative: Secure Tunnel (Advanced)
 
-const client = new KindlingApiClient('http://localhost:8080');
+If you need full API access from Claude Code Web's remote sandbox:
 
-const server = new Server({
-  name: 'kindling',
-  version: '1.0.0',
-}, {
-  capabilities: { tools: {} },
-});
+```bash
+# Option A: Cloudflare Tunnel (recommended)
+cloudflare tunnel --url http://localhost:8080
 
-server.tool('kindling_retrieve', async (args) => {
-  return await client.retrieve(args);
-});
-
-server.tool('kindling_append', async (args) => {
-  await client.appendObservation(args.observation, { capsuleId: args.capsuleId });
-  return { success: true };
-});
+# Option B: ngrok
+ngrok http 8080
 ```
 
-**Architecture:**
+Then Claude Code Web can make HTTP requests to the public URL, which tunnels back to your local machine.
 
-```
-┌─────────────────────┐
-│   Web Agent         │
-│ (Claude Code Web)   │
-│                     │
-│ ┌─────────────────┐ │
-│ │   Extension     │ │  fetch()   ┌──────────────┐
-│ │   or MCP        │─┼───────────▶│ API Server   │
-│ └─────────────────┘ │             │ localhost:8080│
-└─────────────────────┘             └──────┬───────┘
-                                           │
-                                    ┌──────▼───────┐
-                                    │  SQLite DB   │
-                                    │  (local)     │
-                                    └──────────────┘
-```
+**⚠️ Security considerations:**
+- Add authentication (API keys, OAuth)
+- Use HTTPS only
+- Rate limiting
+- IP allowlisting (Anthropic's IP ranges)
 
-**Note:** Data stays on your local machine. The API server is on localhost, and the extension/MCP just bridges the sandboxed web environment to your local system.
+#### ❌ What Doesn't Work
+
+**MCP Integration:** Claude Code Web's remote sandbox [cannot access local MCP servers](https://github.com/anthropics/claude-code/issues/11146). MCP only works with desktop/CLI Claude Code.
+
+**Browser Extensions:** Extensions run in your local browser, but Claude Code Web runs in remote containers. They can't communicate directly.
+
+**localhost API:** Claude Code Web cannot reach `http://localhost:8080` because it's not running on your machine.
 
 ### Testing Your Integration
 
