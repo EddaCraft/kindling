@@ -335,7 +335,7 @@ export function importDatabase(
           capsuleCount++;
 
           // Import capsule observations
-          capsule.observationIds.forEach((obsId, seq) => {
+          capsule.observationIds.forEach((obsId: string, seq: number) => {
             capsuleObsStmt.run(capsule.id, obsId, seq);
           });
         }

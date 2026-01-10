@@ -47,7 +47,7 @@ export interface KindlingStore extends RetrievalStore, ExportStore, ImportStore 
   // Write operations
   insertObservation(observation: Observation): void;
   createCapsule(capsule: Capsule): void;
-  closeCapsule(capsuleId: ID, closedAt?: number, summaryId?: ID): void;
+  closeCapsule(capsuleId: ID, closedAt?: number): void;
   attachObservationToCapsule(observationId: ID, capsuleId: ID): void;
   createSummary(summary: Summary): void;
   createPin(pin: Pin): void;
@@ -114,11 +114,12 @@ export class KindlingService {
     this.provider = config.provider;
     this.capsuleManager = new CapsuleManager({
       createCapsule: (capsule: Capsule) => this.store.createCapsule(capsule),
-      closeCapsule: (capsuleId: ID, closedAt?: number, summaryId?: ID) =>
-        this.store.closeCapsule(capsuleId, closedAt, summaryId),
-      getCapsule: (capsuleId: ID) => this.store.getCapsule(capsuleId),
+      closeCapsule: (capsuleId: ID, closedAt: number) =>
+        this.store.closeCapsule(capsuleId, closedAt),
+      getCapsuleById: (capsuleId: ID) => this.store.getCapsule(capsuleId),
       getOpenCapsuleForSession: (sessionId: string) =>
         this.store.getOpenCapsuleForSession(sessionId),
+      insertSummary: (summary: Summary) => this.store.createSummary(summary),
     });
   }
 
@@ -150,17 +151,17 @@ export class KindlingService {
         content: options.summaryContent,
         confidence: options.confidence ?? 1.0,
         createdAt: Date.now(),
-        scopeIds: this.capsuleManager.get(capsuleId)?.scopeIds ?? {},
+        evidenceRefs: [],
       };
 
       // Validate and store summary
       const validation = validateSummary(summary);
-      if (!validation.valid) {
-        throw new Error(`Invalid summary: ${validation.errors?.join(', ')}`);
+      if (!validation.ok) {
+        const errorMessages = validation.error.map(e => e.message).join(', ');
+        throw new Error(`Invalid summary: ${errorMessages}`);
       }
 
-      this.store.createSummary(summary);
-      signals.summaryId = summary.id;
+      this.store.createSummary(validation.value);
     }
 
     return this.capsuleManager.close(capsuleId, signals);
@@ -174,19 +175,22 @@ export class KindlingService {
    */
   appendObservation(observation: Observation, options?: AppendObservationOptions): void {
     // Validate observation if requested (default: true)
+    let obsToStore = observation;
     if (options?.validate !== false) {
       const validation = validateObservation(observation);
-      if (!validation.valid) {
-        throw new Error(`Invalid observation: ${validation.errors?.join(', ')}`);
+      if (!validation.ok) {
+        const errorMessages = validation.error.map(e => e.message).join(', ');
+        throw new Error(`Invalid observation: ${errorMessages}`);
       }
+      obsToStore = validation.value;
     }
 
     // Store observation
-    this.store.insertObservation(observation);
+    this.store.insertObservation(obsToStore);
 
     // Attach to capsule if specified
     if (options?.capsuleId) {
-      this.store.attachObservationToCapsule(observation.id, options.capsuleId);
+      this.store.attachObservationToCapsule(obsToStore.id, options.capsuleId);
     }
   }
 
@@ -211,7 +215,7 @@ export class KindlingService {
       id: `pin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       targetType: options.targetType,
       targetId: options.targetId,
-      note: options.note,
+      reason: options.note,
       createdAt: Date.now(),
       expiresAt: options.ttlMs ? Date.now() + options.ttlMs : undefined,
       scopeIds: options.scopeIds ?? {},
@@ -219,12 +223,13 @@ export class KindlingService {
 
     // Validate pin
     const validation = validatePin(pin);
-    if (!validation.valid) {
-      throw new Error(`Invalid pin: ${validation.errors?.join(', ')}`);
+    if (!validation.ok) {
+      const errorMessages = validation.error.map(e => e.message).join(', ');
+      throw new Error(`Invalid pin: ${errorMessages}`);
     }
 
-    this.store.createPin(pin);
-    return pin;
+    this.store.createPin(validation.value);
+    return validation.value;
   }
 
   /**
