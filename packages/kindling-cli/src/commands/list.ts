@@ -1,0 +1,112 @@
+/**
+ * List command - List entities (capsules, pins, observations)
+ */
+
+import { initializeService, handleError, formatJson, formatTimestamp, truncate } from '../utils.js';
+
+interface ListOptions {
+  db?: string;
+  session?: string;
+  repo?: string;
+  limit?: string;
+  json?: boolean;
+}
+
+export async function listCommand(entity: string, options: ListOptions): Promise<void> {
+  try {
+    const { service, db } = initializeService(options.db);
+    const limit = parseInt(options.limit || '20', 10);
+
+    const scopeIds = {
+      sessionId: options.session,
+      repoId: options.repo,
+    };
+
+    let results: any[] = [];
+
+    switch (entity.toLowerCase()) {
+      case 'capsules': {
+        const query = `
+          SELECT id, type, intent, status, opened_at, closed_at, scope_ids
+          FROM capsules
+          ${options.session ? 'WHERE json_extract(scope_ids, \'$.sessionId\') = ?' : ''}
+          ${options.repo && !options.session ? 'WHERE json_extract(scope_ids, \'$.repoId\') = ?' : ''}
+          ${options.repo && options.session ? 'AND json_extract(scope_ids, \'$.repoId\') = ?' : ''}
+          ORDER BY opened_at DESC
+          LIMIT ?
+        `;
+        const params = [options.session, options.repo, limit].filter(Boolean);
+        results = db.prepare(query).all(...params) as any[];
+        break;
+      }
+
+      case 'pins': {
+        results = service.listPins(scopeIds);
+        break;
+      }
+
+      case 'observations': {
+        const query = `
+          SELECT id, kind, content, ts, scope_ids, redacted
+          FROM observations
+          ${options.session ? 'WHERE json_extract(scope_ids, \'$.sessionId\') = ?' : ''}
+          ${options.repo && !options.session ? 'WHERE json_extract(scope_ids, \'$.repoId\') = ?' : ''}
+          ${options.repo && options.session ? 'AND json_extract(scope_ids, \'$.repoId\') = ?' : ''}
+          ORDER BY ts DESC
+          LIMIT ?
+        `;
+        const params = [options.session, options.repo, limit].filter(Boolean);
+        results = db.prepare(query).all(...params) as any[];
+        break;
+      }
+
+      default:
+        throw new Error(`Unknown entity type: ${entity}. Valid types: capsules, pins, observations`);
+    }
+
+    if (options.json) {
+      console.log(formatJson(results, true));
+    } else {
+      console.log(`\n${entity.charAt(0).toUpperCase() + entity.slice(1)} (${results.length}):`);
+      console.log('='.repeat(50) + '\n');
+
+      if (results.length === 0) {
+        console.log('No results found.\n');
+      } else {
+        results.forEach((result, i) => {
+          console.log(`${i + 1}. ${result.id}`);
+
+          if (entity === 'capsules') {
+            console.log(`   Type: ${result.type}`);
+            console.log(`   Intent: ${result.intent}`);
+            console.log(`   Status: ${result.status}`);
+            console.log(`   Opened: ${formatTimestamp(result.opened_at)}`);
+            if (result.closed_at) {
+              console.log(`   Closed: ${formatTimestamp(result.closed_at)}`);
+            }
+          } else if (entity === 'pins') {
+            console.log(`   Target: ${result.targetType} ${result.targetId}`);
+            if (result.note) {
+              console.log(`   Note: ${result.note}`);
+            }
+            console.log(`   Created: ${formatTimestamp(result.createdAt)}`);
+            if (result.expiresAt) {
+              console.log(`   Expires: ${formatTimestamp(result.expiresAt)}`);
+            }
+          } else if (entity === 'observations') {
+            console.log(`   Kind: ${result.kind}`);
+            console.log(`   Content: ${truncate(result.content, 100)}`);
+            console.log(`   Time: ${formatTimestamp(result.ts)}`);
+            console.log(`   Redacted: ${result.redacted ? 'yes' : 'no'}`);
+          }
+
+          console.log('');
+        });
+      }
+    }
+
+    db.close();
+  } catch (error) {
+    handleError(error, options.json);
+  }
+}

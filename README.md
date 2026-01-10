@@ -88,45 +88,52 @@ npm run build
 ### Basic Usage
 
 ```typescript
-import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalRetrievalProvider } from '@kindling/provider-local';
+import { openDatabase } from '@kindling/store-sqlite';
+import { SqliteKindlingStore } from '@kindling/store-sqlite';
+import { LocalFtsProvider } from '@kindling/provider-local';
 import { KindlingService, ObservationKind, CapsuleType } from '@kindling/core';
 
 // Initialize Kindling
 const db = openDatabase({ dbPath: './my-memory.db' });
 const store = new SqliteKindlingStore(db);
-const provider = new LocalRetrievalProvider(store);
+const provider = new LocalFtsProvider(db);
 const service = new KindlingService({ store, provider });
 
 // Open a session capsule
 const capsule = service.openCapsule({
   type: CapsuleType.Session,
   intent: 'debug',
-  scope: { sessionId: 'session-1', repoId: 'my-project' },
+  scopeIds: { sessionId: 'session-1', repoId: 'my-project' },
 });
 
 // Capture observations
 service.appendObservation({
+  id: 'obs-1',
   kind: ObservationKind.Command,
   content: 'npm test failed',
   provenance: { command: 'npm test', exitCode: 1 },
-  scope: { sessionId: 'session-1' },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'session-1' },
+  redacted: false,
 }, { capsuleId: capsule.id });
 
 service.appendObservation({
+  id: 'obs-2',
   kind: ObservationKind.Error,
   content: 'Authentication failed',
   provenance: { stack: 'Error: Auth failed\n  at login.ts:42' },
-  scope: { sessionId: 'session-1' },
+  ts: Date.now(),
+  scopeIds: { sessionId: 'session-1' },
+  redacted: false,
 }, { capsuleId: capsule.id });
 
 // Retrieve relevant context
-const results = service.retrieve({
+const results = await service.retrieve({
   query: 'authentication',
-  scope: { sessionId: 'session-1' },
+  scopeIds: { sessionId: 'session-1' },
 });
 
-console.log('Found:', results.providerHits.length, 'relevant observations');
+console.log('Found:', results.candidates.length, 'relevant observations');
 
 // Close session with summary
 service.closeCapsule(capsule.id, {
@@ -157,6 +164,12 @@ kindling pin observation obs_abc123 --note "Root cause identified"
 
 # Remove a pin
 kindling unpin pin_xyz789
+
+# Export memory
+kindling export my-backup.json --pretty
+
+# Import memory
+kindling import my-backup.json
 ```
 
 ## Use Cases

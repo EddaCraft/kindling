@@ -6,6 +6,7 @@
 
 import type Database from 'better-sqlite3';
 import type { Observation, Capsule, Summary, Pin, ScopeIds } from '@kindling/core';
+import { exportDatabase as exportDB, importDatabase as importDB, type ExportOptions } from './export.js';
 
 /**
  * Evidence snippet with context
@@ -575,5 +576,25 @@ export class SqliteKindlingStore {
       scopeIds: JSON.parse(row.scope_ids),
       redacted: row.redacted === 1,
     }));
+  }
+
+  /**
+   * Export database to dataset
+   *
+   * @param options - Export options
+   * @returns Export dataset
+   */
+  exportDatabase(options?: ExportOptions) {
+    return exportDB(this.db, options);
+  }
+
+  /**
+   * Import dataset into database
+   *
+   * @param dataset - Dataset to import
+   * @returns Import result
+   */
+  importDatabase(dataset: any) {
+    return importDB(this.db, dataset);
   }
 }

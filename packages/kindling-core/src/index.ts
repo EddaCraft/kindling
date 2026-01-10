@@ -18,3 +18,6 @@ export * from './retrieval/index.js';
 
 // Re-export export/import coordination
 export * from './export/index.js';
+
+// Re-export service orchestration
+export * from './service/index.js';
