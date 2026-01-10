@@ -8,7 +8,26 @@ Thank you for your interest in contributing to Kindling!
 git clone https://github.com/eddacraft/kindling.git
 cd kindling
 pnpm install
+pnpm build
+```
+
+## Local Development
+
+```bash
+# Run all tests
 pnpm test
+
+# Run tests for a specific package
+cd packages/kindling-core
+pnpm test
+```
+
+```bash
+# Build all packages
+pnpm build
+
+# Build a specific package
+cd packages/kindling-cli
 pnpm build
 ```
 
