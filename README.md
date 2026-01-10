@@ -79,29 +79,28 @@ git clone https://github.com/EddaCraft/kindling.git
 cd kindling
 
 # Install dependencies
-npm install
+pnpm install
 
 # Build all packages
-npm run build
+pnpm run build
 ```
 
 ### Basic Usage
 
 ```typescript
-import { openDatabase } from '@kindling/store-sqlite';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
+import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
 import { LocalFtsProvider } from '@kindling/provider-local';
-import { KindlingService, ObservationKind, CapsuleType } from '@kindling/core';
+import { KindlingService } from '@kindling/core';
 
 // Initialize Kindling
-const db = openDatabase({ dbPath: './my-memory.db' });
+const db = openDatabase({ path: './my-memory.db' });
 const store = new SqliteKindlingStore(db);
 const provider = new LocalFtsProvider(db);
 const service = new KindlingService({ store, provider });
 
 // Open a session capsule
 const capsule = service.openCapsule({
-  type: CapsuleType.Session,
+  type: 'session',
   intent: 'debug',
   scopeIds: { sessionId: 'session-1', repoId: 'my-project' },
 });
@@ -109,7 +108,7 @@ const capsule = service.openCapsule({
 // Capture observations
 service.appendObservation({
   id: 'obs-1',
-  kind: ObservationKind.Command,
+  kind: 'command',
   content: 'npm test failed',
   provenance: { command: 'npm test', exitCode: 1 },
   ts: Date.now(),
@@ -119,7 +118,7 @@ service.appendObservation({
 
 service.appendObservation({
   id: 'obs-2',
-  kind: ObservationKind.Error,
+  kind: 'error',
   content: 'Authentication failed',
   provenance: { stack: 'Error: Auth failed\n  at login.ts:42' },
   ts: Date.now(),
@@ -199,8 +198,9 @@ adapter.onSessionEnd('session-1', {
 });
 
 // Later: retrieve session context
-const context = service.retrieve({
-  scope: { sessionId: 'session-1' },
+const context = await service.retrieve({
+  query: 'context',
+  scopeIds: { sessionId: 'session-1' },
 });
 ```
 
@@ -241,7 +241,10 @@ service.pin({
 });
 
 // Pins always appear first in retrieval
-const results = service.retrieve({ query: 'outage' });
+const results = await service.retrieve({
+  query: 'outage',
+  scopeIds: {},
+});
 console.log(results.pins); // Includes the pinned error
 ```
 
@@ -309,28 +312,28 @@ kindling/
 
 ```bash
 # Run all tests
-npm test
+pnpm test
 
 # Run tests for specific package
 cd packages/kindling-core
-npm test
+pnpm test
 
 # Watch mode
-npm run test:watch
+pnpm run test:watch
 ```
 
 ### Building
 
 ```bash
 # Build all packages
-npm run build
+pnpm run build
 
 # Build specific package
 cd packages/kindling-cli
-npm run build
+pnpm run build
 
 # Clean build artifacts
-npm run clean
+pnpm run clean
 ```
 
 ## Roadmap
@@ -338,12 +341,12 @@ npm run clean
 ✅ **M1: OSS Scaffolding** - Repository structure, planning documentation
 ✅ **M2: Local Capture + Continuity (OpenCode)** - Core capture, storage, and retrieval
 ✅ **M3: High-Signal Workflows (PocketFlow)** - Workflow-driven capsules with intent/confidence
-✅ **M4: OSS Hardening** - CLI tools, documentation polish
+✅ **M4: OSS Hardening** - CLI tools, export/import, documentation polish
 
 Future:
 - **Semantic retrieval** (embeddings integration)
 - **Multi-user support** with conflict resolution
-- **Export/import** for portability
+- **Advanced export/import** (partial exports, merge strategies)
 - **Edda**: Governance and curation layer
 
 ## Design Principles

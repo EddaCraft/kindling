@@ -190,7 +190,7 @@ export class KindlingService {
 
     // Attach to capsule if specified
     if (options?.capsuleId) {
-      this.store.attachObservationToCapsule(obsToStore.id, options.capsuleId);
+      this.store.attachObservationToCapsule(options.capsuleId, obsToStore.id);
     }
   }
 

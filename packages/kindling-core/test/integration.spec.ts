@@ -11,7 +11,6 @@ import { SqliteKindlingStore } from '../../kindling-store-sqlite/src/store/sqlit
 import { LocalFtsProvider } from '../../kindling-provider-local/src/provider/local-fts.js';
 import { openDatabase } from '../../kindling-store-sqlite/src/db/open.js';
 import type { Observation } from '../src/types/observation.js';
-import { CapsuleType, ObservationKind } from '../src/types/index.js';
 
 describe('KindlingService Integration', () => {
   let db: Database.Database;
@@ -19,7 +18,7 @@ describe('KindlingService Integration', () => {
 
   beforeEach(() => {
     // Create in-memory database for testing
-    db = openDatabase({ dbPath: ':memory:' });
+    db = openDatabase({ path: ':memory:' });
     const store = new SqliteKindlingStore(db);
     const provider = new LocalFtsProvider(db);
     service = new KindlingService({ store, provider });
@@ -28,7 +27,7 @@ describe('KindlingService Integration', () => {
   it('should complete a full session workflow', async () => {
     // Open a capsule for a development session
     const capsule = service.openCapsule({
-      type: CapsuleType.Session,
+      type: 'session',
       intent: 'debug',
       scopeIds: {
         sessionId: 'session-1',
@@ -42,7 +41,7 @@ describe('KindlingService Integration', () => {
     // Append some observations
     const obs1: Observation = {
       id: 'obs-1',
-      kind: ObservationKind.Command,
+      kind: 'command',
       content: 'npm test failed with authentication error',
       provenance: { command: 'npm test', exitCode: 1 },
       ts: Date.now(),
@@ -54,7 +53,7 @@ describe('KindlingService Integration', () => {
 
     const obs2: Observation = {
       id: 'obs-2',
-      kind: ObservationKind.Error,
+      kind: 'error',
       content: 'AuthenticationError: Invalid token',
       provenance: { stack: 'Error at login.ts:42' },
       ts: Date.now() + 1000,
@@ -78,6 +77,7 @@ describe('KindlingService Integration', () => {
       targetType: 'observation',
       targetId: 'obs-2',
       note: 'Root cause identified',
+      scopeIds: { sessionId: 'session-1', repoId: 'my-project' },
     });
 
     expect(pin.id).toBeDefined();
@@ -106,14 +106,14 @@ describe('KindlingService Integration', () => {
   it('should export and import data', () => {
     // Create some data
     const capsule = service.openCapsule({
-      type: CapsuleType.Session,
+      type: 'session',
       intent: 'test',
       scopeIds: { sessionId: 'session-2' },
     });
 
     const obs: Observation = {
       id: 'obs-export-1',
-      kind: ObservationKind.Message,
+      kind: 'message',
       content: 'Test observation for export',
       provenance: {},
       ts: Date.now(),
@@ -130,7 +130,7 @@ describe('KindlingService Integration', () => {
     expect(bundle.dataset.capsules.length).toBe(1);
 
     // Create new database for import
-    const db2 = openDatabase({ dbPath: ':memory:' });
+    const db2 = openDatabase({ path: ':memory:' });
     const store2 = new SqliteKindlingStore(db2);
     const provider2 = new LocalFtsProvider(db2);
     const service2 = new KindlingService({ store: store2, provider: provider2 });
@@ -153,7 +153,7 @@ describe('KindlingService Integration', () => {
   it('should handle redaction', async () => {
     const obs: Observation = {
       id: 'obs-secret',
-      kind: ObservationKind.Message,
+      kind: 'message',
       content: 'API key: secret123',
       provenance: {},
       ts: Date.now(),

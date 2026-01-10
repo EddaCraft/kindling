@@ -4,7 +4,7 @@
   "description": "CLI for Kindling inspection, debugging, and export/import",
   "type": "module",
   "bin": {
-    "kindling": "./dist/cli.js"
+    "kindling": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
