@@ -55,13 +55,22 @@ importers:
       '@kindling/core':
         specifier: workspace:*
         version: link:../kindling-core
+      '@kindling/provider-local':
+        specifier: workspace:*
+        version: link:../kindling-provider-local
       '@kindling/store-sqlite':
         specifier: workspace:*
         version: link:../kindling-store-sqlite
+      better-sqlite3:
+        specifier: ^12.0.0
+        version: 12.5.0
       commander:
         specifier: ^12.0.0
         version: 12.1.0
     devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.0
+        version: 7.6.13
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.27

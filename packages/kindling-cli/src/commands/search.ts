@@ -41,8 +41,8 @@ export async function searchCommand(query: string, options: SearchOptions): Prom
           console.log(`\n${i + 1}. [PIN] ${target.id}`);
           console.log(`   Type: ${'kind' in target ? target.kind : 'summary'}`);
           console.log(`   Content: ${truncate(target.content, 100)}`);
-          if (pin.pin.note) {
-            console.log(`   Note: ${pin.pin.note}`);
+          if (pin.pin.reason) {
+            console.log(`   Note: ${pin.pin.reason}`);
           }
         });
         console.log('');

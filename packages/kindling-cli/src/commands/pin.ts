@@ -37,8 +37,8 @@ export async function pinCommand(type: string, id: string, options: PinOptions):
       console.log('\nPin created successfully');
       console.log(`ID: ${pin.id}`);
       console.log(`Target: ${pin.targetType} ${pin.targetId}`);
-      if (pin.note) {
-        console.log(`Note: ${pin.note}`);
+      if (pin.reason) {
+        console.log(`Note: ${pin.reason}`);
       }
       if (pin.expiresAt) {
         console.log(`Expires: ${new Date(pin.expiresAt).toISOString()}`);

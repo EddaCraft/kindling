@@ -28,7 +28,7 @@ export function initializeService(dbPath?: string): {
   db: Database.Database;
 } {
   const path = dbPath || getDefaultDbPath();
-  const db = openDatabase({ dbPath: path });
+  const db = openDatabase({ path });
   const store = new SqliteKindlingStore(db);
   const provider = new LocalFtsProvider(db);
   const service = new KindlingService({ store, provider });

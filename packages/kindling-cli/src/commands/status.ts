@@ -12,7 +12,7 @@ interface StatusOptions {
 export async function statusCommand(options: StatusOptions): Promise<void> {
   try {
     const dbPath = options.db || getDefaultDbPath();
-    const { service, db } = initializeService(dbPath);
+    const { db } = initializeService(dbPath);
 
     // Get database info
     const dbInfo = db.pragma('database_list') as Array<{ name: string; file: string }>;
