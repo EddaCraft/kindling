@@ -12,6 +12,7 @@ import { searchCommand } from './commands/search.js';
 import { listCommand } from './commands/list.js';
 import { pinCommand, unpinCommand } from './commands/pin.js';
 import { exportCommand, importCommand } from './commands/export.js';
+import { serveCommand } from './commands/serve.js';
 
 const program = new Command();
 
@@ -87,6 +88,16 @@ program
   .option('--dry-run', 'Validate without importing')
   .option('--json', 'Output as JSON')
   .action(importCommand);
+
+// Serve command
+program
+  .command('serve')
+  .description('Start API server for multi-agent access')
+  .option('--db <path>', 'Database path (default: ~/.kindling/kindling.db)')
+  .option('--port <port>', 'Port to listen on', '8080')
+  .option('--host <host>', 'Host to bind to', '127.0.0.1')
+  .option('--no-cors', 'Disable CORS')
+  .action(serveCommand);
 
 // Parse args and execute
 program.parse();

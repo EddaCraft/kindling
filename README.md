@@ -518,6 +518,177 @@ service.appendObservation({
 - Database connection strings with credentials
 - Private repository content (if uncertain about sharing)
 
+### Multi-Agent Concurrency
+
+**For 5+ concurrent agents**, use the API server approach:
+
+#### Option 1: Direct SDK (2-4 agents, occasional writes)
+
+Each agent opens its own connection. SQLite WAL mode handles coordination:
+
+```typescript
+// Agent 1
+const db1 = openDatabase({ path: '~/.kindling/shared.db' });
+const store1 = new SqliteKindlingStore(db1);
+
+// Agent 2 (different process)
+const db2 = openDatabase({ path: '~/.kindling/shared.db' });
+const store2 = new SqliteKindlingStore(db2);
+
+// Add retry logic for concurrent writes
+async function withRetry<T>(fn: () => T, maxRetries = 3): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return fn();
+    } catch (err: any) {
+      if (err.code === 'SQLITE_BUSY' && i < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, i)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
+// Use it
+await withRetry(() => store1.insertObservation(obs));
+```
+
+#### Option 2: API Server (5+ agents, high concurrency)
+
+Start the API server to coordinate all writes:
+
+```bash
+# Terminal 1: Start API server (holds single DB connection)
+kindling serve --port 8080 --db ~/.kindling/shared.db
+
+# Terminal 2+: Agents make HTTP requests
+curl -X POST http://localhost:8080/api/observations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "error",
+    "content": "JWT verification failed",
+    "scopeIds": {"sessionId": "sess-123"},
+    "capsuleId": "capsule-abc"
+  }'
+```
+
+**TypeScript client:**
+
+```typescript
+import { KindlingApiClient } from '@kindling/api-server/client';
+
+// All agents connect to same server
+const client = new KindlingApiClient('http://localhost:8080');
+
+// Writes are naturally serialized through server
+await client.appendObservation({
+  kind: 'command',
+  content: 'npm test',
+  scopeIds: { sessionId: 'agent-1-session' },
+  capsuleId: 'capsule-123'
+});
+
+// Reads work as expected
+const results = await client.retrieve({
+  query: 'authentication error',
+  scopeIds: { repoId: 'my-app' }
+});
+```
+
+**Benefits:**
+- No lock contention (server holds single connection)
+- Language-agnostic (HTTP)
+- Built-in request queuing
+- Still local-first (server on localhost, data never leaves machine)
+
+### Web Agents (Claude Code Web, Cursor Web)
+
+**Challenge:** Web-based agents run in browser sandbox and can't access local filesystem.
+
+**Solution:** Use API server as bridge:
+
+#### 1. Start API Server Locally
+
+```bash
+kindling serve --port 8080
+```
+
+#### 2. Option A: Browser Extension (Recommended)
+
+Create a browser extension that:
+- Runs in browser context with web agent
+- Makes fetch() calls to `http://localhost:8080`
+- Forwards all Kindling operations through API
+
+```javascript
+// Extension content script
+async function kindlingRetrieve(query, scopeIds) {
+  const response = await fetch('http://localhost:8080/api/retrieve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, scopeIds })
+  });
+  return await response.json();
+}
+
+// Expose to web agent
+window.kindlingBridge = {
+  retrieve: kindlingRetrieve,
+  appendObservation: kindlingAppendObservation,
+  // ... other methods
+};
+```
+
+#### 2. Option B: MCP Server (If Supported)
+
+If your web agent supports Model Context Protocol, wrap Kindling as MCP tools:
+
+```typescript
+import { Server } from '@modelcontextprotocol/sdk';
+import { KindlingApiClient } from '@kindling/api-server/client';
+
+const client = new KindlingApiClient('http://localhost:8080');
+
+const server = new Server({
+  name: 'kindling',
+  version: '1.0.0',
+}, {
+  capabilities: { tools: {} },
+});
+
+server.tool('kindling_retrieve', async (args) => {
+  return await client.retrieve(args);
+});
+
+server.tool('kindling_append', async (args) => {
+  await client.appendObservation(args.observation, { capsuleId: args.capsuleId });
+  return { success: true };
+});
+```
+
+**Architecture:**
+
+```
+┌─────────────────────┐
+│   Web Agent         │
+│ (Claude Code Web)   │
+│                     │
+│ ┌─────────────────┐ │
+│ │   Extension     │ │  fetch()   ┌──────────────┐
+│ │   or MCP        │─┼───────────▶│ API Server   │
+│ └─────────────────┘ │             │ localhost:8080│
+└─────────────────────┘             └──────┬───────┘
+                                           │
+                                    ┌──────▼───────┐
+                                    │  SQLite DB   │
+                                    │  (local)     │
+                                    └──────────────┘
+```
+
+**Note:** Data stays on your local machine. The API server is on localhost, and the extension/MCP just bridges the sandboxed web environment to your local system.
+
 ### Testing Your Integration
 
 ```bash
