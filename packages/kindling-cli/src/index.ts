@@ -13,6 +13,7 @@ import { listCommand } from './commands/list.js';
 import { pinCommand, unpinCommand } from './commands/pin.js';
 import { exportCommand, importCommand } from './commands/export.js';
 import { serveCommand } from './commands/serve.js';
+import { syncInitCommand, syncAddSubmoduleCommand, syncPushCommand } from './commands/sync.js';
 
 const program = new Command();
 
@@ -98,6 +99,31 @@ program
   .option('--host <host>', 'Host to bind to', '127.0.0.1')
   .option('--no-cors', 'Disable CORS')
   .action(serveCommand);
+
+// Sync commands
+const syncCommand = program
+  .command('sync')
+  .description('GitHub sync commands for Claude Code Web integration');
+
+syncCommand
+  .command('init')
+  .description('Initialize Kindling GitHub sync (ONCE globally)')
+  .requiredOption('--repo <name>', 'GitHub repo (username/kindling-memory)')
+  .option('--private', 'Create as private repo (recommended)')
+  .action(syncInitCommand);
+
+syncCommand
+  .command('add-submodule')
+  .description('Add Kindling memory as submodule to current project')
+  .action(syncAddSubmoduleCommand);
+
+syncCommand
+  .command('push')
+  .description('Push current Kindling memory to GitHub')
+  .option('--db <path>', 'Database path (default: ~/.kindling/kindling.db)')
+  .option('--branch <name>', 'Branch to push to (default: main)')
+  .option('--scope <value>', 'Scope filter: all|7d|30d (default: all)')
+  .action(syncPushCommand);
 
 // Parse args and execute
 program.parse();
