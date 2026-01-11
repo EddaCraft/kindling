@@ -612,41 +612,80 @@ const results = await client.retrieve({
 
 **Why?** Security and isolation - Claude Code Web executes in Google Gvisor containers on Anthropic's servers, with only GitHub OAuth access.
 
-#### ✅ Solution: GitHub as Communication Bridge
+#### ✅ Solution: GitHub Submodule Bridge
 
-Since Claude Code Web has native GitHub integration, use a **private GitHub repo** as a bridge:
+Since Claude Code Web has native GitHub integration, use a **git submodule** to include your Kindling memory repo.
+
+**⚠️ Important:** Even for a single project, you need a submodule if you want Kindling in a separate repo. Claude Code Web connects to ONE repo at a time, so the submodule brings memory into that repo's filesystem.
+
+**Complete Setup:**
 
 ```bash
-# Setup (one time)
+# STEP 1: Create shared Kindling memory repository (ONCE, globally)
 kindling sync init --repo username/kindling-memory --private
 
-# Continuous sync
-kindling sync start --interval 60s
+# This creates on GitHub:
+# username/kindling-memory (private repo)
+#   └── .kindling/
+#       ├── index.json
+#       ├── capsules/
+#       └── pins/
 
-# Manual sync
-kindling sync push
+# STEP 2: Add submodule to EVERY project (even if you only have one)
+cd ~/projects/my-app
+kindling sync add-submodule
+
+# This runs:
+#   git submodule add https://github.com/username/kindling-memory.git .kindling
+#   git commit -m "Add Kindling memory submodule"
+
+# Your project structure now:
+# my-app/
+#   ├── src/              ← Your code
+#   ├── .kindling/        ← Submodule (points to kindling-memory repo)
+#   │   ├── index.json
+#   │   └── ...
+#   ├── .gitmodules       ← Git submodule config (auto-created)
+#   └── package.json
+
+# STEP 3: Sync memory as you work
+kindling sync push  # Pushes to kindling-memory repo
+
+# STEP 4: Other projects pull latest memory
+cd ~/projects/other-app
+git submodule update --remote --merge  # Gets latest from kindling-memory
 ```
 
-**How it works:**
+**Architecture:**
 
 ```
-┌──────────────┐                          ┌─────────────────┐
-│ Local        │                          │ Claude Code Web │
-│ Kindling DB  │                          │ (Remote Sandbox)│
-└──────┬───────┘                          └────────┬────────┘
-       │                                           │
-       │ Push summaries,                           │ Read via
-       │ pins, capsules                            │ file access
-       ▼                                           ▼
-┌──────────────────────────────────────────────────────────┐
-│  Private GitHub Repo: username/kindling-memory           │
-│                                                           │
-│  .kindling/                                               │
-│    ├── index.json          # Memory index                │
-│    ├── capsules/           # Recent capsules             │
-│    ├── pins/               # Active pins                 │
-│    └── observations/       # Recent observations         │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│  Your Project: my-app (GitHub)                          │
+│                                                          │
+│  src/                    ← Claude Code Web works here   │
+│  .kindling/              ← Git submodule                 │
+│    ├── index.json        ← Claude reads this!           │
+│    ├── capsules/                                         │
+│    └── pins/                                             │
+│  .gitmodules             ← Submodule config             │
+└────────────┬────────────────────────────────────────────┘
+             │ .kindling/ points to ↓
+             │
+┌────────────▼────────────────────────────────────────────┐
+│  Separate Repo: kindling-memory (private)               │
+│                                                          │
+│  .kindling/                                              │
+│    ├── index.json        ← Synced from local Kindling   │
+│    ├── capsules/                                         │
+│    └── pins/                                             │
+└─────────────────────────────────────────────────────────┘
+      ↑
+      │ Local agents sync here
+      │
+┌─────┴───────┐
+│ Your Machine│
+│ Kindling DB │
+└─────────────┘
 ```
 
 **What Claude Code Web can do:**
@@ -679,6 +718,23 @@ console.log(`Found ${pins.length} pinned items for this repo`);
 - Repo MUST be private
 - Redacted observations never synced
 - Configurable scope (last 7 days, specific repos, etc.)
+
+**FAQ:**
+
+**Q: Do I need a submodule if I only work on one project?**
+**A: YES.** If you want Kindling in a separate repo (recommended), you need a submodule. Claude Code Web connects to ONE repo, so the submodule is how it accesses the memory repo.
+
+**Q: Can I skip the submodule and just sync directly to my project repo?**
+**A: Yes, but not recommended.** You could run `kindling sync push --target ./.kindling/` to sync into the same repo. But this:
+- ❌ Clutters git history with memory syncs
+- ❌ Mixes memory data with code
+- ❌ Can't share memory across multiple projects
+
+**Q: I have 3 projects. Do I need to set up submodules 3 times?**
+**A: YES.** Create the kindling-memory repo once (`sync init`), then add it as a submodule to each project (`sync add-submodule`). All 3 projects share the same memory.
+
+**Q: What if my project is public but I want Kindling private?**
+**A: Perfect use case.** The submodule can be private even if the parent repo is public. GitHub respects permissions - only people with access to both repos can see the memory.
 
 #### 🔒 Alternative: Secure Tunnel (Advanced)
 
