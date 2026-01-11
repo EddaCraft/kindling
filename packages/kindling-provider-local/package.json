@@ -2,6 +2,26 @@
   "name": "@kindling/provider-local",
   "version": "0.1.0",
   "description": "Local FTS-based retrieval provider for Kindling",
+  "keywords": [
+    "search",
+    "retrieval",
+    "fts",
+    "full-text-search",
+    "kindling",
+    "local",
+    "ranking"
+  ],
+  "homepage": "https://github.com/EddaCraft/kindling#readme",
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-provider-local"
+  },
+  "license": "Apache-2.0",
+  "author": "EddaCraft",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,7 +39,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@kindling/core": "workspace:*",
@@ -31,5 +52,7 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "license": "Apache-2.0"
+  "publishConfig": {
+    "access": "public"
+  }
 }
