@@ -2,6 +2,27 @@
   "name": "@kindling/core",
   "version": "0.1.0",
   "description": "Core domain model and orchestration for Kindling",
+  "keywords": [
+    "memory",
+    "context",
+    "ai",
+    "agent",
+    "continuity",
+    "local-first",
+    "capsule",
+    "observation"
+  ],
+  "homepage": "https://github.com/EddaCraft/kindling#readme",
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-core"
+  },
+  "license": "Apache-2.0",
+  "author": "EddaCraft",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,7 +40,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@kindling/store-sqlite": "workspace:*",
@@ -30,5 +52,7 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "license": "Apache-2.0"
+  "publishConfig": {
+    "access": "public"
+  }
 }

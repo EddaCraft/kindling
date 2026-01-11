@@ -2,6 +2,26 @@
   "name": "@kindling/cli",
   "version": "0.1.0",
   "description": "CLI for Kindling inspection, debugging, and export/import",
+  "keywords": [
+    "cli",
+    "command-line",
+    "kindling",
+    "inspection",
+    "debugging",
+    "export",
+    "import"
+  ],
+  "homepage": "https://github.com/EddaCraft/kindling#readme",
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-cli"
+  },
+  "license": "Apache-2.0",
+  "author": "EddaCraft",
   "type": "module",
   "bin": {
     "kindling": "./dist/cli.js"
@@ -22,7 +42,8 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@kindling/core": "workspace:*",
@@ -34,5 +55,7 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "license": "Apache-2.0"
+  "publishConfig": {
+    "access": "public"
+  }
 }

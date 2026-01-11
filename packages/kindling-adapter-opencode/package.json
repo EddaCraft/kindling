@@ -2,6 +2,25 @@
   "name": "@kindling/adapter-opencode",
   "version": "0.1.0",
   "description": "OpenCode adapter for Kindling",
+  "keywords": [
+    "opencode",
+    "adapter",
+    "session",
+    "kindling",
+    "ai",
+    "capture"
+  ],
+  "homepage": "https://github.com/EddaCraft/kindling#readme",
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-adapter-opencode"
+  },
+  "license": "Apache-2.0",
+  "author": "EddaCraft",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,7 +38,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@kindling/core": "workspace:*"
@@ -29,5 +49,7 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "license": "Apache-2.0"
+  "publishConfig": {
+    "access": "public"
+  }
 }
