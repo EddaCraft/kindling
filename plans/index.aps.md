@@ -83,6 +83,18 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 
 **Target:** Safe, understandable OSS v0.1 release
 
+### M5: Standard Adapter Framework
+
+* Base adapter interface and abstract class in `kindling-core`
+* Standard event model (`AdapterEvent`) for platform-agnostic ingestion
+* Shared event receiver (HTTP, stdin, file watch modes)
+* Platform adapters as thin wrappers (Claude Code, Cursor, Aider, etc.)
+* Adapter development documentation
+
+**Status:** Planned
+
+**Target:** Adding a new platform adapter requires minimal code (event mapping + content formatting only)
+
 ---
 
 ## Modules
@@ -147,6 +159,16 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Tags:** cli, tooling, debugging
 * **Dependencies:** kindling-core
 
+### kindling-adapter-framework
+
+* **Path:** ./modules/kindling-adapter-framework.aps.md
+* **Scope:** ADAPTER
+* **Owner:** @aneki
+* **Status:** Planned
+* **Priority:** medium
+* **Tags:** adapter, framework, integration
+* **Dependencies:** kindling-core
+
 ---
 
 ## Decisions
@@ -161,6 +183,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **D-008:** DB location is configurable. Default is `~/.kindling/kindling.db` (or platform equivalent), with support for per-repo paths and explicit overrides
 * **D-009:** Capsules auto-close when the source provides a natural end signal (e.g. session end, workflow node end). Otherwise, explicit close is required, with a safety timeout for inactivity
 * **D-010:** Promotion and MemoryObjects are out of scope for Kindling OSS v0.1; pins and notes are the only persistence mechanism
+* **D-011:** Platform adapters follow a standard contract (`BaseSessionAdapter`) to minimize per-platform code. Platform-specific logic is limited to event mapping and content formatting
 
 ---
 
