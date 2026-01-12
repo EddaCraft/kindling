@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| CLI | @aneki | medium | Draft |
+| CLI | @aneki | medium | In Progress |
 
 ## Purpose
 

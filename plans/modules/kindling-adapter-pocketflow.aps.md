@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| ADAPTER-PF | @aneki | medium | Draft |
+| ADAPTER-PF | @aneki | medium | In Progress |
 
 ## Purpose
 
@@ -49,9 +49,9 @@ PocketFlow may be vendored internally (MIT license, explicitly supports copying 
 
 ## Acceptance Criteria
 
-- [ ] PocketFlow vendoring/dependency approach documented
-- [ ] Node lifecycle produces observations and capsules
-- [ ] Intent derived from node metadata
+- [x] PocketFlow vendoring/dependency approach documented
+- [x] Node lifecycle produces observations and capsules
+- [x] Intent derived from node metadata
 - [ ] Confidence signals reflect execution outcome
 - [ ] Outputs bounded and privacy-safe
 

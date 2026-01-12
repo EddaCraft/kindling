@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| RETRIEVAL | @aneki | high | Draft |
+| RETRIEVAL | @aneki | high | In Progress |
 
 ## Purpose
 
@@ -58,7 +58,7 @@ Where `ProviderHit` includes:
 ## Acceptance Criteria
 
 - [ ] Provider contract implemented with stable ordering
-- [ ] FTS search returns relevant candidates within acceptable latency
+- [x] FTS search returns relevant candidates within acceptable latency
 - [ ] Ranking matches expectations for common queries (resume work, find decision, find failure)
 - [ ] Evidence snippets are bounded and redaction-compliant
 - [ ] Ordering is deterministic given identical store state

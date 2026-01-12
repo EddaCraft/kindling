@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| ADAPTER-OC | @aneki | high | Draft |
+| ADAPTER-OC | @aneki | high | Implemented |
 
 ## Purpose
 
@@ -46,11 +46,11 @@ The adapter must remain thin: mapping and plumbing only. The rules for capsules,
 
 ## Acceptance Criteria
 
-- [ ] All OpenCode event types mapped to observation kinds
-- [ ] Session start opens capsule; session end closes it
-- [ ] `/memory` commands work and produce stable output
-- [ ] Basic filtering prevents obvious secret capture
-- [ ] Adapter handles missing repoId gracefully
+- [x] All OpenCode event types mapped to observation kinds
+- [x] Session start opens capsule; session end closes it
+- [x] `/memory` commands work and produce stable output
+- [x] Basic filtering prevents obvious secret capture
+- [x] Adapter handles missing repoId gracefully
 
 ## Risks & Mitigations
 

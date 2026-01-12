@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| STORAGE | @aneki | high | Draft |
+| STORAGE | @aneki | high | Implemented |
 
 ## Purpose
 
@@ -53,12 +53,12 @@ It must support:
 
 ## Acceptance Criteria
 
-- [ ] WAL enabled, FKs enforced
-- [ ] Tables exist: observations, capsules, capsule_observations, summaries, pins, schema_migrations
-- [ ] Indexes support: (sessionId, ts), (repoId, ts), (agentId, ts), global time window queries
-- [ ] FTS exists for observations and summaries
-- [ ] Redacted content not retrievable via FTS; references remain resolvable
-- [ ] Export/import round-trips deterministically
+- [x] WAL enabled, FKs enforced
+- [x] Tables exist: observations, capsules, capsule_observations, summaries, pins, schema_migrations
+- [x] Indexes support: (sessionId, ts), (repoId, ts), (agentId, ts), global time window queries
+- [x] FTS exists for observations and summaries
+- [x] Redacted content not retrievable via FTS; references remain resolvable
+- [x] Export/import round-trips deterministically
 
 ## Risks & Mitigations
 

@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| KINDLING | @aneki | high | Draft |
+| KINDLING | @aneki | high | In Progress |
 
 ## Purpose
 
@@ -46,10 +46,10 @@ Summarisation is conservative in v0.1: primary summaries occur on capsule close.
 
 ## Acceptance Criteria
 
-- [ ] Domain types compile and are reused by all packages
-- [ ] Capsule lifecycle works end-to-end (open → observe → close)
-- [ ] Retrieval returns deterministic, explainable results
-- [ ] Export/import round-trips without data loss
+- [x] Domain types compile and are reused by all packages
+- [x] Capsule lifecycle works end-to-end (open → observe → close)
+- [x] Retrieval returns deterministic, explainable results
+- [x] Export/import round-trips without data loss
 
 ## Risks & Mitigations
 

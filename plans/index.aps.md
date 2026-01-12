@@ -46,6 +46,8 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * Package boundaries enforced (core / store / provider / adapters)
 * Architecture, data model, and retrieval contract docs published
 
+**Status:** Complete
+
 **Target:** Repo builds, types compile, no runtime behaviour required
 
 ### M2: Local Capture + Continuity (OpenCode)
@@ -56,6 +58,8 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * Local retrieval provider (FTS + recency)
 * `/memory` command surface
 
+**Status:** In Progress
+
 **Target:** End-to-end local memory works in OpenCode
 
 ### M3: High-Signal Workflows (PocketFlow)
@@ -63,6 +67,8 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * PocketFlow adapter (vendored or dependency)
 * Node-level capsules with intent hints
 * Structured evidence capture
+
+**Status:** Planned
 
 **Target:** Workflow-driven capsules outperform heuristic session summaries
 
@@ -72,6 +78,8 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * Export/import
 * Minimal CLI for inspection, debugging, and standalone use
 * Documentation polish (README, examples)
+
+**Status:** Planned
 
 **Target:** Safe, understandable OSS v0.1 release
 
@@ -84,7 +92,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-core.aps.md
 * **Scope:** KINDLING
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** In Progress
 * **Priority:** high
 * **Tags:** memory, domain, core
 * **Dependencies:** kindling-store-sqlite, kindling-provider-local
@@ -94,7 +102,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-store-sqlite.aps.md
 * **Scope:** STORAGE
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** Implemented
 * **Priority:** high
 * **Tags:** sqlite, persistence
 * **Dependencies:** (none)
@@ -104,7 +112,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-provider-local.aps.md
 * **Scope:** RETRIEVAL
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** In Progress
 * **Priority:** high
 * **Tags:** search, fts
 * **Dependencies:** kindling-store-sqlite
@@ -114,7 +122,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-adapter-opencode.aps.md
 * **Scope:** ADAPTER
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** Implemented
 * **Priority:** high
 * **Tags:** opencode, ingestion
 * **Dependencies:** kindling-core
@@ -124,7 +132,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-adapter-pocketflow.aps.md
 * **Scope:** ADAPTER
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** In Progress
 * **Priority:** medium
 * **Tags:** pocketflow, workflows
 * **Dependencies:** kindling-core
@@ -134,7 +142,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-cli.aps.md
 * **Scope:** CLI
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** In Progress
 * **Priority:** medium
 * **Tags:** cli, tooling, debugging
 * **Dependencies:** kindling-core
