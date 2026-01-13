@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "checks": [
+    {
+      "name": "test",
+      "description": "Unit test validation",
+      "enabled": true,
+      "config": {
+        "min_score": 80
+      }
+    },
+    {
+      "name": "coverage",
+      "description": "Test coverage validation",
+      "enabled": true,
+      "config": {
+        "min_score": 80,
+        "thresholds": {
+          "lines": 80,
+          "functions": 80,
+          "branches": 80,
+          "statements": 80
+        }
+      }
+    },
+    {
+      "name": "secret",
+      "description": "Secret scanning",
+      "enabled": true,
+      "config": {
+        "min_score": 80
+      }
+    },
+    {
+      "name": "eslint",
+      "description": "Code quality checks",
+      "enabled": true,
+      "config": {
+        "min_score": 80
+      }
+    }
+  ],
+  "thresholds": {
+    "overall_score": 80
+  }
+}
