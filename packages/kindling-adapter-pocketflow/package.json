@@ -1,7 +1,7 @@
 {
   "name": "@kindling/adapter-pocketflow",
   "version": "0.1.0",
-  "description": "PocketFlow adapter for Kindling",
+  "description": "PocketFlow workflow adapter for Kindling - capture node executions with intent and confidence",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +14,26 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "kindling",
+    "pocketflow",
+    "adapter",
+    "workflow",
+    "nodes",
+    "agent",
+    "ai",
+    "memory"
+  ],
+  "author": "EddaCraft <hello@eddacraft.ai>",
+  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-adapter-pocketflow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-adapter-pocketflow"
+  },
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run --passWithNoTests",

@@ -1,0 +1,118 @@
+# @kindling/provider-local
+
+Local FTS-based retrieval provider for Kindling with deterministic, explainable ranking.
+
+[![npm version](https://img.shields.io/npm/v/@kindling/provider-local.svg)](https://www.npmjs.com/package/@kindling/provider-local)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
+
+## Installation
+
+```bash
+npm install @kindling/provider-local
+```
+
+## Overview
+
+`@kindling/provider-local` implements the `RetrievalProvider` interface using SQLite FTS5:
+
+- **FTS5 Search** - Full-text search with BM25 ranking
+- **Recency Weighting** - Recent observations score higher
+- **Deterministic Results** - Same query always produces same results
+- **Explainable Scoring** - Results include match context and scores
+
+## Usage
+
+```typescript
+import { LocalFtsProvider } from '@kindling/provider-local';
+import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
+
+// Initialize
+const db = openDatabase({ dbPath: './kindling.db' });
+const store = new SqliteKindlingStore(db);
+const provider = new LocalFtsProvider(store);
+
+// Search
+const results = await provider.search({
+  query: 'authentication error',
+  scopeIds: { repoId: '/repo' },
+  maxResults: 50,
+});
+
+// Results include scores and context
+for (const result of results) {
+  console.log(`${result.entity.id}: ${result.score}`);
+  console.log(`  Match: ${result.matchContext}`);
+}
+```
+
+## Scoring
+
+The provider combines FTS relevance with recency:
+
+```
+score = (fts_relevance * 0.7) + (recency_score * 0.3)
+
+where:
+  fts_relevance = BM25 score from FTS5 (normalized to 0.0-1.0)
+  recency_score = 1.0 - (age_days / max_age_days)
+```
+
+## Provider Interface
+
+```typescript
+interface RetrievalProvider {
+  name: string;
+  search(options: ProviderSearchOptions): Promise<ProviderSearchResult[]>;
+}
+
+interface ProviderSearchOptions {
+  query: string;
+  scopeIds: ScopeIds;
+  maxResults?: number;
+  excludeIds?: string[];
+  includeRedacted?: boolean;
+}
+
+interface ProviderSearchResult {
+  entity: Observation | Summary;
+  score: number;
+  matchContext?: string;
+}
+```
+
+## Characteristics
+
+| Property | Value |
+|----------|-------|
+| **Name** | `local-fts` |
+| **Deterministic** | Yes |
+| **Latency** | < 50ms typical |
+| **Max Results** | Configurable (default: 50) |
+
+## Integration with Core
+
+```typescript
+import { CapsuleManager } from '@kindling/core';
+import { SqliteKindlingStore } from '@kindling/store-sqlite';
+import { LocalFtsProvider } from '@kindling/provider-local';
+
+const store = new SqliteKindlingStore(db);
+const provider = new LocalFtsProvider(store);
+
+// Provider is used by core for retrieval
+const manager = new CapsuleManager(store, { provider });
+
+const results = manager.retrieve({
+  query: 'authentication',
+  scopeIds: { sessionId: 's1' },
+});
+```
+
+## Related Packages
+
+- [`@kindling/core`](../kindling-core) - Domain types and `RetrievalProvider` interface
+- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite store with FTS indexes
+
+## License
+
+Apache-2.0

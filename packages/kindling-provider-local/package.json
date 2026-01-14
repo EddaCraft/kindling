@@ -1,7 +1,7 @@
 {
   "name": "@kindling/provider-local",
   "version": "0.1.0",
-  "description": "Local FTS-based retrieval provider for Kindling",
+  "description": "Local FTS-based retrieval provider for Kindling with deterministic, explainable ranking",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +14,26 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "kindling",
+    "retrieval",
+    "search",
+    "fts",
+    "full-text-search",
+    "ranking",
+    "bm25",
+    "local-first"
+  ],
+  "author": "EddaCraft <hello@eddacraft.ai>",
+  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-provider-local#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-provider-local"
+  },
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run",

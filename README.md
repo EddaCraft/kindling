@@ -4,47 +4,134 @@
 
 Kindling captures observations (tool calls, diffs, commands, errors) from AI-assisted workflows, organizes them into capsules (bounded units of meaning), and makes context retrievable with deterministic, explainable results—all running locally with no external services.
 
+[![npm version](https://img.shields.io/npm/v/@kindling/core.svg)](https://www.npmjs.com/package/@kindling/core)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 
-## Problem
+## Why Kindling?
 
 AI-assisted development produces large volumes of transient activity (tool calls, diffs, agent runs) but loses context between sessions. Developers and local agents repeatedly re-discover the same information, leading to wasted time, architectural drift, and brittle workflows.
 
-## Solution
-
 Kindling provides **continuity without judgement**. It captures what happened, preserves provenance, and makes context retrievable in a deterministic, explainable way—without asserting organizational truth or governance.
 
-### Key Features
+## Features
 
-- **📦 Observation Capture**: Records tool calls, commands, file diffs, errors, and messages with full provenance
-- **🎯 Capsule-Based Organization**: Groups observations into bounded units (sessions, workflow nodes)
-- **🔍 Deterministic Retrieval**: FTS-based search with explainable, stable ranking
-- **📌 Pin Management**: User-controlled high-priority content with optional TTL
-- **💾 Local-First**: Embedded SQLite with WAL mode, no external dependencies
-- **🔒 Privacy-Aware**: Redaction support, bounded output capture
-- **🎨 Adapter Architecture**: OpenCode and PocketFlow integrations included
+- **Observation Capture** - Records tool calls, commands, file diffs, errors, and messages with full provenance
+- **Capsule Organization** - Groups observations into bounded units (sessions, workflow nodes)
+- **Deterministic Retrieval** - FTS-based search with explainable, stable ranking
+- **Pin Management** - User-controlled high-priority content with optional TTL
+- **Local-First** - Embedded SQLite with WAL mode, no external dependencies
+- **Privacy-Aware** - Automatic redaction of secrets, bounded output capture
+- **Adapter Architecture** - OpenCode and PocketFlow integrations included
+
+## Installation
+
+```bash
+# Install the core package
+npm install @kindling/core
+
+# Install the SQLite store
+npm install @kindling/store-sqlite
+
+# Install the local retrieval provider
+npm install @kindling/provider-local
+```
+
+### Optional packages
+
+```bash
+# OpenCode session adapter
+npm install @kindling/adapter-opencode
+
+# PocketFlow workflow adapter
+npm install @kindling/adapter-pocketflow
+
+# CLI tools
+npm install -g @kindling/cli
+```
+
+## Quick Start
+
+```typescript
+import { KindlingService, ObservationKind, CapsuleType } from '@kindling/core';
+import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
+import { LocalRetrievalProvider } from '@kindling/provider-local';
+
+// Initialize Kindling
+const db = openDatabase({ dbPath: './my-memory.db' });
+const store = new SqliteKindlingStore(db);
+const provider = new LocalRetrievalProvider(store);
+const service = new KindlingService({ store, provider });
+
+// Open a session capsule
+const capsule = service.openCapsule({
+  type: CapsuleType.Session,
+  intent: 'debug authentication issue',
+  scope: { sessionId: 'session-1', repoId: 'my-project' },
+});
+
+// Capture observations
+service.appendObservation({
+  kind: ObservationKind.Command,
+  content: 'npm test failed with auth error',
+  provenance: { command: 'npm test', exitCode: 1 },
+  scope: { sessionId: 'session-1' },
+}, { capsuleId: capsule.id });
+
+service.appendObservation({
+  kind: ObservationKind.Error,
+  content: 'JWT validation failed: token expired',
+  provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
+  scope: { sessionId: 'session-1' },
+}, { capsuleId: capsule.id });
+
+// Retrieve relevant context
+const results = service.retrieve({
+  query: 'authentication token',
+  scope: { sessionId: 'session-1' },
+});
+
+console.log('Found:', results.providerHits.length, 'relevant observations');
+
+// Close session with summary
+service.closeCapsule(capsule.id, {
+  generateSummary: true,
+  summaryContent: 'Fixed JWT expiration check in token validation middleware',
+});
+
+db.close();
+```
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@kindling/core`](./packages/kindling-core) | Domain types, capsule lifecycle, retrieval orchestration |
+| [`@kindling/store-sqlite`](./packages/kindling-store-sqlite) | SQLite persistence with FTS5 indexing |
+| [`@kindling/provider-local`](./packages/kindling-provider-local) | FTS-based retrieval with deterministic ranking |
+| [`@kindling/adapter-opencode`](./packages/kindling-adapter-opencode) | OpenCode session integration |
+| [`@kindling/adapter-pocketflow`](./packages/kindling-adapter-pocketflow) | PocketFlow workflow integration |
+| [`@kindling/cli`](./packages/kindling-cli) | Command-line tools for inspection and management |
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Adapters                         │
-│  ┌──────────────┐        ┌──────────────────────┐  │
-│  │  OpenCode    │        │  PocketFlow Nodes    │  │
-│  │  Sessions    │        │  (Workflows)         │  │
-│  └──────┬───────┘        └──────────┬───────────┘  │
-└─────────┼──────────────────────────┼───────────────┘
-          │                          │
-          └─────────┬────────────────┘
-                    ▼
-         ┌──────────────────────┐
-         │  KindlingService     │ ← Orchestration
-         │  (kindling-core)     │
-         └──────────┬───────────┘
-                    │
-       ┌────────────┴──────────────┐
-       ▼                           ▼
+                     Adapters
+  ┌──────────────┐        ┌──────────────────────┐
+  │  OpenCode    │        │  PocketFlow Nodes    │
+  │  Sessions    │        │  (Workflows)         │
+  └──────┬───────┘        └──────────┬───────────┘
+         │                           │
+         └─────────┬─────────────────┘
+                   ▼
+        ┌──────────────────────┐
+        │  KindlingService     │  ← Orchestration
+        │  (@kindling/core)    │
+        └──────────┬───────────┘
+                   │
+      ┌────────────┴──────────────┐
+      ▼                           ▼
 ┌──────────────┐          ┌─────────────────────┐
 │ SqliteStore  │          │ LocalRetrieval      │
 │ (persistence)│          │ Provider (search)   │
@@ -58,86 +145,7 @@ Kindling provides **continuity without judgement**. It captures what happened, p
        └─────────────────────┘
 ```
 
-## Package Structure
-
-Kindling is organized as a TypeScript monorepo with clear boundaries:
-
-- **[@kindling/core](packages/kindling-core)** - Domain types, capsule lifecycle, retrieval orchestration
-- **[@kindling/store-sqlite](packages/kindling-store-sqlite)** - SQLite persistence with FTS indexing
-- **[@kindling/provider-local](packages/kindling-provider-local)** - FTS-based retrieval with ranking
-- **[@kindling/adapter-opencode](packages/kindling-adapter-opencode)** - OpenCode session integration
-- **[@kindling/adapter-pocketflow](packages/kindling-adapter-pocketflow)** - Workflow node integration
-- **[@kindling/cli](packages/kindling-cli)** - Command-line tools for inspection and management
-
-## Quick Start
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/EddaCraft/kindling.git
-cd kindling
-
-# Install dependencies
-npm install
-
-# Build all packages
-npm run build
-```
-
-### Basic Usage
-
-```typescript
-import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalRetrievalProvider } from '@kindling/provider-local';
-import { KindlingService, ObservationKind, CapsuleType } from '@kindling/core';
-
-// Initialize Kindling
-const db = openDatabase({ dbPath: './my-memory.db' });
-const store = new SqliteKindlingStore(db);
-const provider = new LocalRetrievalProvider(store);
-const service = new KindlingService({ store, provider });
-
-// Open a session capsule
-const capsule = service.openCapsule({
-  type: CapsuleType.Session,
-  intent: 'debug',
-  scope: { sessionId: 'session-1', repoId: 'my-project' },
-});
-
-// Capture observations
-service.appendObservation({
-  kind: ObservationKind.Command,
-  content: 'npm test failed',
-  provenance: { command: 'npm test', exitCode: 1 },
-  scope: { sessionId: 'session-1' },
-}, { capsuleId: capsule.id });
-
-service.appendObservation({
-  kind: ObservationKind.Error,
-  content: 'Authentication failed',
-  provenance: { stack: 'Error: Auth failed\n  at login.ts:42' },
-  scope: { sessionId: 'session-1' },
-}, { capsuleId: capsule.id });
-
-// Retrieve relevant context
-const results = service.retrieve({
-  query: 'authentication',
-  scope: { sessionId: 'session-1' },
-});
-
-console.log('Found:', results.providerHits.length, 'relevant observations');
-
-// Close session with summary
-service.closeCapsule(capsule.id, {
-  generateSummary: true,
-  summaryContent: 'Fixed authentication bug in token validation',
-});
-
-db.close();
-```
-
-### CLI Usage
+## CLI Usage
 
 ```bash
 # Show database status
@@ -159,31 +167,61 @@ kindling pin observation obs_abc123 --note "Root cause identified"
 kindling unpin pin_xyz789
 ```
 
+## Core Concepts
+
+### Observations
+
+Atomic units of captured context:
+
+| Kind | Description |
+|------|-------------|
+| `tool_call` | AI tool invocations (Read, Edit, Bash, etc.) |
+| `command` | Shell commands with exit codes and output |
+| `file_diff` | File changes with paths |
+| `error` | Errors with stack traces |
+| `message` | User/assistant messages |
+| `node_start` / `node_end` | Workflow node lifecycle |
+| `node_output` / `node_error` | Workflow node results |
+
+### Capsules
+
+Bounded units of meaning that group observations:
+
+- **Session** - Interactive development session
+- **PocketFlowNode** - Single workflow node execution
+
+Each capsule has:
+- Type and intent (debug, implement, test, etc.)
+- Open/close lifecycle with automatic summary generation
+- Scope (sessionId, repoId, agentId, userId)
+
+### Retrieval Tiers
+
+Deterministic, explainable retrieval with 3 tiers:
+
+1. **Pins** - Non-evictable, user-controlled priority content
+2. **Current Summary** - Active session/capsule context
+3. **Provider Hits** - Ranked FTS results with explainability
+
 ## Use Cases
 
-### 1. Session Continuity
+### Session Continuity
 
-Capture entire development sessions and resume work without re-explaining context:
+Resume work without re-explaining context:
 
 ```typescript
-import { SessionAdapter } from '@kindling/adapter-opencode';
+import { SessionManager } from '@kindling/adapter-opencode';
 
-const adapter = new SessionAdapter({ service });
+const manager = new SessionManager(store);
 
-// Session starts
-adapter.onSessionStart('session-1', { repoId: 'my-app' });
-
-// Events flow in
-adapter.onEvent({
-  type: 'ToolCall',
+// Start session
+manager.onSessionStart({
   sessionId: 'session-1',
-  data: { toolName: 'Read', result: '...' },
+  intent: 'Fix authentication bug',
+  repoId: '/home/user/my-project',
 });
 
-// Session ends
-adapter.onSessionEnd('session-1', {
-  summaryContent: 'Implemented user authentication',
-});
+// Events flow in automatically...
 
 // Later: retrieve session context
 const context = service.retrieve({
@@ -191,16 +229,15 @@ const context = service.retrieve({
 });
 ```
 
-### 2. Workflow Memory
+### Workflow Memory
 
-Capture high-signal workflow executions with intent and confidence:
+Capture high-signal workflow executions:
 
 ```typescript
 import { NodeAdapter, NodeStatus } from '@kindling/adapter-pocketflow';
 
 const adapter = new NodeAdapter({ service, repoId: 'my-app' });
 
-// Workflow node executes
 adapter.onNodeStart({
   node: { id: 'test-1', name: 'run-integration-tests' },
   status: NodeStatus.Running,
@@ -211,15 +248,13 @@ adapter.onNodeEnd({
   status: NodeStatus.Success,
   output: { passed: 42, failed: 0 },
 });
-// Creates capsule with intent='test', confidence based on history
 ```
 
-### 3. Pin Critical Findings
+### Pin Critical Findings
 
 Mark important discoveries for non-evictable retrieval:
 
 ```typescript
-// Pin a critical error
 service.pin({
   targetType: 'observation',
   targetId: errorObs.id,
@@ -232,114 +267,13 @@ const results = service.retrieve({ query: 'outage' });
 console.log(results.pins); // Includes the pinned error
 ```
 
-## Core Concepts
-
-### Observations
-
-Atomic units of captured context:
-
-- **ToolCall**: AI tool invocations (Read, Edit, Bash, etc.)
-- **Command**: Shell commands with exit codes and output
-- **FileDiff**: File changes with paths
-- **Error**: Errors with stack traces
-- **Message**: User/assistant messages
-- **NodeStart/NodeOutput/NodeError/NodeEnd**: Workflow events
-
-### Capsules
-
-Bounded units of meaning that group observations:
-
-- **Session**: Interactive development session
-- **PocketFlowNode**: Single workflow node execution
-- **Custom**: User-defined capsule types
-
-Each capsule has:
-- Type and intent (debug, implement, test, etc.)
-- Open/close lifecycle
-- Automatic summary generation on close
-- Scope (sessionId, repoId, agentId, userId)
-
-### Retrieval Tiers
-
-Deterministic, explainable retrieval with 3 tiers:
-
-1. **Pins** - Non-evictable, user-controlled
-2. **Current Summary** - Active session/capsule context
-3. **Provider Hits** - Ranked FTS results with explainability
-
-Ranking factors:
-- Scope match (session > repo > agent/user)
-- Recency decay
-- Confidence weighting (for summaries)
-- Intent matching
-
-## Development
-
-### Project Structure
-
-```
-kindling/
-├── packages/
-│   ├── kindling-core/          # Domain model & orchestration
-│   ├── kindling-store-sqlite/  # SQLite persistence
-│   ├── kindling-provider-local/# FTS retrieval
-│   ├── kindling-adapter-opencode/
-│   ├── kindling-adapter-pocketflow/
-│   └── kindling-cli/           # CLI tools
-├── plans/                      # Detailed planning docs
-│   ├── index.aps.md           # Roadmap & milestones
-│   └── modules/               # Module specifications
-└── docs/                       # Additional documentation
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests for specific package
-cd packages/kindling-core
-npm test
-
-# Watch mode
-npm run test:watch
-```
-
-### Building
-
-```bash
-# Build all packages
-npm run build
-
-# Build specific package
-cd packages/kindling-cli
-npm run build
-
-# Clean build artifacts
-npm run clean
-```
-
-## Roadmap
-
-✅ **M1: OSS Scaffolding** - Repository structure, planning documentation
-✅ **M2: Local Capture + Continuity (OpenCode)** - Core capture, storage, and retrieval
-✅ **M3: High-Signal Workflows (PocketFlow)** - Workflow-driven capsules with intent/confidence
-✅ **M4: OSS Hardening** - CLI tools, documentation polish
-
-Future:
-- **Semantic retrieval** (embeddings integration)
-- **Multi-user support** with conflict resolution
-- **Export/import** for portability
-- **Edda**: Governance and curation layer
-
 ## Design Principles
 
-1. **Capture, Don't Judge**: Kindling preserves what happened without asserting truth
-2. **Deterministic & Explainable**: All retrieval results include "why" explanations
-3. **Local-First**: No external services, embedded SQLite
-4. **Privacy-Aware**: Redaction, bounded output, configurable capture
-5. **Provenance Always**: Every piece of context points to concrete evidence
+1. **Capture, Don't Judge** - Kindling preserves what happened without asserting truth
+2. **Deterministic & Explainable** - All retrieval results include "why" explanations
+3. **Local-First** - No external services, embedded SQLite
+4. **Privacy-Aware** - Redaction, bounded output, configurable capture
+5. **Provenance Always** - Every piece of context points to concrete evidence
 
 ## Non-Goals
 
@@ -349,6 +283,38 @@ Kindling explicitly does **not**:
 - Provide multi-user collaboration (yet)
 - Replace existing knowledge management systems
 
+## Requirements
+
+- Node.js >= 20.0.0
+- pnpm >= 8.0.0 (for development)
+
+## Development
+
+```bash
+# Clone the repository
+git clone https://github.com/EddaCraft/kindling.git
+cd kindling
+
+# Install dependencies
+pnpm install
+
+# Build all packages
+pnpm run build
+
+# Run tests
+pnpm run test
+
+# Type-check
+pnpm run type-check
+```
+
+## Documentation
+
+- [Data Model](./docs/data-model.md) - Core entities and relationships
+- [Retrieval Contract](./docs/retrieval-contract.md) - How retrieval works
+- [Contributing](./CONTRIBUTING.md) - Development guidelines
+- [Security](./SECURITY.md) - Security policy
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
@@ -357,17 +323,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 Apache 2.0 - See [LICENSE](LICENSE) for details.
 
-## Documentation
-
-- [Plans & Roadmap](plans/index.aps.md)
-- [Architecture Overview](docs/architecture.md) (coming soon)
-- [Data Model](docs/data-model.md) (coming soon)
-- [Retrieval Contract](docs/retrieval-contract.md) (coming soon)
-
-## Planning (APS)
-
-FYI: Kindling uses APS docs for roadmap and module planning. If you want the longer-form planning context, start at [plans/index.aps.md](plans/index.aps.md).
-
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/EddaCraft/kindling/issues)
@@ -375,4 +330,4 @@ FYI: Kindling uses APS docs for roadmap and module planning. If you want the lon
 
 ---
 
-**Built with ❤️ by the EddaCraft team**
+**Built by the [EddaCraft](https://eddacraft.ai) team**

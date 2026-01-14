@@ -1,7 +1,7 @@
 {
   "name": "@kindling/core",
   "version": "0.1.0",
-  "description": "Core domain model and orchestration for Kindling",
+  "description": "Core domain model and orchestration for Kindling - local memory engine for AI-assisted development",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +14,27 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "kindling",
+    "ai",
+    "memory",
+    "context",
+    "llm",
+    "agent",
+    "observations",
+    "capsules",
+    "retrieval"
+  ],
+  "author": "EddaCraft <hello@eddacraft.ai>",
+  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-core"
+  },
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run",

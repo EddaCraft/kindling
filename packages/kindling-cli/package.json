@@ -1,7 +1,7 @@
 {
   "name": "@kindling/cli",
   "version": "0.1.0",
-  "description": "CLI for Kindling inspection, debugging, and export/import",
+  "description": "Command-line interface for Kindling - inspect, search, and manage your local AI memory",
   "type": "module",
   "bin": {
     "kindling": "./dist/cli.js"
@@ -17,6 +17,26 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "kindling",
+    "cli",
+    "command-line",
+    "ai",
+    "memory",
+    "inspection",
+    "debugging",
+    "search"
+  ],
+  "author": "EddaCraft <hello@eddacraft.ai>",
+  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run --passWithNoTests",
