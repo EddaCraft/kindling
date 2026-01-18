@@ -10,6 +10,7 @@ import { statusCommand, formatStatus } from './commands/status.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,8 +27,8 @@ program
   .description('CLI for Kindling inspection, debugging, and export/import')
   .version(packageJson.version);
 
-// Default database path
-const DEFAULT_DB_PATH = process.env.KINDLING_DB || join(process.env.HOME || '~', '.kindling', 'memory.db');
+// Default database path (matches @kindling/store-sqlite default)
+const DEFAULT_DB_PATH = process.env.KINDLING_DB || join(homedir(), '.kindling', 'kindling.db');
 
 program
   .command('status')

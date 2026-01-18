@@ -106,11 +106,11 @@ pnpm publish -r --access public
 
 ## ⚠️ Known Issues
 
-### Circular Dependencies
-There's a circular dependency between `@kindling/core` and `@kindling/store-sqlite`. This is:
-- **Expected** - Core defines interfaces, store implements them
-- **Handled** - pnpm resolves this correctly during publishing
-- **Not a blocker** - Packages will publish and work correctly
+### Dependency Structure
+`@kindling/core` defines interfaces that `@kindling/store-sqlite` and `@kindling/provider-local` implement:
+- **Core is independent** - No runtime dependencies on store or provider
+- **Store/Provider depend on core** - They implement core's interfaces
+- **No circular dependencies** - Clear dependency flow from implementations to core
 
 ### CLI Implementation
 The CLI is minimally functional:
@@ -154,5 +154,5 @@ Before publishing, verify:
 
 **Status**: ✅ All packages are ready for npm publishing
 
-**Prepared**: 2026-01-11
+**Prepared**: 2026-01-18
 **By**: Claude (AI Assistant)

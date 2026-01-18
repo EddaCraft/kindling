@@ -12,7 +12,7 @@ This guide covers how to publish Kindling packages to npm.
 
 Due to dependencies between packages, publish in this order:
 
-### 1. Core Foundation (No dependencies)
+### 1. Core Foundation (No internal dependencies)
 ```bash
 cd packages/kindling-core
 npm publish --access public
@@ -121,12 +121,14 @@ ls package/
 
 ## Troubleshooting
 
-### Circular Dependency Warning
+### Dependency Structure
 
-If you see warnings about circular dependencies between `kindling-core` and `kindling-store-sqlite`:
+The packages have a clear dependency hierarchy:
 
-- This is expected and handled correctly by the dependency graph
-- Publishing in the correct order (core first, then store) resolves this
+- `@kindling/core` has no internal dependencies (defines interfaces)
+- `@kindling/store-sqlite` and `@kindling/provider-local` depend on core
+- Adapters depend on core
+- CLI depends on core and store
 
 ### Workspace Protocol Not Converted
 
