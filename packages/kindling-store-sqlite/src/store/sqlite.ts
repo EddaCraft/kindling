@@ -6,7 +6,7 @@
 
 import type Database from 'better-sqlite3';
 import type { Observation, Capsule, Summary, Pin, ScopeIds } from '@kindling/core';
-import { exportDatabase as exportDB, importDatabase as importDB, type ExportOptions } from './export.js';
+import { exportDatabase as exportDB, importDatabase as importDB, type ExportOptions, type ExportDataset } from './export.js';
 
 /**
  * Evidence snippet with context
@@ -686,7 +686,7 @@ export class SqliteKindlingStore {
    * @param dataset - Dataset to import
    * @returns Import result
    */
-  importDatabase(dataset: any) {
+  importDatabase(dataset: ExportDataset) {
     return importDB(this.db, dataset);
   }
 }

@@ -12,7 +12,7 @@ import type {
   Observation,
   RetrieveOptions,
   OpenCapsuleOptions,
-  CloseCapsuleSignals,
+  CloseCapsuleOptions,
 } from '@kindling/core';
 
 export interface ServerConfig {
@@ -61,7 +61,7 @@ export function createServer(config: ServerConfig): FastifyInstance {
   // Close capsule
   server.post<{
     Params: { id: string };
-    Body: CloseCapsuleSignals;
+    Body: CloseCapsuleOptions;
   }>('/api/capsules/:id/close', async (request) => {
     const capsule = service.closeCapsule(request.params.id, request.body);
     return capsule;

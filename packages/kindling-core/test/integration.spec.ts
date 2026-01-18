@@ -4,7 +4,7 @@
  * Tests end-to-end workflows using the service API
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { KindlingService } from '../src/service/kindling-service.js';
 import { SqliteKindlingStore } from '../../kindling-store-sqlite/src/store/sqlite.js';
@@ -22,6 +22,10 @@ describe('KindlingService Integration', () => {
     const store = new SqliteKindlingStore(db);
     const provider = new LocalFtsProvider(db);
     service = new KindlingService({ store, provider });
+  });
+
+  afterEach(() => {
+    db.close();
   });
 
   it('should complete a full session workflow', async () => {

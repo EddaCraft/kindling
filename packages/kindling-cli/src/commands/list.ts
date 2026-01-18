@@ -26,16 +26,27 @@ export async function listCommand(entity: string, options: ListOptions): Promise
 
     switch (entity.toLowerCase()) {
       case 'capsules': {
+        const conditions: string[] = [];
+        const params: (string | number)[] = [];
+
+        if (options.session) {
+          conditions.push("json_extract(scope_ids, '$.sessionId') = ?");
+          params.push(options.session);
+        }
+        if (options.repo) {
+          conditions.push("json_extract(scope_ids, '$.repoId') = ?");
+          params.push(options.repo);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
         const query = `
           SELECT id, type, intent, status, opened_at, closed_at, scope_ids
           FROM capsules
-          ${options.session ? 'WHERE json_extract(scope_ids, \'$.sessionId\') = ?' : ''}
-          ${options.repo && !options.session ? 'WHERE json_extract(scope_ids, \'$.repoId\') = ?' : ''}
-          ${options.repo && options.session ? 'AND json_extract(scope_ids, \'$.repoId\') = ?' : ''}
+          ${whereClause}
           ORDER BY opened_at DESC
           LIMIT ?
         `;
-        const params = [options.session, options.repo, limit].filter(Boolean);
+        params.push(limit);
         results = db.prepare(query).all(...params) as any[];
         break;
       }
@@ -46,16 +57,27 @@ export async function listCommand(entity: string, options: ListOptions): Promise
       }
 
       case 'observations': {
+        const conditions: string[] = [];
+        const params: (string | number)[] = [];
+
+        if (options.session) {
+          conditions.push("json_extract(scope_ids, '$.sessionId') = ?");
+          params.push(options.session);
+        }
+        if (options.repo) {
+          conditions.push("json_extract(scope_ids, '$.repoId') = ?");
+          params.push(options.repo);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
         const query = `
           SELECT id, kind, content, ts, scope_ids, redacted
           FROM observations
-          ${options.session ? 'WHERE json_extract(scope_ids, \'$.sessionId\') = ?' : ''}
-          ${options.repo && !options.session ? 'WHERE json_extract(scope_ids, \'$.repoId\') = ?' : ''}
-          ${options.repo && options.session ? 'AND json_extract(scope_ids, \'$.repoId\') = ?' : ''}
+          ${whereClause}
           ORDER BY ts DESC
           LIMIT ?
         `;
-        const params = [options.session, options.repo, limit].filter(Boolean);
+        params.push(limit);
         results = db.prepare(query).all(...params) as any[];
         break;
       }

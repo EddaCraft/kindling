@@ -48,7 +48,7 @@ export interface KindlingStore extends RetrievalStore, ExportStore, ImportStore 
   insertObservation(observation: Observation): void;
   createCapsule(capsule: Capsule): void;
   closeCapsule(capsuleId: ID, closedAt?: number): void;
-  attachObservationToCapsule(observationId: ID, capsuleId: ID): void;
+  attachObservationToCapsule(capsuleId: ID, observationId: ID): void;
   createSummary(summary: Summary): void;
   createPin(pin: Pin): void;
   removePin(pinId: ID): void;
@@ -146,7 +146,7 @@ export class KindlingService {
     // Generate summary if requested
     if (options?.generateSummary && options.summaryContent) {
       const summary: Summary = {
-        id: `sum_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `sum_${crypto.randomUUID()}`,
         capsuleId,
         content: options.summaryContent,
         confidence: options.confidence ?? 1.0,
@@ -212,7 +212,7 @@ export class KindlingService {
    */
   pin(options: CreatePinOptions): Pin {
     const pin: Pin = {
-      id: `pin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `pin_${crypto.randomUUID()}`,
       targetType: options.targetType,
       targetId: options.targetId,
       reason: options.note,
