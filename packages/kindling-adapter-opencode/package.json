@@ -34,12 +34,14 @@
   "bugs": {
     "url": "https://github.com/EddaCraft/kindling/issues"
   },
+  "license": "Apache-2.0",
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@kindling/core": "workspace:*"
@@ -49,5 +51,7 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "license": "Apache-2.0"
+  "publishConfig": {
+    "access": "public"
+  }
 }

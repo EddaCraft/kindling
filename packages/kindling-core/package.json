@@ -35,21 +35,21 @@
   "bugs": {
     "url": "https://github.com/EddaCraft/kindling/issues"
   },
+  "license": "Apache-2.0",
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "@kindling/store-sqlite": "workspace:*",
-    "@kindling/provider-local": "workspace:*"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "license": "Apache-2.0"
+  "publishConfig": {
+    "access": "public"
+  }
 }
