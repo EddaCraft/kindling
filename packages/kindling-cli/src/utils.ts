@@ -60,16 +60,24 @@ export function formatJson(data: any, pretty = false): string {
 }
 
 /**
- * Handle command errors
+ * Format an error for display
  */
-export function handleError(error: unknown, asJson = false): void {
+export function formatError(error: unknown, asJson = false): string {
   const message = error instanceof Error ? error.message : String(error);
+  return asJson ? formatJson({ error: message }) : `Error: ${message}`;
+}
 
-  if (asJson) {
-    console.error(formatJson({ error: message }));
-  } else {
-    console.error(`Error: ${message}`);
+/**
+ * Handle command errors
+ *
+ * @param error - Error to handle
+ * @param asJson - Format as JSON
+ * @param exit - Whether to call process.exit (default: true)
+ */
+export function handleError(error: unknown, asJson = false, exit = true): void {
+  console.error(formatError(error, asJson));
+
+  if (exit) {
+    process.exit(1);
   }
-
-  process.exit(1);
 }
