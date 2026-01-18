@@ -169,6 +169,16 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Tags:** adapter, framework, integration
 * **Dependencies:** kindling-core
 
+### npm-publishing
+
+* **Path:** ./modules/npm-publishing.aps.md
+* **Scope:** NPM
+* **Owner:** @aneki
+* **Status:** Planned
+* **Priority:** high
+* **Tags:** npm, publishing, release, oss
+* **Dependencies:** (all packages)
+
 ---
 
 ## Decisions

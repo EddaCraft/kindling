@@ -1,26 +1,7 @@
 {
   "name": "@kindling/adapter-opencode",
   "version": "0.1.0",
-  "description": "OpenCode adapter for Kindling",
-  "keywords": [
-    "opencode",
-    "adapter",
-    "session",
-    "kindling",
-    "ai",
-    "capture"
-  ],
-  "homepage": "https://github.com/EddaCraft/kindling#readme",
-  "bugs": {
-    "url": "https://github.com/EddaCraft/kindling/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/EddaCraft/kindling.git",
-    "directory": "packages/kindling-adapter-opencode"
-  },
-  "license": "Apache-2.0",
-  "author": "EddaCraft",
+  "description": "OpenCode session adapter for Kindling - capture tool calls, commands, and file changes from AI coding sessions",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,6 +14,27 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "kindling",
+    "opencode",
+    "adapter",
+    "session",
+    "ai",
+    "coding",
+    "tool-calls",
+    "memory"
+  ],
+  "author": "EddaCraft <hello@eddacraft.ai>",
+  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-adapter-opencode#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-adapter-opencode"
+  },
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
+  "license": "Apache-2.0",
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run",

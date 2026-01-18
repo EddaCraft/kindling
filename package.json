@@ -2,10 +2,28 @@
   "name": "kindling-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "Lightweight local memory and contextual continuity for agentic workflows",
+  "description": "Local memory and continuity engine for AI-assisted development",
+  "keywords": [
+    "ai",
+    "memory",
+    "context",
+    "llm",
+    "agent",
+    "continuity",
+    "local-first",
+    "sqlite",
+    "fts",
+    "opencode",
+    "pocketflow"
+  ],
+  "author": "EddaCraft <hello@eddacraft.ai>",
+  "homepage": "https://github.com/EddaCraft/kindling#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/EddaCraft/kindling.git"
+    "url": "git+https://github.com/EddaCraft/kindling.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
   },
   "license": "Apache-2.0",
   "engines": {

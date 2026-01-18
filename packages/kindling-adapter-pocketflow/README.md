@@ -1,6 +1,9 @@
 # @kindling/adapter-pocketflow
 
-PocketFlow adapter for Kindling - captures workflow executions with intent and confidence.
+PocketFlow workflow adapter for Kindling - capture node executions with intent and confidence.
+
+[![npm version](https://img.shields.io/npm/v/@kindling/adapter-pocketflow.svg)](https://www.npmjs.com/package/@kindling/adapter-pocketflow)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
@@ -10,286 +13,144 @@ npm install @kindling/adapter-pocketflow
 
 ## Overview
 
-`@kindling/adapter-pocketflow` integrates PocketFlow workflow nodes with Kindling's memory system. It automatically captures workflow executions, determines intent from node names, and calculates confidence based on success patterns.
+`@kindling/adapter-pocketflow` integrates Kindling with PocketFlow workflows:
 
-## Features
-
-- **Automatic Capsule Creation** - Each workflow node execution creates a capsule
-- **Intent Detection** - Infers intent (test, build, deploy, etc.) from node names
-- **Confidence Calculation** - Tracks success history to compute confidence scores
-- **High-Signal Filtering** - Captures meaningful workflow events only
-- **Provenance Tracking** - Full workflow context preserved
+- **Node-Level Capsules** - Each node execution creates a capsule
+- **Automatic Capture** - Records `node_start`, `node_output`, `node_error`, `node_end` events
+- **Intent Inference** - Derives capsule intent from node names
+- **Confidence Tracking** - Records success/failure confidence
 
 ## Usage
 
-### Basic Integration
+### Node Adapter
 
 ```typescript
 import { NodeAdapter, NodeStatus } from '@kindling/adapter-pocketflow';
-import { KindlingService } from '@kindling/core';
+import { SqliteKindlingStore } from '@kindling/store-sqlite';
 
-// Initialize adapter
+const store = new SqliteKindlingStore(db);
 const adapter = new NodeAdapter({
-  service: kindlingService,
+  store,
   repoId: '/home/user/my-project',
 });
 
-// Node execution starts
+// When a node starts
 adapter.onNodeStart({
   node: { id: 'test-1', name: 'run-integration-tests' },
   status: NodeStatus.Running,
-  timestamp: Date.now(),
+  input: { testPattern: '**/*.test.ts' },
 });
 
-// Node produces output
+// When a node produces output
 adapter.onNodeOutput({
   node: { id: 'test-1', name: 'run-integration-tests' },
-  output: { passed: 42, failed: 0, duration: '12.5s' },
-  timestamp: Date.now(),
+  output: { passed: 42, failed: 0 },
 });
 
-// Node execution completes
+// When a node ends
 adapter.onNodeEnd({
   node: { id: 'test-1', name: 'run-integration-tests' },
   status: NodeStatus.Success,
-  timestamp: Date.now(),
+  output: { passed: 42, failed: 0, duration: 3500 },
 });
 ```
 
-### Handling Errors
+### Flow Integration
 
 ```typescript
-// Node error
-adapter.onNodeError({
-  node: { id: 'deploy-1', name: 'deploy-to-staging' },
-  error: {
-    message: 'Connection timeout',
-    stack: 'Error: Connection timeout\n  at deploy.ts:42',
-  },
-  timestamp: Date.now(),
-});
+import { KindlingFlow, KindlingNode } from '@kindling/adapter-pocketflow';
 
-// Node ends with failure
-adapter.onNodeEnd({
-  node: { id: 'deploy-1', name: 'deploy-to-staging' },
-  status: NodeStatus.Failed,
-  timestamp: Date.now(),
-});
-```
-
-## Intent Detection
-
-The adapter automatically detects intent from node names:
-
-### Test Intent
-Patterns: `test`, `spec`, `jest`, `vitest`, `pytest`, `check`
-
-```typescript
-// Detected as intent: 'test'
-{ node: { name: 'run-unit-tests' } }
-{ node: { name: 'integration-spec' } }
-{ node: { name: 'pytest-validation' } }
-```
-
-### Build Intent
-Patterns: `build`, `compile`, `bundle`, `webpack`, `tsc`
-
-```typescript
-// Detected as intent: 'build'
-{ node: { name: 'build-production' } }
-{ node: { name: 'compile-typescript' } }
-{ node: { name: 'webpack-bundle' } }
-```
-
-### Deploy Intent
-Patterns: `deploy`, `release`, `publish`, `ship`
-
-```typescript
-// Detected as intent: 'deploy'
-{ node: { name: 'deploy-to-production' } }
-{ node: { name: 'publish-package' } }
-{ node: { name: 'ship-release' } }
-```
-
-### Lint Intent
-Patterns: `lint`, `format`, `prettier`, `eslint`
-
-```typescript
-// Detected as intent: 'lint'
-{ node: { name: 'run-eslint' } }
-{ node: { name: 'format-check' } }
-```
-
-### Debug Intent
-Patterns: `debug`, `investigate`, `diagnose`, `trace`
-
-```typescript
-// Detected as intent: 'debug'
-{ node: { name: 'debug-memory-leak' } }
-{ node: { name: 'trace-performance' } }
-```
-
-### Default Intent
-If no pattern matches, intent is set to `'workflow'`.
-
-## Confidence Calculation
-
-Confidence is calculated based on historical success rates for similar workflows:
-
-### Success Tracking
-- **Success**: Node completes with `NodeStatus.Success`
-- **Failure**: Node completes with `NodeStatus.Failed` or has errors
-
-### Confidence Formula
-
-```
-confidence = successCount / totalCount
-```
-
-- **High confidence (0.8+)**: Reliable, well-tested workflow
-- **Medium confidence (0.5-0.8)**: Somewhat reliable
-- **Low confidence (<0.5)**: Unreliable or new workflow
-
-### Example
-
-```typescript
-// First run: no history, confidence = 0.5 (default)
-adapter.onNodeEnd({
-  node: { name: 'deploy-app' },
-  status: NodeStatus.Success,
-});
-// confidence = 0.5
-
-// Second run: 1 success, confidence increases
-adapter.onNodeEnd({
-  node: { name: 'deploy-app' },
-  status: NodeStatus.Success,
-});
-// confidence = 0.75
-
-// Third run: success again
-adapter.onNodeEnd({
-  node: { name: 'deploy-app' },
-  status: NodeStatus.Success,
-});
-// confidence = 0.9
-```
-
-## Captured Observations
-
-The adapter captures these observation types:
-
-### NodeStart
-When workflow node execution begins.
-
-```typescript
-{
-  kind: ObservationKind.NodeStart,
-  content: 'run-integration-tests',
-  provenance: {
-    nodeId: 'test-1',
-    nodeName: 'run-integration-tests',
-    status: NodeStatus.Running,
-  },
+// Extend KindlingNode for automatic capture
+class MyTestNode extends KindlingNode {
+  async exec(input: TestInput): Promise<TestOutput> {
+    const results = await runTests(input.pattern);
+    return { passed: results.passed, failed: results.failed };
+  }
 }
+
+// Create a flow
+const flow = new KindlingFlow({
+  store,
+  repoId: '/repo',
+});
+
+flow.addNode('test', new MyTestNode());
+flow.addNode('deploy', new DeployNode());
+flow.connect('test', 'deploy', 'success');
+
+// Run the flow (capsules created automatically)
+await flow.run({ pattern: '**/*.test.ts' });
 ```
 
-### NodeOutput
-When workflow node produces output.
+## Captured Events
+
+| Event | When | Content |
+|-------|------|---------|
+| `node_start` | Node begins execution | Node ID, name, input |
+| `node_output` | Node produces output | Output data |
+| `node_error` | Node throws error | Error message, stack |
+| `node_end` | Node completes | Final status, output, duration |
+
+## Intent Inference
+
+Node names are parsed to infer capsule intent:
+
+| Node Name | Inferred Intent |
+|-----------|-----------------|
+| `run-tests` | `test` |
+| `build-app` | `build` |
+| `deploy-production` | `deploy` |
+| `fix-auth-bug` | `debug` |
+| `implement-feature` | `implement` |
+
+## Confidence Scoring
+
+Confidence is tracked based on node success/failure history:
 
 ```typescript
-{
-  kind: ObservationKind.NodeOutput,
-  content: JSON.stringify(output),
-  provenance: {
-    nodeId: 'test-1',
-    nodeName: 'run-integration-tests',
-    output: { passed: 42, failed: 0 },
-  },
-}
-```
+// First run: neutral confidence
+{ confidence: 0.5 }
 
-### NodeError
-When workflow node encounters an error.
+// Consistent success: higher confidence
+{ confidence: 0.85 }
 
-```typescript
-{
-  kind: ObservationKind.NodeError,
-  content: 'Connection timeout',
-  provenance: {
-    nodeId: 'deploy-1',
-    nodeName: 'deploy-to-staging',
-    error: { message: '...', stack: '...' },
-  },
-}
-```
-
-### NodeEnd
-When workflow node execution completes.
-
-```typescript
-{
-  kind: ObservationKind.NodeEnd,
-  content: 'run-integration-tests completed: Success',
-  provenance: {
-    nodeId: 'test-1',
-    nodeName: 'run-integration-tests',
-    status: NodeStatus.Success,
-    confidence: 0.9,
-  },
-}
-```
-
-## Capsule Lifecycle
-
-Each workflow node execution creates a capsule:
-
-1. **onNodeStart** - Opens a capsule with detected intent
-2. **onNodeOutput/onNodeError** - Appends observations to capsule
-3. **onNodeEnd** - Closes capsule with summary and confidence
-
-### Summary Generation
-
-On capsule close, a summary observation is automatically created:
-
-```typescript
-{
-  kind: ObservationKind.Message,
-  content: 'Workflow: run-integration-tests (Success)',
-  provenance: {
-    confidence: 0.9,
-    intent: 'test',
-    status: NodeStatus.Success,
-  },
-}
+// Recent failures: lower confidence
+{ confidence: 0.3 }
 ```
 
 ## Configuration
 
-### Adapter Options
-
 ```typescript
 interface NodeAdapterOptions {
-  service: KindlingService;  // Kindling service instance
-  repoId: string;            // Repository identifier
-  agentId?: string;          // Optional agent identifier
-  userId?: string;           // Optional user identifier
+  store: KindlingStore;
+  repoId: string;
+  agentId?: string;
+  userId?: string;
+  
+  // Intent inference
+  intentMapping?: Record<string, string>;
+  
+  // Confidence tracking
+  confidenceWindow?: number;  // Default: 10 runs
 }
 ```
 
-## Privacy & Filtering
+## PocketFlow Concepts
 
-The adapter respects safety filters:
+PocketFlow is a minimalist workflow framework:
 
-- **Large outputs** are truncated to prevent excessive storage
-- **Sensitive data** in output is automatically redacted (if configured)
-- **Failed nodes** are still captured for debugging
+- **Node** - `prep -> exec -> post` lifecycle
+- **Flow** - Orchestrates nodes via action-based transitions
+- **Shared Store** - Global state accessible by all nodes
+- **BatchNode/BatchFlow** - Process arrays of items
+
+See the [PocketFlow documentation](./vendor/pocketflow/docs/) for details.
 
 ## Related Packages
 
-- **[@kindling/core](../kindling-core)** - Core domain model
-- **[@kindling/adapter-opencode](../kindling-adapter-opencode)** - OpenCode integration
-- **[@kindling/cli](../kindling-cli)** - CLI for inspection
+- [`@kindling/core`](../kindling-core) - Domain types and capsule lifecycle
+- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite persistence
+- [`@kindling/adapter-opencode`](../kindling-adapter-opencode) - OpenCode session adapter
 
 ## License
 

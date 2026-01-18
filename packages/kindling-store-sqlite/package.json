@@ -1,27 +1,7 @@
 {
   "name": "@kindling/store-sqlite",
   "version": "0.1.0",
-  "description": "SQLite-based system of record for Kindling",
-  "keywords": [
-    "sqlite",
-    "storage",
-    "persistence",
-    "database",
-    "kindling",
-    "local-first",
-    "fts"
-  ],
-  "homepage": "https://github.com/EddaCraft/kindling#readme",
-  "bugs": {
-    "url": "https://github.com/EddaCraft/kindling/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/EddaCraft/kindling.git",
-    "directory": "packages/kindling-store-sqlite"
-  },
-  "license": "Apache-2.0",
-  "author": "EddaCraft",
+  "description": "SQLite persistence layer for Kindling with FTS5 full-text search and WAL mode",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -35,6 +15,27 @@
     "dist",
     "migrations"
   ],
+  "keywords": [
+    "kindling",
+    "sqlite",
+    "fts5",
+    "full-text-search",
+    "persistence",
+    "storage",
+    "better-sqlite3",
+    "local-first"
+  ],
+  "author": "EddaCraft <hello@eddacraft.ai>",
+  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-store-sqlite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EddaCraft/kindling.git",
+    "directory": "packages/kindling-store-sqlite"
+  },
+  "bugs": {
+    "url": "https://github.com/EddaCraft/kindling/issues"
+  },
+  "license": "Apache-2.0",
   "scripts": {
     "build": "tsc --build",
     "test": "vitest run",

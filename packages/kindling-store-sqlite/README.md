@@ -1,6 +1,9 @@
 # @kindling/store-sqlite
 
-SQLite-based system of record for Kindling with full-text search indexing.
+SQLite persistence layer for Kindling with FTS5 full-text search and WAL mode.
+
+[![npm version](https://img.shields.io/npm/v/@kindling/store-sqlite.svg)](https://www.npmjs.com/package/@kindling/store-sqlite)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
@@ -10,178 +13,140 @@ npm install @kindling/store-sqlite
 
 ## Overview
 
-`@kindling/store-sqlite` provides a durable, local-first storage layer for Kindling using SQLite with WAL mode and FTS5 full-text search. It implements the `KindlingStore` contract defined in `@kindling/core`.
+`@kindling/store-sqlite` provides the persistence layer for Kindling using embedded SQLite:
 
-## Features
-
-- **Embedded SQLite** with WAL mode for concurrent reads
-- **FTS5 Full-Text Search** for content indexing
-- **Schema Migrations** for version upgrades
-- **Transaction Support** for atomic operations
-- **Scoped Queries** by session, repo, agent, user
-- **Deterministic Ordering** by timestamp and sequence
+- **WAL Mode** - Write-ahead logging for concurrent access
+- **FTS5 Indexing** - Full-text search on observations and summaries
+- **Automatic Migrations** - Schema versioning with migration support
+- **Local-First** - No external services required
 
 ## Usage
 
-### Initialize Database
+### Opening a Database
+
+```typescript
+import { openDatabase, closeDatabase } from '@kindling/store-sqlite';
+
+// Open with file path
+const db = openDatabase({ dbPath: './kindling.db' });
+
+// Or use in-memory for testing
+const testDb = openDatabase({ dbPath: ':memory:' });
+
+// Close when done
+closeDatabase(db);
+```
+
+### Using the Store
 
 ```typescript
 import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
 
-// Open database file
-const db = openDatabase({ path: './my-memory.db' });
-
-// Or use in-memory database for testing
-const memDb = openDatabase({ path: ':memory:' });
-
-// Create store
+const db = openDatabase({ dbPath: './kindling.db' });
 const store = new SqliteKindlingStore(db);
-```
 
-### Store Operations
-
-```typescript
-import { ObservationKind } from '@kindling/core';
-
-// Insert observation
-const obs = await store.insertObservation({
-  kind: ObservationKind.Command,
-  content: 'npm test',
-  provenance: { command: 'npm test', exitCode: 0 },
-  scope: { sessionId: 'session-1' },
-  capsuleId: 'capsule-123',
+// Insert an observation
+store.insertObservation({
+  id: 'obs-1',
+  kind: 'tool_call',
+  content: 'Read file src/auth.ts',
+  provenance: { toolName: 'read_file', path: 'src/auth.ts' },
+  ts: Date.now(),
+  scopeIds: { sessionId: 's1', repoId: '/repo' },
+  redacted: false,
 });
 
 // Query observations
-const observations = await store.queryObservations({
-  scope: { sessionId: 'session-1' },
-  limit: 50,
+const observations = store.getObservations({
+  scopeIds: { sessionId: 's1' },
+  limit: 100,
 });
+
+// Insert a capsule
+store.insertCapsule({
+  id: 'cap-1',
+  type: 'session',
+  intent: 'Fix authentication bug',
+  status: 'open',
+  openedAt: Date.now(),
+  scopeIds: { sessionId: 's1', repoId: '/repo' },
+  observationIds: [],
+});
+
+// Attach observation to capsule
+store.attachObservation('cap-1', 'obs-1');
 
 // Full-text search
-const results = await store.searchObservations({
-  query: 'authentication error',
-  scope: { sessionId: 'session-1' },
+const results = store.searchObservations({
+  query: 'authentication',
+  scopeIds: { repoId: '/repo' },
+  limit: 50,
 });
 ```
 
-### Capsule Management
+### Migrations
+
+Migrations run automatically when opening the database:
 
 ```typescript
-import { CapsuleType } from '@kindling/core';
+import { openDatabase, getMigrationStatus } from '@kindling/store-sqlite';
 
-// Create capsule
-const capsule = await store.insertCapsule({
-  type: CapsuleType.Session,
-  intent: 'debug',
-  scope: { sessionId: 'session-1', repoId: 'my-project' },
-  openedAt: Date.now(),
-});
+const db = openDatabase({ dbPath: './kindling.db' });
 
-// Close capsule with summary
-await store.closeCapsule(capsule.id, {
-  closedAt: Date.now(),
-  summaryObservationId: summaryObs.id,
-});
-
-// Query capsules
-const capsules = await store.queryCapsules({
-  scope: { sessionId: 'session-1' },
-  open: false,
-});
+// Check migration status
+const status = getMigrationStatus(db);
+console.log('Current version:', status.currentVersion);
+console.log('Pending migrations:', status.pending);
 ```
 
-### Pin Management
+### Export/Import
 
 ```typescript
-// Pin an observation for priority retrieval
-const pin = await store.insertPin({
-  targetType: 'observation',
-  targetId: obs.id,
-  note: 'Root cause of production outage',
-  ttlMs: 7 * 24 * 60 * 60 * 1000, // 1 week
+import { exportDatabase, importBundle } from '@kindling/store-sqlite';
+
+// Export all data
+const bundle = exportDatabase(db, {
+  scopeIds: { repoId: '/repo' },
 });
 
-// List pins
-const pins = await store.queryPins({
-  scope: { sessionId: 'session-1' },
-});
-
-// Remove pin
-await store.deletePin(pin.id);
+// Import into another database
+importBundle(targetDb, bundle);
 ```
 
 ## Database Schema
 
-The store maintains several tables:
+The store manages these tables:
 
-- **observations** - Atomic units of context
-- **capsules** - Bounded groups of observations
-- **pins** - User-controlled priority content
-- **observations_fts** - Full-text search index
-
-Indexes are created for efficient querying by:
-- Scope (sessionId, repoId, agentId, userId)
-- Timestamp and sequence
-- Capsule membership
-- Pin status
-
-## Migrations
-
-The store includes a migration system for schema upgrades. Migrations are stored in the `migrations/` directory and applied automatically on database initialization.
-
-### Custom Migrations
-
-You can check the current schema version and apply migrations manually:
-
-```typescript
-import { getMigrations, applyMigrations } from '@kindling/store-sqlite';
-
-const migrations = getMigrations();
-applyMigrations(db, migrations);
-```
+| Table | Purpose |
+|-------|---------|
+| `observations` | Atomic event records |
+| `observations_fts` | FTS5 index for observation content |
+| `capsules` | Bounded units of meaning |
+| `capsule_observations` | Join table with ordering |
+| `summaries` | Capsule summaries |
+| `summaries_fts` | FTS5 index for summary content |
+| `pins` | User-marked important items |
+| `schema_migrations` | Migration version tracking |
 
 ## Configuration
 
-### Database Options
-
 ```typescript
 interface DatabaseOptions {
-  path?: string;           // Path to database file (defaults to ~/.kindling/kindling.db)
-  verbose?: boolean;       // Enable SQL query logging
+  dbPath: string;           // File path or ':memory:'
+  walMode?: boolean;        // Enable WAL mode (default: true)
+  busyTimeout?: number;     // Busy timeout in ms (default: 5000)
 }
 ```
 
-### Performance Tuning
+## Requirements
 
-The store uses recommended SQLite settings for performance:
-
-- **WAL mode** - Write-Ahead Logging for concurrent reads
-- **NORMAL synchronous** - Balance between safety and speed
-- **1GB cache size** - In-memory page cache
-- **Memory-mapped I/O** - Fast file access
-
-## Data Storage
-
-All data is stored locally in a single SQLite database file. The database:
-
-- **Is portable** - Copy the file to back up or transfer
-- **Has no external dependencies** - Fully self-contained
-- **Supports concurrent access** - Multiple readers, single writer
-- **Is queryable with SQL** - Use standard SQLite tools for inspection
-
-## Privacy & Security
-
-- **Local-only** - No network access, no external services
-- **User-controlled** - You own and control your data
-- **Redactable** - Observations can be updated or deleted
-- **Portable** - Export/import support for data migration
+- Node.js >= 20.0.0
+- SQLite support via `better-sqlite3`
 
 ## Related Packages
 
-- **[@kindling/core](../kindling-core)** - Core domain model
-- **[@kindling/provider-local](../kindling-provider-local)** - FTS-based retrieval
-- **[@kindling/cli](../kindling-cli)** - CLI for inspection
+- [`@kindling/core`](../kindling-core) - Domain types and interfaces
+- [`@kindling/provider-local`](../kindling-provider-local) - FTS retrieval using this store
 
 ## License
 

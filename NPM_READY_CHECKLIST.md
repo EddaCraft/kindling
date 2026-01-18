@@ -146,13 +146,29 @@ Before publishing, verify:
 ## 📚 Resources
 
 - [PUBLISHING.md](PUBLISHING.md) - Complete publishing guide
+- [plans/modules/npm-publishing.aps.md](plans/modules/npm-publishing.aps.md) - APS planning module
 - [npm documentation](https://docs.npmjs.com/)
 - [pnpm publishing](https://pnpm.io/cli/publish)
 - [Semantic Versioning](https://semver.org/)
+
+## 📋 APS Planning Documentation
+
+Detailed planning documentation is available in the APS format:
+
+**Module:** [plans/modules/npm-publishing.aps.md](plans/modules/npm-publishing.aps.md)
+
+**Execution Steps:**
+- [NPM-001](plans/execution/NPM-001.steps.md) - Package metadata
+- [NPM-002](plans/execution/NPM-002.steps.md) - Package READMEs
+- [NPM-003](plans/execution/NPM-003.steps.md) - CHANGELOG.md
+- [NPM-004](plans/execution/NPM-004.steps.md) - Publish scripts & .npmrc
+- [NPM-005](plans/execution/NPM-005.steps.md) - GitHub Actions workflow
+- [NPM-006](plans/execution/NPM-006.steps.md) - CLI executable verification
 
 ---
 
 **Status**: ✅ All packages are ready for npm publishing
 
-**Prepared**: 2026-01-18
+**Prepared**: 2026-01-11
+**Updated**: 2026-01-18
 **By**: Claude (AI Assistant)

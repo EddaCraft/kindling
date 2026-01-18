@@ -1,299 +1,176 @@
 # @kindling/cli
 
-Command-line interface for Kindling inspection, debugging, and export/import.
+Command-line interface for Kindling - inspect, search, and manage your local AI memory.
+
+[![npm version](https://img.shields.io/npm/v/@kindling/cli.svg)](https://www.npmjs.com/package/@kindling/cli)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
 ```bash
+# Install globally
 npm install -g @kindling/cli
-```
 
-Or use directly with npx:
-
-```bash
+# Or run via npx
 npx @kindling/cli status
 ```
-
-## Overview
-
-`@kindling/cli` provides a command-line interface for inspecting and managing Kindling databases. Use it to search for context, list entities, manage pins, and export/import data.
 
 ## Commands
 
 ### Status
 
-Show database status and summary.
+Show database status and statistics:
 
 ```bash
 kindling status
+kindling status --db ./custom-path.db
+```
 
-# Example output:
-# Database: /home/user/.kindling/memory.db
-# Observations: 1,234
-# Capsules: 56 (12 open)
-# Pins: 8
+Output:
+```
+Database: /home/user/.kindling/memory.db
+Size: 2.4 MB
+
+Observations: 1,247
+Capsules: 23 (5 open, 18 closed)
+Pins: 8 (3 expired)
+Summaries: 18
 ```
 
 ### Search
 
-Search for observations by query and scope.
+Search for context across observations and summaries:
 
 ```bash
 # Basic search
 kindling search "authentication error"
 
-# Session-scoped search
-kindling search "bug fix" --session session-123
+# Filter by session
+kindling search "auth" --session session-123
 
-# Repo-scoped search
-kindling search "api endpoint" --repo /home/user/my-project
+# Filter by repository
+kindling search "auth" --repo /home/user/my-project
 
 # Limit results
-kindling search "deploy" --limit 10
+kindling search "auth" --limit 20
 
-# Filter by observation kind
-kindling search "test" --kind Command
+# Include redacted observations
+kindling search "auth" --include-redacted
 ```
-
-**Options:**
-- `--session <id>` - Filter by session ID
-- `--repo <path>` - Filter by repository path
-- `--agent <id>` - Filter by agent ID
-- `--user <id>` - Filter by user ID
-- `--kind <type>` - Filter by observation kind
-- `--limit <n>` - Limit number of results (default: 20)
-- `--format <fmt>` - Output format: text, json (default: text)
 
 ### List
 
-List entities in the database.
+List entities in the database:
 
 ```bash
 # List capsules
 kindling list capsules
-kindling list capsules --session session-123
-kindling list capsules --open  # Only open capsules
-
-# List observations
-kindling list observations
-kindling list observations --capsule capsule-123
-kindling list observations --limit 50
+kindling list capsules --status open
+kindling list capsules --type session
 
 # List pins
 kindling list pins
-kindling list pins --session session-123
+kindling list pins --active  # Only non-expired
+
+# List observations
+kindling list observations
+kindling list observations --kind error
+kindling list observations --capsule cap-123
 ```
-
-**Options:**
-- `--session <id>` - Filter by session ID
-- `--repo <path>` - Filter by repository path
-- `--capsule <id>` - Filter by capsule ID
-- `--open` - Only show open capsules
-- `--limit <n>` - Limit results (default: 50)
-- `--format <fmt>` - Output format: text, json (default: text)
-
-### Show
-
-Show details of a specific entity.
-
-```bash
-# Show observation details
-kindling show observation obs_abc123
-
-# Show capsule details
-kindling show capsule cap_xyz789
-
-# Show pin details
-kindling show pin pin_def456
-```
-
-**Options:**
-- `--format <fmt>` - Output format: text, json (default: text)
 
 ### Pin
 
-Pin an observation for priority retrieval.
+Pin important observations or summaries:
 
 ```bash
 # Pin an observation
 kindling pin observation obs_abc123 --note "Root cause identified"
 
-# Pin with TTL (time-to-live)
-kindling pin observation obs_def456 --note "Important fix" --ttl 7d
+# Pin with TTL (expires in 7 days)
+kindling pin observation obs_abc123 --ttl 7d
 
-# Pin a capsule summary
-kindling pin capsule cap_xyz789 --note "Critical debugging session"
+# Pin a summary
+kindling pin summary sum_xyz789 --note "Key architecture decision"
 ```
-
-**Options:**
-- `--note <text>` - Pin note/description
-- `--ttl <duration>` - Time-to-live (e.g., 1h, 7d, 30d)
-
-**TTL Format:**
-- `1h`, `2h`, etc. - Hours
-- `1d`, `7d`, etc. - Days
-- `1w`, `4w`, etc. - Weeks
-- `1m`, `6m`, etc. - Months
 
 ### Unpin
 
-Remove a pin.
+Remove a pin:
 
 ```bash
-kindling unpin pin_abc123
+kindling unpin pin_xyz789
+```
+
+### Inspect
+
+View details of an entity:
+
+```bash
+kindling inspect observation obs_abc123
+kindling inspect capsule cap_xyz789
+kindling inspect summary sum_123
 ```
 
 ### Export
 
-Export database contents to a file.
+Export data for backup or transfer:
 
 ```bash
-# Export entire database
-kindling export backup.json
+# Export all data
+kindling export ./backup.json
 
-# Export specific session
-kindling export session-backup.json --session session-123
-
-# Export specific repo
-kindling export repo-backup.json --repo /home/user/my-project
-
-# Export with compression
-kindling export backup.json.gz
+# Export scoped data
+kindling export ./backup.json --repo /home/user/my-project
+kindling export ./backup.json --session session-123
 ```
-
-**Options:**
-- `--session <id>` - Export specific session
-- `--repo <path>` - Export specific repo
-- `--format <fmt>` - Export format: json, jsonl (default: json)
 
 ### Import
 
-Import database contents from a file.
+Import data from a backup:
 
 ```bash
-# Import from file
-kindling import backup.json
-
-# Import with merge (skip conflicts)
-kindling import backup.json --merge
-
-# Import compressed file
-kindling import backup.json.gz
+kindling import ./backup.json
 ```
-
-**Options:**
-- `--merge` - Skip existing entries instead of failing
-- `--force` - Overwrite existing entries
 
 ## Configuration
 
-### Database Location
+The CLI uses these default paths:
 
-By default, the CLI looks for the database at:
+| Item | Default Path |
+|------|--------------|
+| Database | `~/.kindling/memory.db` |
+| Config | `~/.kindling/config.json` |
 
-```
-$HOME/.kindling/memory.db
-```
-
-Override with the `--db` flag:
-
-```bash
-kindling status --db /path/to/custom.db
-```
-
-Or set the `KINDLING_DB` environment variable:
+Override with environment variables:
 
 ```bash
-export KINDLING_DB=/path/to/custom.db
+export KINDLING_DB_PATH=/custom/path/memory.db
 kindling status
 ```
 
-### Output Format
-
-Most commands support `--format` flag:
-
-- `text` - Human-readable output (default)
-- `json` - JSON output for scripting
+Or use the `--db` flag:
 
 ```bash
+kindling status --db ./my-memory.db
+```
+
+## Output Formats
+
+```bash
+# Default (human-readable)
+kindling list capsules
+
 # JSON output
-kindling search "error" --format json | jq '.results[].content'
-```
+kindling list capsules --json
 
-## Examples
-
-### Debug Recent Errors
-
-```bash
-# Find recent errors in current session
-kindling search "error" --session session-123 --kind Error --limit 5
-```
-
-### Inspect Workflow Execution
-
-```bash
-# List capsules for a workflow run
-kindling list capsules --repo /home/user/my-project
-
-# Show specific capsule details
-kindling show capsule cap_workflow_123
-
-# List observations in that capsule
-kindling list observations --capsule cap_workflow_123
-```
-
-### Pin Critical Findings
-
-```bash
-# Pin a critical error for later review
-kindling pin observation obs_critical_error \
-  --note "Production outage root cause" \
-  --ttl 30d
-```
-
-### Export Session for Sharing
-
-```bash
-# Export debugging session for team review
-kindling export debug-session.json --session session-123
-
-# Share the file and others can import it
-kindling import debug-session.json
-```
-
-## Scripting
-
-The CLI is designed for scripting with JSON output:
-
-```bash
-#!/bin/bash
-
-# Find all authentication errors
-errors=$(kindling search "authentication" \
-  --kind Error \
-  --format json \
-  | jq '.results[] | .content')
-
-# Count errors
-count=$(echo "$errors" | wc -l)
-echo "Found $count authentication errors"
-
-# Pin the most recent one
-recent_id=$(kindling search "authentication" \
-  --kind Error \
-  --limit 1 \
-  --format json \
-  | jq -r '.results[0].id')
-
-kindling pin observation "$recent_id" \
-  --note "Latest auth error"
+# Quiet (IDs only)
+kindling list capsules --quiet
 ```
 
 ## Related Packages
 
-- **[@kindling/core](../kindling-core)** - Core domain model
-- **[@kindling/store-sqlite](../kindling-store-sqlite)** - SQLite persistence
-- **[@kindling/provider-local](../kindling-provider-local)** - Local retrieval
+- [`@kindling/core`](../kindling-core) - Domain types
+- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite persistence
 
 ## License
 

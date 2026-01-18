@@ -6,6 +6,7 @@
 
 import type Database from 'better-sqlite3';
 import type { Observation, Capsule, Summary, Pin, ScopeIds } from '@kindling/core';
+import { exportDatabase as exportDB, importDatabase as importDB, type ExportOptions, type ExportDataset } from './export.js';
 
 /**
  * Evidence snippet with context
@@ -575,5 +576,117 @@ export class SqliteKindlingStore {
       scopeIds: JSON.parse(row.scope_ids),
       redacted: row.redacted === 1,
     }));
+  }
+
+  /**
+   * Get capsule by ID
+   * Alias for getCapsuleById for compatibility
+   */
+  getCapsule(capsuleId: string): Capsule | undefined {
+    const query = `
+      SELECT id, type, intent, status, opened_at, closed_at, scope_ids
+      FROM capsules
+      WHERE id = ?
+    `;
+
+    const row = this.db.prepare(query).get(capsuleId) as {
+      id: string;
+      type: string;
+      intent: string;
+      status: string;
+      opened_at: number;
+      closed_at: number | null;
+      scope_ids: string;
+    } | undefined;
+
+    if (!row) return undefined;
+
+    // Get observation IDs
+    const obsIds = this.db.prepare(`
+      SELECT observation_id
+      FROM capsule_observations
+      WHERE capsule_id = ?
+      ORDER BY seq ASC
+    `).all(capsuleId) as Array<{ observation_id: string }>;
+
+    return {
+      id: row.id,
+      type: row.type as Capsule['type'],
+      intent: row.intent,
+      status: row.status as Capsule['status'],
+      openedAt: row.opened_at,
+      closedAt: row.closed_at ?? undefined,
+      scopeIds: JSON.parse(row.scope_ids),
+      observationIds: obsIds.map(o => o.observation_id),
+    };
+  }
+
+  /**
+   * Create summary
+   * Alias for insertSummary for compatibility
+   */
+  createSummary(summary: Summary): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO summaries (id, capsule_id, content, confidence, created_at, evidence_refs)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      summary.id,
+      summary.capsuleId,
+      summary.content,
+      summary.confidence,
+      summary.createdAt,
+      JSON.stringify(summary.evidenceRefs)
+    );
+  }
+
+  /**
+   * Create pin
+   * Alias for insertPin for compatibility
+   */
+  createPin(pin: Pin): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      pin.id,
+      pin.targetType,
+      pin.targetId,
+      pin.reason ?? null,
+      pin.createdAt,
+      pin.expiresAt ?? null,
+      JSON.stringify(pin.scopeIds)
+    );
+  }
+
+  /**
+   * Remove pin
+   * Alias for deletePin for compatibility
+   */
+  removePin(pinId: string): void {
+    this.deletePin(pinId);
+  }
+
+  /**
+   * Export database to dataset
+   *
+   * @param options - Export options
+   * @returns Export dataset
+   */
+  exportDatabase(options?: ExportOptions) {
+    return exportDB(this.db, options);
+  }
+
+  /**
+   * Import dataset into database
+   *
+   * @param dataset - Dataset to import
+   * @returns Import result
+   */
+  importDatabase(dataset: ExportDataset) {
+    return importDB(this.db, dataset);
   }
 }

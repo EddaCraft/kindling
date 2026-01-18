@@ -1,6 +1,9 @@
 # @kindling/core
 
-Core domain model and orchestration for Kindling - local memory and contextual continuity for agentic workflows.
+Core domain model and orchestration for Kindling - local memory engine for AI-assisted development.
+
+[![npm version](https://img.shields.io/npm/v/@kindling/core.svg)](https://www.npmjs.com/package/@kindling/core)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
@@ -10,130 +13,174 @@ npm install @kindling/core
 
 ## Overview
 
-`@kindling/core` provides the foundational types, interfaces, and orchestration logic for the Kindling system. It defines the core concepts of observations, capsules, and retrieval, and coordinates between storage and retrieval providers.
+`@kindling/core` provides the domain types, capsule lifecycle management, and retrieval orchestration for Kindling. It defines the core abstractions that other packages implement:
 
-## Key Concepts
-
-### Observations
-
-Atomic units of captured context with full provenance:
-
-- **ToolCall**: AI tool invocations (Read, Edit, Bash, etc.)
-- **Command**: Shell commands with exit codes and output
-- **FileDiff**: File changes with paths and diffs
-- **Error**: Errors with stack traces
-- **Message**: User/assistant messages
-- **NodeStart/NodeOutput/NodeError/NodeEnd**: Workflow events
-
-### Capsules
-
-Bounded units of meaning that group observations:
-
-- **Session**: Interactive development session
-- **PocketFlowNode**: Single workflow node execution
-- **Custom**: User-defined capsule types
-
-Each capsule tracks:
-- Type and intent (debug, implement, test, etc.)
-- Open/close lifecycle
-- Automatic summary generation
-- Scope (sessionId, repoId, agentId, userId)
-
-### Retrieval Tiers
-
-Deterministic, explainable retrieval with 3 tiers:
-
-1. **Pins** - User-controlled, non-evictable content
-2. **Current Summary** - Active session/capsule context
-3. **Provider Hits** - Ranked FTS results with explainability
+- **Observations** - Atomic records of captured events
+- **Capsules** - Bounded units of meaning that group observations
+- **Summaries** - High-level descriptions of capsule content
+- **Pins** - User-marked important items
+- **Retrieval** - Deterministic, scoped search across all entities
 
 ## Usage
 
 ```typescript
-import { KindlingService, ObservationKind, CapsuleType } from '@kindling/core';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalRetrievalProvider } from '@kindling/provider-local';
+import {
+  // Types
+  Observation,
+  ObservationKind,
+  Capsule,
+  CapsuleType,
+  CapsuleStatus,
+  Summary,
+  Pin,
+  ScopeIds,
+  
+  // Capsule lifecycle
+  CapsuleManager,
+  openCapsule,
+  closeCapsule,
+  
+  // Retrieval
+  RetrieveOptions,
+  RetrieveResult,
+  RetrievalProvider,
+  
+  // Utilities
+  ok,
+  err,
+} from '@kindling/core';
+```
 
-// Initialize service
-const store = new SqliteKindlingStore(db);
-const provider = new LocalRetrievalProvider(store);
-const service = new KindlingService({ store, provider });
+## Core Types
+
+### Observation
+
+An atomic, immutable record of an event:
+
+```typescript
+interface Observation {
+  id: string;
+  kind: ObservationKind;
+  content: string;
+  provenance: Record<string, unknown>;
+  ts: number;
+  scopeIds: ScopeIds;
+  redacted: boolean;
+}
+
+type ObservationKind =
+  | 'tool_call'
+  | 'command'
+  | 'file_diff'
+  | 'error'
+  | 'message'
+  | 'node_start'
+  | 'node_end'
+  | 'node_output'
+  | 'node_error';
+```
+
+### Capsule
+
+A bounded unit that groups related observations:
+
+```typescript
+interface Capsule {
+  id: string;
+  type: CapsuleType;
+  intent: string;
+  status: CapsuleStatus;
+  openedAt: number;
+  closedAt?: number;
+  scopeIds: ScopeIds;
+  observationIds: string[];
+  summaryId?: string;
+}
+
+type CapsuleType = 'session' | 'pocketflow_node';
+type CapsuleStatus = 'open' | 'closed';
+```
+
+### ScopeIds
+
+Multi-dimensional isolation for queries:
+
+```typescript
+interface ScopeIds {
+  sessionId?: string;
+  repoId?: string;
+  agentId?: string;
+  userId?: string;
+}
+```
+
+## Capsule Lifecycle
+
+```typescript
+import { CapsuleManager } from '@kindling/core';
+import { SqliteKindlingStore } from '@kindling/store-sqlite';
+
+const manager = new CapsuleManager(store);
 
 // Open a capsule
-const capsule = service.openCapsule({
-  type: CapsuleType.Session,
-  intent: 'debug',
-  scope: { sessionId: 'session-1', repoId: 'my-project' },
+const capsule = manager.open({
+  type: 'session',
+  intent: 'Fix authentication bug',
+  scopeIds: { sessionId: 's1', repoId: '/repo' },
 });
 
-// Capture observations
-service.appendObservation({
-  kind: ObservationKind.Command,
-  content: 'npm test failed',
-  provenance: { command: 'npm test', exitCode: 1 },
-  scope: { sessionId: 'session-1' },
-}, { capsuleId: capsule.id });
+// Attach observations
+manager.attach(capsule.id, observation);
 
-// Retrieve context
-const results = service.retrieve({
-  query: 'authentication error',
-  scope: { sessionId: 'session-1' },
-});
-
-// Close capsule with summary
-service.closeCapsule(capsule.id, {
-  generateSummary: true,
-  summaryContent: 'Fixed auth bug in token validation',
+// Close with summary
+manager.close(capsule.id, {
+  content: 'Fixed JWT validation',
+  confidence: 0.9,
 });
 ```
 
-## API
+## Retrieval
 
-### KindlingService
+```typescript
+import { RetrieveOptions, RetrieveResult } from '@kindling/core';
 
-Main orchestration service that coordinates storage and retrieval.
+const options: RetrieveOptions = {
+  query: 'authentication',
+  scopeIds: { repoId: '/repo' },
+  tokenBudget: 8000,
+  maxCandidates: 50,
+};
 
-**Methods:**
-- `openCapsule(spec)` - Create and open a new capsule
-- `closeCapsule(id, options)` - Close a capsule with optional summary
-- `appendObservation(obs, options)` - Add an observation to a capsule
-- `retrieve(query)` - Search for relevant context
-- `pin(target)` - Pin content for priority retrieval
-- `unpin(pinId)` - Remove a pin
+// Results are tiered: pins -> summary -> candidates
+const result: RetrieveResult = {
+  pins: [...],           // Non-evictable, user-pinned
+  currentSummary: {...}, // Active capsule summary
+  candidates: [...],     // FTS-ranked results
+  provenance: {...},     // Explains how results were generated
+};
+```
 
-### Types
+## Result Type
 
-**Core types exported:**
-- `Observation` - Base observation interface
-- `Capsule` - Bounded unit of observations
-- `RetrievalResult` - Tiered retrieval results
-- `Pin` - User-controlled priority content
-- `ObservationKind` - Enum of observation types
-- `CapsuleType` - Enum of capsule types
+Kindling uses a Result type for validation:
 
-## Architecture
+```typescript
+import { Result, ok, err } from '@kindling/core';
 
-`@kindling/core` is designed to be storage-agnostic and retrieval-agnostic. It defines contracts (`KindlingStore`, `RetrievalProvider`) that can be implemented by different backends.
-
-**Default implementations:**
-- Storage: `@kindling/store-sqlite` (SQLite with FTS5)
-- Retrieval: `@kindling/provider-local` (FTS-based ranking)
-
-## Design Principles
-
-1. **Capture, Don't Judge** - Preserve what happened without asserting truth
-2. **Deterministic & Explainable** - All results include "why" explanations
-3. **Local-First** - No external services required
-4. **Privacy-Aware** - Redaction support, bounded output
-5. **Provenance Always** - Every piece of context points to concrete evidence
+function validate(input: unknown): Result<Observation> {
+  if (!isValid(input)) {
+    return err({ field: 'content', message: 'Content is required' });
+  }
+  return ok(input as Observation);
+}
+```
 
 ## Related Packages
 
-- **[@kindling/store-sqlite](../kindling-store-sqlite)** - SQLite persistence
-- **[@kindling/provider-local](../kindling-provider-local)** - Local FTS retrieval
-- **[@kindling/adapter-opencode](../kindling-adapter-opencode)** - OpenCode integration
-- **[@kindling/adapter-pocketflow](../kindling-adapter-pocketflow)** - PocketFlow integration
-- **[@kindling/cli](../kindling-cli)** - Command-line tools
+- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite persistence
+- [`@kindling/provider-local`](../kindling-provider-local) - FTS retrieval
+- [`@kindling/adapter-opencode`](../kindling-adapter-opencode) - OpenCode integration
+- [`@kindling/adapter-pocketflow`](../kindling-adapter-pocketflow) - PocketFlow integration
 
 ## License
 
