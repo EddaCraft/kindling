@@ -23,7 +23,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {
-      "@kindling/*": ["./packages/*/src"]
+      "@eddacraft/*": ["./packages/*/src"]
     }
   },
   "exclude": ["node_modules", "dist", "test"]
