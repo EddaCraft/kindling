@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(gh api:*)",
-      "Bash(pnpm run test:*)"
+      "Bash(pnpm run test:*)",
+      "Bash(done)",
+      "Bash(grep:*)"
     ]
   }
 }
