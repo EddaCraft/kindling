@@ -113,13 +113,6 @@ importers:
         version: 1.6.1(@types/node@20.19.27)
 
   packages/kindling-core:
-    dependencies:
-      '@kindling/provider-local':
-        specifier: workspace:*
-        version: link:../kindling-provider-local
-      '@kindling/store-sqlite':
-        specifier: workspace:*
-        version: link:../kindling-store-sqlite
     devDependencies:
       '@types/node':
         specifier: ^20.11.0

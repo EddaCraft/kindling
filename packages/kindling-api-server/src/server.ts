@@ -70,11 +70,13 @@ export function createServer(config: ServerConfig): FastifyInstance {
   // Get capsule
   server.get<{
     Params: { id: string };
-  }>('/api/capsules/:id', async (_request, reply) => {
-    // We'd need to add a getCapsule method to KindlingService
-    // For now, return not implemented
-    reply.code(501);
-    return { error: 'Not implemented yet' };
+  }>('/api/capsules/:id', async (request, reply) => {
+    const capsule = service.getCapsule(request.params.id);
+    if (!capsule) {
+      reply.code(404);
+      return { error: 'Capsule not found' };
+    }
+    return capsule;
   });
 
   // Append observation
