@@ -21,12 +21,14 @@ export type Timestamp = number;
  * - repoId: Isolate by repository path
  * - agentId: Isolate by agent (future)
  * - userId: Isolate by user (future)
+ * - taskId: Link to external task system (e.g., Beads task ID)
  */
 export interface ScopeIds {
   sessionId?: string;
   repoId?: string;
   agentId?: string;
   userId?: string;
+  taskId?: string;
 }
 
 /**
