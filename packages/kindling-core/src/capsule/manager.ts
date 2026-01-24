@@ -97,6 +97,22 @@ export class CapsuleManager implements ICapsuleManager {
   }
 
   /**
+   * Notify that an observation was attached to a capsule
+   *
+   * Updates the cached capsule's observationIds if the capsule is in the cache.
+   *
+   * @param capsuleId - Capsule that received the observation
+   * @param observationId - Observation that was attached
+   */
+  notifyObservationAttached(capsuleId: ID, observationId: ID): void {
+    const cached = this.activeCache.get(capsuleId);
+    if (cached) {
+      // Update the cached capsule's observationIds
+      cached.observationIds.push(observationId);
+    }
+  }
+
+  /**
    * Clear the active capsule cache
    *
    * Useful for testing or manual cache invalidation.

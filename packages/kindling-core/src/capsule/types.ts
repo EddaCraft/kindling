@@ -79,4 +79,14 @@ export interface CapsuleManager {
    * @returns Open capsule or undefined
    */
   getOpen(scopeIds: Partial<ScopeIds>): Capsule | undefined;
+
+  /**
+   * Notify that an observation was attached to a capsule
+   *
+   * Updates any cached capsule state to include the new observation.
+   *
+   * @param capsuleId - Capsule that received the observation
+   * @param observationId - Observation that was attached
+   */
+  notifyObservationAttached(capsuleId: ID, observationId: ID): void;
 }

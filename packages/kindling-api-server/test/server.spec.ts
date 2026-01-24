@@ -116,5 +116,79 @@ describe('Kindling API Server', () => {
       expect(body.id).toBe(created.id);
       expect(body.status).toBe('closed');
     });
+
+    it('should include observationIds after appending observations', async () => {
+      // Create a capsule
+      const createResponse = await server.inject({
+        method: 'POST',
+        url: '/api/capsules',
+        payload: {
+          type: 'session',
+          intent: 'test',
+          scopeIds: { sessionId: 'test-session-3' },
+        },
+      });
+
+      const created = JSON.parse(createResponse.body);
+      expect(created.observationIds).toEqual([]);
+
+      // Append an observation
+      const obs1Response = await server.inject({
+        method: 'POST',
+        url: '/api/observations',
+        payload: {
+          observation: {
+            id: 'obs-1',
+            kind: 'message',
+            content: 'First observation',
+            provenance: {},
+            ts: Date.now(),
+            scopeIds: { sessionId: 'test-session-3' },
+            redacted: false,
+          },
+          capsuleId: created.id,
+        },
+      });
+
+      expect(obs1Response.statusCode).toBe(201);
+
+      // Fetch the capsule - should have the observation
+      const response1 = await server.inject({
+        method: 'GET',
+        url: `/api/capsules/${created.id}`,
+      });
+
+      expect(response1.statusCode).toBe(200);
+      const body1 = JSON.parse(response1.body);
+      expect(body1.observationIds).toEqual(['obs-1']);
+
+      // Append another observation
+      await server.inject({
+        method: 'POST',
+        url: '/api/observations',
+        payload: {
+          observation: {
+            id: 'obs-2',
+            kind: 'command',
+            content: 'Second observation',
+            provenance: { command: 'npm test' },
+            ts: Date.now(),
+            scopeIds: { sessionId: 'test-session-3' },
+            redacted: false,
+          },
+          capsuleId: created.id,
+        },
+      });
+
+      // Fetch the capsule again - should have both observations
+      const response2 = await server.inject({
+        method: 'GET',
+        url: `/api/capsules/${created.id}`,
+      });
+
+      expect(response2.statusCode).toBe(200);
+      const body2 = JSON.parse(response2.body);
+      expect(body2.observationIds).toEqual(['obs-1', 'obs-2']);
+    });
   });
 });

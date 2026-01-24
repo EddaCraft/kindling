@@ -191,6 +191,8 @@ export class KindlingService {
     // Attach to capsule if specified
     if (options?.capsuleId) {
       this.store.attachObservationToCapsule(options.capsuleId, obsToStore.id);
+      // Update the capsule manager's cache
+      this.capsuleManager.notifyObservationAttached(options.capsuleId, obsToStore.id);
     }
   }
 

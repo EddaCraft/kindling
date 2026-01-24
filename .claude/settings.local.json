@@ -4,7 +4,8 @@
       "Bash(gh api:*)",
       "Bash(pnpm run test:*)",
       "Bash(done)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Skill(commit-commands:commit)"
     ]
   }
 }
