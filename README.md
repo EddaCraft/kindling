@@ -27,28 +27,45 @@ Kindling provides **continuity without judgement**. It captures what happened, p
 
 ## Installation
 
+### Node.js (recommended)
+
 ```bash
-# Install the core package
-npm install @kindling/core
+# npm
+npm install @kindling/core @kindling/store-sqlite @kindling/provider-local
 
-# Install the SQLite store
-npm install @kindling/store-sqlite
+# pnpm
+pnpm add @kindling/core @kindling/store-sqlite @kindling/provider-local
 
-# Install the local retrieval provider
-npm install @kindling/provider-local
+# yarn
+yarn add @kindling/core @kindling/store-sqlite @kindling/provider-local
+```
+
+### Browser (WASM)
+
+For browser environments, use `@kindling/store-sqljs` instead of `@kindling/store-sqlite`:
+
+```bash
+# npm
+npm install @kindling/core @kindling/store-sqljs @kindling/provider-local
+
+# pnpm
+pnpm add @kindling/core @kindling/store-sqljs @kindling/provider-local
+
+# yarn
+yarn add @kindling/core @kindling/store-sqljs @kindling/provider-local
 ```
 
 ### Optional packages
 
 ```bash
 # OpenCode session adapter
-npm install @kindling/adapter-opencode
+npm install @kindling/adapter-opencode    # or: pnpm add / yarn add
 
 # PocketFlow workflow adapter
-npm install @kindling/adapter-pocketflow
+npm install @kindling/adapter-pocketflow  # or: pnpm add / yarn add
 
-# CLI tools
-npm install -g @kindling/cli
+# CLI tools (global install)
+npm install -g @kindling/cli              # or: pnpm add -g / yarn global add
 ```
 
 ## Quick Start
@@ -225,7 +242,7 @@ manager.onSessionStart({
 
 // Later: retrieve session context
 const context = service.retrieve({
-  scope: { sessionId: 'session-1' },
+  scopeIds: { sessionId: 'session-1' },
 });
 ```
 
