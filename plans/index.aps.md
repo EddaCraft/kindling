@@ -34,6 +34,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * `kindling-core` → depends on → `kindling-provider-local`
 * `kindling-adapter-opencode` → depends on → `kindling-core`
 * `kindling-adapter-pocketflow` → depends on → `kindling-core`
+* `kindling-adapter-claude-code` → depends on → `kindling-core`
 * `kindling-cli` → depends on → `kindling-core`
 
 ---
@@ -157,6 +158,16 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Status:** In Progress
 * **Priority:** medium
 * **Tags:** cli, tooling, debugging
+* **Dependencies:** kindling-core
+
+### kindling-adapter-claude-code
+
+* **Path:** ./modules/kindling-adapter-claude-code.aps.md
+* **Scope:** ADAPTER-CC
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** high
+* **Tags:** claude-code, hooks, ingestion, dogfooding
 * **Dependencies:** kindling-core
 
 ### kindling-adapter-framework
