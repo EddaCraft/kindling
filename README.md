@@ -54,42 +54,42 @@ npm install -g @kindling/cli
 ## Quick Start
 
 ```typescript
-import { KindlingService, ObservationKind, CapsuleType } from '@kindling/core';
+import { KindlingService } from '@kindling/core';
 import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalRetrievalProvider } from '@kindling/provider-local';
+import { LocalFtsProvider } from '@kindling/provider-local';
 
 // Initialize Kindling
 const db = openDatabase({ dbPath: './my-memory.db' });
 const store = new SqliteKindlingStore(db);
-const provider = new LocalRetrievalProvider(store);
+const provider = new LocalFtsProvider(store);
 const service = new KindlingService({ store, provider });
 
 // Open a session capsule
 const capsule = service.openCapsule({
-  type: CapsuleType.Session,
+  type: 'session',
   intent: 'debug authentication issue',
-  scope: { sessionId: 'session-1', repoId: 'my-project' },
+  scopeIds: { sessionId: 'session-1', repoId: 'my-project' },
 });
 
 // Capture observations
 service.appendObservation({
-  kind: ObservationKind.Command,
+  kind: 'command',
   content: 'npm test failed with auth error',
   provenance: { command: 'npm test', exitCode: 1 },
-  scope: { sessionId: 'session-1' },
+  scopeIds: { sessionId: 'session-1' },
 }, { capsuleId: capsule.id });
 
 service.appendObservation({
-  kind: ObservationKind.Error,
+  kind: 'error',
   content: 'JWT validation failed: token expired',
   provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
-  scope: { sessionId: 'session-1' },
+  scopeIds: { sessionId: 'session-1' },
 }, { capsuleId: capsule.id });
 
 // Retrieve relevant context
 const results = service.retrieve({
   query: 'authentication token',
-  scope: { sessionId: 'session-1' },
+  scopeIds: { sessionId: 'session-1' },
 });
 
 console.log('Found:', results.providerHits.length, 'relevant observations');

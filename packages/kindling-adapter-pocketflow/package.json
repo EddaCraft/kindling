@@ -37,9 +37,10 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsc --build",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
+    "lint": "eslint src",
     "clean": "rm -rf dist",
     "prepublishOnly": "pnpm run build"
   },

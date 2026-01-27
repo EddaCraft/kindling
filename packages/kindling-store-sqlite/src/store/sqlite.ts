@@ -626,19 +626,7 @@ export class SqliteKindlingStore {
    * Alias for insertSummary for compatibility
    */
   createSummary(summary: Summary): void {
-    const stmt = this.db.prepare(`
-      INSERT INTO summaries (id, capsule_id, content, confidence, created_at, evidence_refs)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      summary.id,
-      summary.capsuleId,
-      summary.content,
-      summary.confidence,
-      summary.createdAt,
-      JSON.stringify(summary.evidenceRefs)
-    );
+    this.insertSummary(summary);
   }
 
   /**
@@ -646,20 +634,7 @@ export class SqliteKindlingStore {
    * Alias for insertPin for compatibility
    */
   createPin(pin: Pin): void {
-    const stmt = this.db.prepare(`
-      INSERT INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(
-      pin.id,
-      pin.targetType,
-      pin.targetId,
-      pin.reason ?? null,
-      pin.createdAt,
-      pin.expiresAt ?? null,
-      JSON.stringify(pin.scopeIds)
-    );
+    this.insertPin(pin);
   }
 
   /**

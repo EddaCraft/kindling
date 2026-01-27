@@ -1,6 +1,7 @@
 {
   "name": "kindling-monorepo",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "description": "Local memory and continuity engine for AI-assisted development",
   "keywords": [
@@ -39,8 +40,11 @@
     "clean": "pnpm -r run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^20.11.0",
+    "eslint": "^9.0.0",
     "typescript": "^5.3.0",
+    "typescript-eslint": "^8.0.0",
     "vitest": "^1.2.0"
   }
 }
