@@ -168,6 +168,25 @@ importers:
         specifier: ^1.2.0
         version: 1.6.1(@types/node@20.19.27)
 
+  packages/kindling-store-sqljs:
+    dependencies:
+      '@kindling/core':
+        specifier: workspace:*
+        version: link:../kindling-core
+      sql.js:
+        specifier: ^1.11.0
+        version: 1.13.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.27
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.2.0
+        version: 1.6.1(@types/node@20.19.27)
+
 packages:
 
   /@esbuild/aix-ppc64@0.21.5:
@@ -1502,6 +1521,10 @@ packages:
   /split2@4.2.0:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
     engines: {node: '>= 10.x'}
+    dev: false
+
+  /sql.js@1.13.0:
+    resolution: {integrity: sha512-RJbVP1HRDlUUXahJ7VMTcu9Rm1Nzw+EBpoPr94vnbD4LwR715F3CcxE2G2k45PewcaZ57pjetYa+LoSJLAASgA==}
     dev: false
 
   /stackback@0.0.2:
