@@ -61,6 +61,9 @@ yarn add @kindling/core @kindling/store-sqljs @kindling/provider-local
 # OpenCode session adapter
 npm install @kindling/adapter-opencode    # or: pnpm add / yarn add
 
+# Claude Code hooks adapter
+npm install @kindling/adapter-claude-code # or: pnpm add / yarn add
+
 # PocketFlow workflow adapter
 npm install @kindling/adapter-pocketflow  # or: pnpm add / yarn add
 
@@ -126,21 +129,23 @@ db.close();
 |---------|-------------|
 | [`@kindling/core`](./packages/kindling-core) | Domain types, capsule lifecycle, retrieval orchestration |
 | [`@kindling/store-sqlite`](./packages/kindling-store-sqlite) | SQLite persistence with FTS5 indexing |
+| [`@kindling/store-sqljs`](./packages/kindling-store-sqljs) | sql.js WASM store for browser compatibility |
 | [`@kindling/provider-local`](./packages/kindling-provider-local) | FTS-based retrieval with deterministic ranking |
 | [`@kindling/adapter-opencode`](./packages/kindling-adapter-opencode) | OpenCode session integration |
 | [`@kindling/adapter-pocketflow`](./packages/kindling-adapter-pocketflow) | PocketFlow workflow integration |
+| [`@kindling/adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration |
 | [`@kindling/cli`](./packages/kindling-cli) | Command-line tools for inspection and management |
 
 ## Architecture
 
 ```
-                     Adapters
-  ┌──────────────┐        ┌──────────────────────┐
-  │  OpenCode    │        │  PocketFlow Nodes    │
-  │  Sessions    │        │  (Workflows)         │
-  └──────┬───────┘        └──────────┬───────────┘
-         │                           │
-         └─────────┬─────────────────┘
+                           Adapters
+  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐
+  │  OpenCode    │  │  Claude Code │  │  PocketFlow Nodes    │
+  │  Sessions    │  │  (Hooks)     │  │  (Workflows)         │
+  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘
+         │                 │                     │
+         └─────────────────┴─────────────────────┘
                    ▼
         ┌──────────────────────┐
         │  KindlingService     │  ← Orchestration
