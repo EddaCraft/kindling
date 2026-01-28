@@ -27,6 +27,22 @@ importers:
         specifier: ^1.2.0
         version: 1.6.1(@types/node@20.19.27)
 
+  packages/kindling-adapter-claude-code:
+    dependencies:
+      '@kindling/core':
+        specifier: workspace:*
+        version: link:../kindling-core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.27
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.2.0
+        version: 1.6.1(@types/node@20.19.27)
+
   packages/kindling-adapter-opencode:
     dependencies:
       '@kindling/core':
