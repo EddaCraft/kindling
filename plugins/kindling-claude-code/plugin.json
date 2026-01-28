@@ -1,0 +1,8 @@
+{
+  "name": "kindling",
+  "version": "0.1.0",
+  "description": "Memory continuity for Claude Code - remember what you worked on across sessions",
+  "author": "EddaCraft",
+  "homepage": "https://github.com/EddaCraft/kindling",
+  "license": "Apache-2.0"
+}

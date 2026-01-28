@@ -84,7 +84,19 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 
 **Target:** Safe, understandable OSS v0.1 release
 
-### M5: Standard Adapter Framework
+### M5: Quick-Start Plugins (NEW)
+
+* Claude Code plugin (zero-install, git clone)
+* OpenCode plugin (same UX)
+* CLI `init` command (one-liner setup)
+* CLI `serve` command (API server)
+* Compelling use cases and documentation
+
+**Status:** In Progress
+
+**Target:** New user can get value in < 2 minutes without writing code
+
+### M6: Standard Adapter Framework
 
 * Base adapter interface and abstract class in `kindling-core`
 * Standard event model (`AdapterEvent`) for platform-agnostic ingestion
@@ -179,6 +191,36 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Priority:** medium
 * **Tags:** adapter, framework, integration
 * **Dependencies:** kindling-core
+
+### kindling-plugin-claude-code
+
+* **Path:** ./modules/kindling-plugin-claude-code.aps.md
+* **Scope:** PLUGIN-CC
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** critical
+* **Tags:** plugin, claude-code, quick-start, zero-config
+* **Dependencies:** (none - self-contained)
+
+### kindling-plugin-opencode
+
+* **Path:** ./modules/kindling-plugin-opencode.aps.md
+* **Scope:** PLUGIN-OC
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** high
+* **Tags:** plugin, opencode, quick-start, zero-config
+* **Dependencies:** kindling-plugin-claude-code (shared patterns)
+
+### kindling-cli-quickstart
+
+* **Path:** ./modules/kindling-cli-quickstart.aps.md
+* **Scope:** CLI-QS
+* **Owner:** @aneki
+* **Status:** Draft
+* **Priority:** medium
+* **Tags:** cli, init, serve, quick-start
+* **Dependencies:** kindling-cli, kindling-api-server
 
 ### npm-publishing
 

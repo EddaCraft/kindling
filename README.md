@@ -78,7 +78,7 @@ import { KindlingService } from '@kindling/core';
 import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
 import { LocalFtsProvider } from '@kindling/provider-local';
 
-// Initialize Kindling
+// Initialise Kindling
 const db = openDatabase({ dbPath: './my-memory.db' });
 const store = new SqliteKindlingStore(db);
 const provider = new LocalFtsProvider(store);
@@ -138,7 +138,7 @@ db.close();
 
 ## Architecture
 
-```
+```diagram
                            Adapters
   ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐
   │  OpenCode    │  │  Claude Code │  │  PocketFlow Nodes    │

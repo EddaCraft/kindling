@@ -143,3 +143,6 @@ vite.config.ts.timestamp-*
 .anvil/cache/
 .anvil/evidence/
 .anvil/*.log
+
+# Agents files
+settings.local.json
