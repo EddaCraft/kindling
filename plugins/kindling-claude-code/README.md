@@ -68,6 +68,7 @@ You want to see what Kindling has captured:
 | `/memory status` | Show database stats |
 | `/memory pin [note]` | Pin last observation |
 | `/memory pins` | List all pins |
+| `/memory unpin <id>` | Remove a pin |
 
 ## How It Works
 

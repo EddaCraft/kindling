@@ -34,7 +34,7 @@ if (!fs.existsSync(file)) {
   process.exit(0);
 }
 
-const query = process.argv[1]?.toLowerCase() || '';
+const query = process.argv.slice(1).join(' ').toLowerCase() || '';
 const lines = fs.readFileSync(file, 'utf-8').split('\n').filter(Boolean);
 const observations = lines.map(l => JSON.parse(l));
 
@@ -56,7 +56,7 @@ matches.forEach((o, i) => {
   console.log('   ' + preview + (o.content?.length > 200 ? '...' : ''));
   console.log('');
 });
-" "$1"
+" "$@"
 ```
 
 ## Example Output

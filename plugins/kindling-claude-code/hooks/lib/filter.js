@@ -17,8 +17,11 @@ const SECRET_PATTERNS = [
   /Basic\s+[A-Za-z0-9+/]{20,}/gi,
 ];
 
-// Tools whose results should be skipped or truncated
-const NOISY_TOOLS = ['WebSearch', 'Grep', 'Glob'];
+// Tools that should be skipped entirely (too noisy)
+const SKIP_TOOLS = ['WebSearch'];
+
+// Tools whose results should be truncated more aggressively
+const NOISY_TOOLS = ['Grep', 'Glob'];
 
 /**
  * Truncate content if too long
@@ -85,9 +88,16 @@ export function filterContent(content) {
  * Check if tool result should be captured
  */
 export function shouldCaptureTool(toolName) {
-  // Skip very noisy tools
-  if (toolName === 'WebSearch') return false;
+  // Skip tools that produce too much noise
+  if (SKIP_TOOLS.includes(toolName)) return false;
   return true;
+}
+
+/**
+ * Check if tool is noisy (results should be truncated more)
+ */
+export function isNoisyTool(toolName) {
+  return NOISY_TOOLS.includes(toolName);
 }
 
 /**
@@ -113,6 +123,7 @@ export function filterToolResult(toolName, result) {
     }
   }
 
-  // Shorter limit for tool results
-  return filterContent(resultStr);
+  // Shorter limit for noisy tools
+  const maxLen = isNoisyTool(toolName) ? 2000 : MAX_CONTENT_LENGTH;
+  return truncate(maskSecrets(resultStr), maxLen);
 }

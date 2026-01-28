@@ -32,7 +32,7 @@ const crypto = require('crypto');
 const dir = path.join(os.homedir(), '.kindling');
 const obsFile = path.join(dir, 'observations.jsonl');
 const pinsFile = path.join(dir, 'pins.json');
-const note = process.argv[1] || 'Pinned observation';
+const note = process.argv.slice(1).join(' ') || 'Pinned observation';
 
 if (!fs.existsSync(obsFile)) {
   console.log('No observations to pin yet.');
@@ -80,7 +80,7 @@ console.log('  Note: ' + note);
 console.log('  Content: ' + (lastObs.content?.substring(0, 100) || '').replace(/\n/g, ' ') + '...');
 console.log('');
 console.log('Use /memory pins to see all pinned items.');
-" "$1"
+" "$@"
 ```
 
 ## Example Output
