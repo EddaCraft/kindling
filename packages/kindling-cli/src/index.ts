@@ -7,6 +7,7 @@
  */
 
 import { Command } from 'commander';
+import { initCommand } from './commands/init.js';
 import { statusCommand } from './commands/status.js';
 import { searchCommand } from './commands/search.js';
 import { listCommand } from './commands/list.js';
@@ -21,6 +22,16 @@ program
   .name('kindling')
   .description('Local memory and continuity engine for AI-assisted development')
   .version('0.1.0');
+
+// Init command
+program
+  .command('init')
+  .description('Initialize Kindling (create database and configure hooks)')
+  .option('--db <path>', 'Database path (default: ~/.kindling/kindling.db)')
+  .option('--claude-code', 'Also configure Claude Code integration')
+  .option('--skip-db', 'Skip database creation (only configure hooks)')
+  .option('--json', 'Output as JSON')
+  .action(initCommand);
 
 // Status command
 program

@@ -11,7 +11,6 @@ import {
   isExcludedPath,
   shouldCaptureToolResult,
   filterToolResult,
-  MAX_CONTENT_LENGTH,
 } from '../claude-code/filter.js';
 
 describe('truncateContent', () => {

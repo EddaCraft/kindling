@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { mapEvent, mapEvents, type MapEventResult } from '../claude-code/mapping.js';
+import { mapEvent, mapEvents } from '../claude-code/mapping.js';
 import type { ClaudeCodeEvent } from '../claude-code/events.js';
 
 describe('mapEvent', () => {

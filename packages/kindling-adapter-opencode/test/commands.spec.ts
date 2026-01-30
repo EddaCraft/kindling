@@ -359,6 +359,7 @@ describe('Memory Commands', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: '1' }],
           capsules: [{ id: '1' }],
           summaries: [],

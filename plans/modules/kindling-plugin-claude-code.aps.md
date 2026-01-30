@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| PLUGIN-CC | @aneki | critical | Draft |
+| PLUGIN-CC | @aneki | critical | Complete: 2025-01-29 |
 
 ## Purpose
 
@@ -10,7 +10,7 @@ A zero-installation Claude Code plugin that provides memory continuity out of th
 
 - Automatic session capture via hooks
 - `/memory` commands for search, status, pin
-- SQLite database created on first use
+- JSON-based storage created on first use (~/.kindling/)
 - No npm, no TypeScript, no configuration required
 
 This is the "quick to value" solution for Claude Code users.
@@ -20,7 +20,7 @@ This is the "quick to value" solution for Claude Code users.
 - Self-contained plugin directory structure
 - Hook scripts (bash/node) for SessionStart, PostToolUse, Stop
 - Slash commands: `/memory search`, `/memory status`, `/memory pin`, `/memory forget`
-- Embedded SQLite database management
+- Embedded JSON file storage management
 - First-run initialization
 - Clear documentation with use cases
 
@@ -42,7 +42,7 @@ This is the "quick to value" solution for Claude Code users.
 3. User restarts Claude Code
 
 4. Plugin automatically:
-   - Creates ~/.kindling/kindling.db on first session
+   - Creates ~/.kindling/ storage on first session
    - Captures tool calls, file changes, commands
    - Closes session capsules on stop
 
@@ -90,6 +90,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-001: Create plugin scaffold and manifest
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** Establish plugin structure that Claude Code recognizes
 - **Expected Outcome:** Plugin directory loads in Claude Code without errors
 - **Scope:** `plugins/kindling-claude-code/`
@@ -101,6 +102,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-002: Implement SQLite database layer
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** Self-contained database operations without external dependencies
 - **Expected Outcome:** DB created on first use, CRUD operations work
 - **Scope:** `hooks/lib/`
@@ -112,6 +114,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-003: Implement hook handlers
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** Capture session activity automatically via hooks
 - **Expected Outcome:** Every tool call becomes a stored observation
 - **Scope:** `hooks/`
@@ -123,6 +126,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-004: Implement /memory search command
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** Allow users to query past sessions
 - **Expected Outcome:** User searches, gets relevant results with context
 - **Scope:** `commands/`
@@ -134,6 +138,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-005: Implement /memory status command
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** Show database status and recent activity
 - **Expected Outcome:** User sees observation count, recent sessions, DB size
 - **Scope:** `commands/`
@@ -144,6 +149,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-006: Implement /memory pin command
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** Allow users to mark important observations
 - **Expected Outcome:** Pinned items persist and show first in search
 - **Scope:** `commands/`
@@ -154,6 +160,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-007: Documentation and use cases
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** Make the plugin compelling and easy to understand
 - **Expected Outcome:** README with clear value proposition and examples
 - **Scope:** `README.md`
@@ -164,10 +171,11 @@ Change status to **Ready** when:
 
 ## Decisions
 
-- **D-001:** Use Node.js for hooks (not bash) for SQLite access
+- **D-001:** Use Node.js for hooks (not bash) for file access
 - **D-002:** Keep v1 simple - LIKE search, not FTS5
-- **D-003:** Single database at ~/.kindling/kindling.db
+- **D-003:** Data stored at ~/.kindling/ (observations.jsonl, capsules.json, pins.json)
 - **D-004:** No external npm dependencies - self-contained
+- **D-005:** Use JSON files instead of SQLite for maximum portability (no native deps)
 
 ## Risks & Mitigations
 

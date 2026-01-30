@@ -197,7 +197,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-plugin-claude-code.aps.md
 * **Scope:** PLUGIN-CC
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** Complete: 2025-01-29
 * **Priority:** critical
 * **Tags:** plugin, claude-code, quick-start, zero-config
 * **Dependencies:** (none - self-contained)
@@ -217,7 +217,7 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 * **Path:** ./modules/kindling-cli-quickstart.aps.md
 * **Scope:** CLI-QS
 * **Owner:** @aneki
-* **Status:** Draft
+* **Status:** Complete: 2025-01-29
 * **Priority:** medium
 * **Tags:** cli, init, serve, quick-start
 * **Dependencies:** kindling-cli, kindling-api-server
@@ -253,3 +253,23 @@ Those concerns belong to downstream systems (e.g. Edda) and are intentionally ou
 ## Open Questions
 
 *No open questions at this time.*
+
+---
+
+## What's Next
+
+**M5 Progress:**
+
+| Deliverable | Status | Next Action |
+|-------------|--------|-------------|
+| Claude Code plugin | ✅ Complete | — |
+| CLI `serve` | ✅ Complete | — |
+| CLI `init` | ✅ Complete | — |
+| OpenCode plugin | Draft | Ready to start |
+
+**Ready Tasks:**
+
+1. **PLUGIN-OC-001:** Research OpenCode extension system
+   - Research how OpenCode extensions work
+   - Document event model and hook points
+   - Plan shared patterns with Claude Code plugin

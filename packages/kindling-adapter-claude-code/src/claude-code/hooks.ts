@@ -8,7 +8,6 @@
 import type { CapsuleStore, Observation, ID } from '@kindling/core';
 import { SessionManager } from './session.js';
 import {
-  createSessionStartEvent,
   createPostToolUseEvent,
   createStopEvent,
   createSubagentStopEvent,

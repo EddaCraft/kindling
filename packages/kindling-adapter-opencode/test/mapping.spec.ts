@@ -58,8 +58,8 @@ describe('Event Mapping', () => {
         expect(result.observation!.content).toContain('file contents');
         expect(result.observation!.scopeIds.sessionId).toBe('s1');
         expect(result.observation!.scopeIds.repoId).toBe('/repo');
-        expect(result.observation!.provenance.toolName).toBe('read_file');
-        expect(result.observation!.provenance.duration_ms).toBe(100);
+        expect(result.observation!.provenance!.toolName).toBe('read_file');
+        expect(result.observation!.provenance!.duration_ms).toBe(100);
       });
 
       it('should map tool call with error', () => {
@@ -76,7 +76,7 @@ describe('Event Mapping', () => {
 
         expect(result.observation).toBeDefined();
         expect(result.observation!.content).toContain('Error: Command not found');
-        expect(result.observation!.provenance.hasError).toBe(true);
+        expect(result.observation!.provenance!.hasError).toBe(true);
       });
 
       it('should sanitize sensitive args', () => {
@@ -95,7 +95,7 @@ describe('Event Mapping', () => {
         const result = mapEvent(event);
 
         expect(result.observation).toBeDefined();
-        expect(result.observation!.provenance.args).toEqual({
+        expect(result.observation!.provenance!.args).toEqual({
           url: 'https://api.example.com',
           api_key: '[REDACTED]',
           password: '[REDACTED]',
@@ -122,8 +122,8 @@ describe('Event Mapping', () => {
         expect(result.observation!.content).toContain('$ git status');
         expect(result.observation!.content).toContain('On branch main');
         expect(result.observation!.content).toContain('Exit code: 0');
-        expect(result.observation!.provenance.cmd).toBe('git');
-        expect(result.observation!.provenance.exitCode).toBe(0);
+        expect(result.observation!.provenance!.cmd).toBe('git');
+        expect(result.observation!.provenance!.exitCode).toBe(0);
       });
 
       it('should map failed command with stderr', () => {
@@ -140,7 +140,7 @@ describe('Event Mapping', () => {
 
         expect(result.observation).toBeDefined();
         expect(result.observation!.content).toContain('stderr: Test failed');
-        expect(result.observation!.provenance.hasStderr).toBe(true);
+        expect(result.observation!.provenance!.hasStderr).toBe(true);
       });
     });
 
@@ -165,8 +165,8 @@ describe('Event Mapping', () => {
         expect(result.observation!.content).toContain('src/types.ts');
         expect(result.observation!.content).toContain('+1 -0');
         expect(result.observation!.content).toContain('@@ -1,3 +1,4 @@');
-        expect(result.observation!.provenance.paths).toEqual(['src/index.ts', 'src/types.ts']);
-        expect(result.observation!.provenance.fileCount).toBe(2);
+        expect(result.observation!.provenance!.paths).toEqual(['src/index.ts', 'src/types.ts']);
+        expect(result.observation!.provenance!.fileCount).toBe(2);
       });
     });
 
@@ -186,8 +186,8 @@ describe('Event Mapping', () => {
         expect(result.observation).toBeDefined();
         expect(result.observation!.kind).toBe('error');
         expect(result.observation!.content).toBe('TypeError: Cannot read property');
-        expect(result.observation!.provenance.source).toBe('runtime');
-        expect(result.observation!.provenance.stackPreview).toBeDefined();
+        expect(result.observation!.provenance!.source).toBe('runtime');
+        expect(result.observation!.provenance!.stackPreview).toBeDefined();
       });
     });
 
@@ -206,8 +206,8 @@ describe('Event Mapping', () => {
         expect(result.observation).toBeDefined();
         expect(result.observation!.kind).toBe('message');
         expect(result.observation!.content).toBe('Fix the bug in auth.ts');
-        expect(result.observation!.provenance.role).toBe('user');
-        expect(result.observation!.provenance.length).toBe(22);
+        expect(result.observation!.provenance!.role).toBe('user');
+        expect(result.observation!.provenance!.length).toBe(22);
       });
 
       it('should map assistant message with model', () => {
@@ -223,7 +223,7 @@ describe('Event Mapping', () => {
         const result = mapEvent(event);
 
         expect(result.observation).toBeDefined();
-        expect(result.observation!.provenance.model).toBe('claude-3');
+        expect(result.observation!.provenance!.model).toBe('claude-3');
       });
     });
 

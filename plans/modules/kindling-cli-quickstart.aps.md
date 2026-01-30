@@ -2,7 +2,7 @@
 
 | Scope | Owner | Priority | Status |
 |-------|-------|----------|--------|
-| CLI-QS | @aneki | medium | Draft |
+| CLI-QS | @aneki | medium | Complete: 2025-01-29 |
 
 ## Purpose
 
@@ -69,12 +69,13 @@ Change status to **Ready** when:
 
 - [x] Purpose and scope are clear
 - [x] User journey defined
-- [ ] At least one task defined
+- [x] At least one task defined
 
 ## Tasks
 
 ### CLI-QS-001: Implement `kindling init` command
 
+- **Status:** Complete: 2025-01-29
 - **Intent:** One-command setup for new users
 - **Expected Outcome:** Running `kindling init` creates DB and configures hooks
 - **Scope:** `packages/kindling-cli/src/commands/`
@@ -93,6 +94,7 @@ Change status to **Ready** when:
 
 ### CLI-QS-002: Implement `kindling serve` command
 
+- **Status:** Complete: 2025-01-26
 - **Intent:** HTTP API for programmatic access and multi-tool integration
 - **Expected Outcome:** Running `kindling serve` starts API server
 - **Scope:** `packages/kindling-cli/src/commands/` or `packages/kindling-api-server/`

@@ -103,6 +103,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: '1' }, { id: '2' }],
           capsules: [{ id: '1' }],
           summaries: [{ id: '1' }],
@@ -127,6 +128,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -152,6 +154,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -171,6 +174,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -192,6 +196,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: 'not an array',
           capsules: [],
           summaries: [],
@@ -213,6 +218,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: 123456,
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1' }],
           capsules: [],
           summaries: [],
@@ -232,6 +238,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: 123456,
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -264,6 +271,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1' }],
           capsules: [{ id: 'cap-1' }],
           summaries: [],
@@ -300,6 +308,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -321,6 +330,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: '1' }, { id: '2' }],
           capsules: [{ id: '1' }],
           summaries: [],
@@ -344,6 +354,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1' }],
           capsules: [{ id: 'cap-1' }],
           summaries: [],
@@ -356,6 +367,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-2' }],
           capsules: [],
           summaries: [{ id: 'sum-1' }],
@@ -376,6 +388,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1', content: 'first' }],
           capsules: [],
           summaries: [],
@@ -388,6 +401,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1', content: 'duplicate' }],
           capsules: [],
           summaries: [],
@@ -407,6 +421,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -437,6 +452,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -449,6 +465,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1' }],
           capsules: [],
           summaries: [],
@@ -469,6 +486,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1' }],
           capsules: [],
           summaries: [],
@@ -481,6 +499,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [],
           capsules: [],
           summaries: [],
@@ -500,6 +519,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1' }],
           capsules: [],
           summaries: [],
@@ -512,6 +532,7 @@ describe('Export/Import Coordination', () => {
         exportedAt: Date.now(),
         dataset: {
           version: '1.0',
+          exportedAt: Date.now(),
           observations: [{ id: 'obs-1' }],
           capsules: [],
           summaries: [],
