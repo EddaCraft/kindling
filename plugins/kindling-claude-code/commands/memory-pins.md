@@ -35,10 +35,12 @@ const db = new Database(dbPath, { readonly: true });
 db.pragma('journal_mode = WAL');
 
 const pins = db.prepare(\`
-  SELECT p.id, p.reason, p.created_at, p.target_id,
-         o.kind, o.content
+  SELECT p.id, p.reason, p.created_at, p.target_id, p.target_type,
+         COALESCE(o.kind, 'summary') as kind,
+         COALESCE(o.content, s.content) as content
   FROM pins p
-  LEFT JOIN observations o ON o.id = p.target_id
+  LEFT JOIN observations o ON o.id = p.target_id AND p.target_type = 'observation'
+  LEFT JOIN summaries s ON s.id = p.target_id AND p.target_type = 'summary'
   WHERE p.expires_at IS NULL OR p.expires_at > ?
   ORDER BY p.created_at DESC
 \`).all(Date.now());

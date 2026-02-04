@@ -45,14 +45,28 @@ if (!query) {
 const db = new Database(dbPath, { readonly: true });
 db.pragma('journal_mode = WAL');
 
-const rows = db.prepare(\`
-  SELECT o.id, o.kind, o.content, o.ts
-  FROM observations_fts fts
-  JOIN observations o ON o.rowid = fts.rowid
-  WHERE observations_fts MATCH ?
-  ORDER BY fts.rank
-  LIMIT 10
-\`).all(query);
+// Sanitize for FTS5: quote each token so special chars are treated as literals
+const safeQuery = query.trim().split(/\\s+/).filter(Boolean)
+  .map(t => '\"' + t.replace(/\"/g, '\"\"') + '\"').join(' ') || '\"\"';
+
+let rows;
+try {
+  rows = db.prepare(\`
+    SELECT o.id, o.kind, o.content, o.ts
+    FROM observations_fts fts
+    JOIN observations o ON o.rowid = fts.rowid
+    WHERE observations_fts MATCH ?
+    ORDER BY fts.rank
+    LIMIT 10
+  \`).all(safeQuery);
+} catch (e) {
+  // Fallback to LIKE search if FTS5 still fails
+  rows = db.prepare(\`
+    SELECT id, kind, content, ts FROM observations
+    WHERE content LIKE '%' || ? || '%'
+    ORDER BY ts DESC LIMIT 10
+  \`).all(query);
+}
 
 db.close();
 

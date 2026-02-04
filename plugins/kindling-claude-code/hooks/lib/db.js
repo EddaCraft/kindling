@@ -243,41 +243,72 @@ export function ensureDb() {
 }
 
 /**
+ * Close the database connection and reset the singleton.
+ * Safe to call multiple times; no-op if the DB is not open.
+ */
+export function closeDb() {
+  if (_db) {
+    try {
+      _db.close();
+    } finally {
+      _db = null;
+    }
+  }
+}
+
+/**
  * Append an observation to the database.
  * If capsuleId is provided, also links it to the capsule.
+ * Uses a transaction to ensure atomicity of the insert + capsule link.
  */
 export function appendObservation(observation) {
   const db = ensureDb();
   const id = observation.id || randomUUID();
   const ts = observation.ts || Date.now();
 
-  db.prepare(`
-    INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted)
-    VALUES (@id, @kind, @content, @provenance, @ts, @scopeIds, @redacted)
-  `).run({
-    id,
-    kind: observation.kind,
-    content: observation.content,
-    provenance: JSON.stringify(observation.provenance || {}),
-    ts,
-    scopeIds: JSON.stringify(observation.scopeIds || {}),
-    redacted: 0,
+  const insertObservationAndLink = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted)
+      VALUES (@id, @kind, @content, @provenance, @ts, @scopeIds, @redacted)
+    `).run({
+      id,
+      kind: observation.kind,
+      content: observation.content,
+      provenance: JSON.stringify(observation.provenance || {}),
+      ts,
+      scopeIds: JSON.stringify(observation.scopeIds || {}),
+      redacted: 0,
+    });
+
+    // Link to capsule if provided
+    if (observation.capsuleId) {
+      const seqResult = db.prepare(`
+        SELECT COALESCE(MAX(seq), -1) + 1 as next_seq
+        FROM capsule_observations WHERE capsule_id = ?
+      `).get(observation.capsuleId);
+
+      db.prepare(`
+        INSERT INTO capsule_observations (capsule_id, observation_id, seq)
+        VALUES (?, ?, ?)
+      `).run(observation.capsuleId, id, seqResult.next_seq);
+    }
   });
 
-  // Link to capsule if provided
-  if (observation.capsuleId) {
-    const seqResult = db.prepare(`
-      SELECT COALESCE(MAX(seq), -1) + 1 as next_seq
-      FROM capsule_observations WHERE capsule_id = ?
-    `).get(observation.capsuleId);
-
-    db.prepare(`
-      INSERT INTO capsule_observations (capsule_id, observation_id, seq)
-      VALUES (?, ?, ?)
-    `).run(observation.capsuleId, id, seqResult.next_seq);
-  }
+  insertObservationAndLink();
 
   return { id, ts, kind: observation.kind, content: observation.content };
+}
+
+/**
+ * Sanitize a user query for FTS5 MATCH by wrapping each token in double
+ * quotes so that special characters (AND, OR, NOT, *, ^, etc.) are treated
+ * as literals rather than FTS5 operators.
+ */
+function sanitizeFtsQuery(raw) {
+  // Split on whitespace, quote each token (escaping internal quotes), rejoin
+  const tokens = raw.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return '""';
+  return tokens.map(t => '"' + t.replace(/"/g, '""') + '"').join(' ');
 }
 
 /**
@@ -285,6 +316,7 @@ export function appendObservation(observation) {
  */
 export function searchObservations(query, limit = 20) {
   const db = ensureDb();
+  const safeQuery = sanitizeFtsQuery(query);
 
   const rows = db.prepare(`
     SELECT o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids
@@ -293,7 +325,7 @@ export function searchObservations(query, limit = 20) {
     WHERE observations_fts MATCH ?
     ORDER BY fts.rank
     LIMIT ?
-  `).all(query, limit);
+  `).all(safeQuery, limit);
 
   return rows.map(row => ({
     id: row.id,
