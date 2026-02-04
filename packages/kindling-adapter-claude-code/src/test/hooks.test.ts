@@ -39,8 +39,7 @@ function createMockStore() {
       }
     }),
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getOpenCapsuleForSession: vi.fn((_sessionId): any => undefined),
+    getOpenCapsuleForSession: vi.fn((_sessionId): undefined => undefined),
 
     insertObservation: vi.fn((observation) => {
       observations.set(observation.id, observation);

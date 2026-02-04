@@ -22,7 +22,7 @@ export async function listCommand(entity: string, options: ListOptions): Promise
       repoId: options.repo,
     };
 
-    let results: any[] = [];
+    let results: Record<string, unknown>[] = [];
 
     switch (entity.toLowerCase()) {
       case 'capsules': {
@@ -47,12 +47,12 @@ export async function listCommand(entity: string, options: ListOptions): Promise
           LIMIT ?
         `;
         params.push(limit);
-        results = db.prepare(query).all(...params) as any[];
+        results = db.prepare(query).all(...params) as Record<string, unknown>[];
         break;
       }
 
       case 'pins': {
-        results = service.listPins(scopeIds);
+        results = service.listPins(scopeIds) as unknown as Record<string, unknown>[];
         break;
       }
 
@@ -78,7 +78,7 @@ export async function listCommand(entity: string, options: ListOptions): Promise
           LIMIT ?
         `;
         params.push(limit);
-        results = db.prepare(query).all(...params) as any[];
+        results = db.prepare(query).all(...params) as Record<string, unknown>[];
         break;
       }
 
@@ -102,23 +102,23 @@ export async function listCommand(entity: string, options: ListOptions): Promise
             console.log(`   Type: ${result.type}`);
             console.log(`   Intent: ${result.intent}`);
             console.log(`   Status: ${result.status}`);
-            console.log(`   Opened: ${formatTimestamp(result.opened_at)}`);
+            console.log(`   Opened: ${formatTimestamp(result.opened_at as number)}`);
             if (result.closed_at) {
-              console.log(`   Closed: ${formatTimestamp(result.closed_at)}`);
+              console.log(`   Closed: ${formatTimestamp(result.closed_at as number)}`);
             }
           } else if (entity === 'pins') {
             console.log(`   Target: ${result.targetType} ${result.targetId}`);
             if (result.note) {
               console.log(`   Note: ${result.note}`);
             }
-            console.log(`   Created: ${formatTimestamp(result.createdAt)}`);
+            console.log(`   Created: ${formatTimestamp(result.createdAt as number)}`);
             if (result.expiresAt) {
-              console.log(`   Expires: ${formatTimestamp(result.expiresAt)}`);
+              console.log(`   Expires: ${formatTimestamp(result.expiresAt as number)}`);
             }
           } else if (entity === 'observations') {
             console.log(`   Kind: ${result.kind}`);
-            console.log(`   Content: ${truncate(result.content, 100)}`);
-            console.log(`   Time: ${formatTimestamp(result.ts)}`);
+            console.log(`   Content: ${truncate(result.content as string, 100)}`);
+            console.log(`   Time: ${formatTimestamp(result.ts as number)}`);
             console.log(`   Redacted: ${result.redacted ? 'yes' : 'no'}`);
           }
 

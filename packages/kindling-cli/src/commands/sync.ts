@@ -250,8 +250,9 @@ export async function syncAddSubmoduleCommand(_options: SyncOptions): Promise<vo
     console.log('   1. Push changes: git push');
     console.log('   2. Sync memory: kindling sync push');
     console.log('   3. Update submodule: git submodule update --remote --merge');
-  } catch (error: any) {
-    console.error('\n❌ Error adding submodule:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('\n❌ Error adding submodule:', message);
     console.error('\nCommon issues:');
     console.error('  - GitHub repo not created yet');
     console.error('  - No push access to the repo');
@@ -295,7 +296,7 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
       summaries: bundle.dataset.summaries.length,
       pins: bundle.dataset.pins.length,
     },
-    pins: bundle.dataset.pins.map((pin: any) => ({
+    pins: bundle.dataset.pins.map((pin: unknown) => pin as Record<string, unknown>).map((pin: Record<string, unknown>) => ({
       id: pin.id,
       targetType: pin.targetType,
       targetId: pin.targetId,
@@ -304,9 +305,14 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
       createdAt: pin.createdAt,
     })),
     recentCapsules: bundle.dataset.capsules
-      .sort((a: any, b: any) => (b.closedAt || b.openedAt) - (a.closedAt || a.openedAt))
+      .map((c: unknown) => c as Record<string, unknown>)
+      .sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+        const aTime = (a.closedAt as number) || (a.openedAt as number);
+        const bTime = (b.closedAt as number) || (b.openedAt as number);
+        return bTime - aTime;
+      })
       .slice(0, 50) // Last 50 capsules
-      .map((c: any) => ({
+      .map((c: Record<string, unknown>) => ({
         id: c.id,
         type: c.type,
         intent: c.intent,
@@ -316,7 +322,7 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
         scopeIds: c.scopeIds,
         summaryId: c.summaryId,
       })),
-    summaries: bundle.dataset.summaries.map((s: any) => ({
+    summaries: bundle.dataset.summaries.map((s: unknown) => s as Record<string, unknown>).map((s: Record<string, unknown>) => ({
       id: s.id,
       capsuleId: s.capsuleId,
       content: s.content,
@@ -365,11 +371,12 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
       stdio: 'inherit'
     });
     console.log('✅ Pushed to GitHub\n');
-  } catch (error: any) {
-    if (error.message?.includes('nothing to commit')) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (typeof message === 'string' && message.includes('nothing to commit')) {
       console.log('ℹ️  No changes to sync\n');
     } else {
-      console.error('❌ Error pushing to GitHub:', error.message);
+      console.error('❌ Error pushing to GitHub:', message);
       console.error('\nCommon issues:');
       console.error('  - GitHub repo not created yet');
       console.error('  - No push access');

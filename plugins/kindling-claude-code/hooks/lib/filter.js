@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Content filtering for Kindling plugin
  *

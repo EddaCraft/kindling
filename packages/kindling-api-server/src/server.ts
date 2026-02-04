@@ -13,11 +13,12 @@ import type {
   RetrieveOptions,
   OpenCapsuleOptions,
   CloseCapsuleOptions,
+  ExportBundle,
 } from '@kindling/core';
 
 export interface ServerConfig {
   service: KindlingService;
-  db: any; // better-sqlite3 Database type
+  db: unknown; // better-sqlite3 Database type
   port?: number;
   host?: string;
   cors?: boolean;
@@ -139,7 +140,7 @@ export function createServer(config: ServerConfig): FastifyInstance {
   // Import
   server.post<{
     Body: {
-      bundle: any;
+      bundle: ExportBundle;
     };
   }>('/api/import', async (request) => {
     const result = service.import(request.body.bundle);

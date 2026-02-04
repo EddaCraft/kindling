@@ -31,8 +31,12 @@ function getDefaultDbPath(): string {
   // Ensure directory exists
   try {
     mkdirSync(kindlingDir, { recursive: true });
-  } catch (err) {
-    // Ignore if directory already exists
+  } catch (e: unknown) {
+    const err = e as { code?: string };
+    // Ignore if directory already exists (EEXIST error)
+    if (err.code !== 'EEXIST') {
+      throw err;
+    }
   }
 
   return join(kindlingDir, 'kindling.db');

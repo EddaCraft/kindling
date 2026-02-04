@@ -55,7 +55,7 @@ export function truncate(text: string, maxLength: number): string {
 /**
  * Format JSON output
  */
-export function formatJson(data: any, pretty = false): string {
+export function formatJson(data: unknown, pretty = false): string {
   return JSON.stringify(data, null, pretty ? 2 : 0);
 }
 

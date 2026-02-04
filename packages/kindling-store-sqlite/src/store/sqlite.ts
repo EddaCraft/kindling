@@ -225,7 +225,7 @@ export class SqliteKindlingStore {
       WHERE (expires_at IS NULL OR expires_at > ?)
     `;
 
-    const params: any[] = [currentTime];
+    const params: (string | number)[] = [currentTime];
 
     // Add scope filtering if provided
     if (scopeIds) {
@@ -524,7 +524,7 @@ export class SqliteKindlingStore {
       FROM observations
       WHERE redacted = 0
     `;
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     // Add scope filtering
     if (scopeIds?.sessionId) {

@@ -81,13 +81,13 @@ export function exportDatabase(
   } = options;
 
   // Build scope filter SQL
-  const buildScopeFilter = (tableName: string): { where: string; params: any[] } => {
+  const buildScopeFilter = (tableName: string): { where: string; params: string[] } => {
     if (!scope) {
       return { where: '', params: [] };
     }
 
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: string[] = [];
 
     if (scope.sessionId) {
       conditions.push(`json_extract(${tableName}.scope_ids, '$.sessionId') = ?`);

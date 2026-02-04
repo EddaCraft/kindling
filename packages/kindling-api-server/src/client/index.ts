@@ -38,7 +38,7 @@ export class KindlingApiClient {
   private async request<T>(
     method: string,
     path: string,
-    body?: any
+    body?: unknown
   ): Promise<T> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
@@ -60,7 +60,7 @@ export class KindlingApiClient {
 
       // Handle 204 No Content
       if (response.status === 204) {
-        return undefined as any as T;
+        return undefined as T extends void ? T : never;
       }
 
       return await response.json() as T;

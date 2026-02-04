@@ -6,6 +6,7 @@
 
 import type { ExportBundle } from './bundle.js';
 import { validateBundle } from './bundle.js';
+import type { ScopeIds, Observation, Capsule, Summary, Pin } from '../types/index.js';
 
 /**
  * Store interface for import operations
@@ -17,11 +18,11 @@ export interface ImportStore {
   importDatabase(dataset: {
     version: string;
     exportedAt: number;
-    scope?: any;
-    observations: any[];
-    capsules: any[];
-    summaries: any[];
-    pins: any[];
+    scope?: Partial<ScopeIds>;
+    observations: Observation[];
+    capsules: Capsule[];
+    summaries: Summary[];
+    pins: Pin[];
   }): {
     observations: number;
     capsules: number;
@@ -140,10 +141,10 @@ export function mergeBundles(
 
   // Merge datasets
   const merged = {
-    observations: [] as any[],
-    capsules: [] as any[],
-    summaries: [] as any[],
-    pins: [] as any[],
+    observations: [] as Observation[],
+    capsules: [] as Capsule[],
+    summaries: [] as Summary[],
+    pins: [] as Pin[],
   };
 
   for (const bundle of bundles) {
@@ -183,9 +184,9 @@ export function mergeBundles(
  * @param entities - Entities to deduplicate
  * @returns Deduplicated entities
  */
-function deduplicateById(entities: any[]): any[] {
+function deduplicateById<T extends { id: string }>(entities: T[]): T[] {
   const seen = new Set<string>();
-  const deduped: any[] = [];
+  const deduped: T[] = [];
 
   for (const entity of entities) {
     if (!entity.id) continue;
@@ -215,7 +216,7 @@ export function compareBundles(
   summaries: { added: number; removed: number; common: number };
   pins: { added: number; removed: number; common: number };
 } {
-  const compareArrays = (arr1: any[], arr2: any[]) => {
+  const compareArrays = (arr1: { id: string }[], arr2: { id: string }[]) => {
     const ids1 = new Set(arr1.map(e => e.id).filter(Boolean));
     const ids2 = new Set(arr2.map(e => e.id).filter(Boolean));
 

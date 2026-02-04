@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SessionManager } from '../claude-code/session.js';
 import type { ClaudeCodeEvent } from '../claude-code/events.js';
+import type { Capsule } from '@kindling/core';
 
 // Mock store implementation
 function createMockStore() {
@@ -34,8 +35,7 @@ function createMockStore() {
       }
     }),
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getOpenCapsuleForSession: vi.fn((_sessionId): any => undefined),
+    getOpenCapsuleForSession: vi.fn((_sessionId): Capsule | undefined => undefined),
 
     insertObservation: vi.fn((observation) => {
       observations.set(observation.id, observation);

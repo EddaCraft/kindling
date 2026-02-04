@@ -3,6 +3,7 @@
  * PostToolUse hook handler
  *
  * Captures tool calls as observations.
+ * Exit 0 = success (never blocks tool use).
  */
 
 import {
@@ -12,7 +13,6 @@ import {
 } from './lib/db.js';
 import { filterContent, filterToolResult, shouldCaptureTool } from './lib/filter.js';
 
-// Read hook context from stdin
 let input = '';
 process.stdin.setEncoding('utf8');
 
@@ -24,17 +24,16 @@ process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
 
-    const sessionId = context.session_id || context.sessionId || 'unknown';
+    const sessionId = context.session_id || 'unknown';
     const cwd = context.cwd || process.cwd();
-    const toolName = context.tool_name || context.toolName || 'unknown';
-    const toolInput = context.tool_input || context.toolInput || {};
-    const toolResult = context.tool_result || context.toolResult;
-    const toolError = context.tool_error || context.toolError;
+    const toolName = context.tool_name || 'unknown';
+    const toolInput = context.tool_input || {};
+    const toolResult = context.tool_result;
+    const toolError = context.tool_error;
 
     // Skip noisy tools
     if (!shouldCaptureTool(toolName)) {
-      console.log(JSON.stringify({ continue: true }));
-      return;
+      process.exit(0);
     }
 
     // Get current capsule
@@ -71,15 +70,11 @@ process.stdin.on('end', () => {
       incrementCapsuleObservationCount(capsule.id);
     }
 
-    // Log for debugging
     console.error(`[kindling] Captured ${toolName} -> ${observation.id.slice(0, 8)}`);
-
-    // Return continue signal
-    console.log(JSON.stringify({ continue: true }));
   } catch (error) {
     console.error(`[kindling] PostToolUse error: ${error.message}`);
-    console.log(JSON.stringify({ continue: true }));
   }
+  process.exit(0);
 });
 
 /**

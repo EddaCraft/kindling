@@ -11,7 +11,7 @@ import { join } from 'path';
 /**
  * Export service interface
  */
-export interface ExportService {
+  export interface ExportService {
   createExportBundle(options?: {
     scope?: Partial<ScopeIds>;
     includeRedacted?: boolean;
@@ -19,7 +19,7 @@ export interface ExportService {
     metadata?: {
       description?: string;
       tags?: string[];
-      [key: string]: any;
+      [key: string]: unknown;
     };
   }): ExportBundle;
 

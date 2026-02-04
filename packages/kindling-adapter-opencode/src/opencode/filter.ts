@@ -17,9 +17,9 @@ export const MAX_CONTENT_LENGTH = 50000; // 50KB
  */
 const SECRET_PATTERNS = [
   // API keys and tokens
-  /['\"]?(?:api[-_]?key|apikey|token|secret|password|passwd|pwd)['\"]?\s*[:=]\s*['\"]?([^\s'\"]+)['\"]?/gi,
+  /['"]?(?:api[-_]?key|apikey|token|secret|password|passwd|pwd)['"]?\s*[:=]\s*['"]?([^\s'"]+)['"]?/gi,
   // AWS keys
-  /(?:AWS|aws)[-_]?(?:SECRET|secret)[-_]?(?:ACCESS|access)[-_]?(?:KEY|key)\s*[:=]\s*['\"]?([A-Za-z0-9/+=]{40})['\"]?/g,
+  /(?:AWS|aws)[-_]?(?:SECRET|secret)[-_]?(?:ACCESS|access)[-_]?(?:KEY|key)\s*[:=]\s*['"]?([A-Za-z0-9/+=]{40})['"]?/g,
   // Generic API tokens (long alphanumeric strings with mixed chars that look like tokens)
   // Must have at least one digit AND one letter AND be 32+ chars
   /\b(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9]{32,}\b/g,

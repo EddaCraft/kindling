@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Simple file-based storage for Kindling plugin
  *

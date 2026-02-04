@@ -6,6 +6,7 @@
  */
 
 import type { ScopeIds } from '../types/common.js';
+import type { Observation, Capsule, Summary, Pin } from '../types/index.js';
 
 /**
  * Store interface for export operations
@@ -22,10 +23,10 @@ export interface ExportStore {
     version: string;
     exportedAt: number;
     scope?: Partial<ScopeIds>;
-    observations: any[];
-    capsules: any[];
-    summaries: any[];
-    pins: any[];
+    observations: Observation[];
+    capsules: Capsule[];
+    summaries: Summary[];
+    pins: Pin[];
   };
 }
 
@@ -43,7 +44,7 @@ export interface ExportBundleOptions {
   metadata?: {
     description?: string;
     tags?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -59,17 +60,17 @@ export interface ExportBundle {
   metadata?: {
     description?: string;
     tags?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
   /** Dataset with entities */
   dataset: {
     version: string;
     exportedAt: number;
     scope?: Partial<ScopeIds>;
-    observations: any[];
-    capsules: any[];
-    summaries: any[];
-    pins: any[];
+    observations: Observation[];
+    capsules: Capsule[];
+    summaries: Summary[];
+    pins: Pin[];
   };
 }
 
@@ -157,7 +158,7 @@ export function validateBundle(bundle: unknown): {
     return { valid: false, errors: ['Bundle must be an object'] };
   }
 
-  const b = bundle as any;
+  const b = bundle as Partial<ExportBundle>;
 
   // Check bundle version
   if (!b.bundleVersion || typeof b.bundleVersion !== 'string') {
