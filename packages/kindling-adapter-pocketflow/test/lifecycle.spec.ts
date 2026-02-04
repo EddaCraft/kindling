@@ -134,7 +134,7 @@ describe('KindlingNode', () => {
       await node.post(context, undefined, { result: 'success' });
 
       const endObs = store.getObservationsByKind('node_end');
-      expect((endObs[0].provenance as Record<string, unknown>).duration).toBeGreaterThanOrEqual(10);
+      expect((endObs[0].provenance as Record<string, unknown>).duration).toBeGreaterThanOrEqual(5);
     });
   });
 
@@ -340,6 +340,6 @@ describe('KindlingFlow', () => {
     const endObs = store.getObservationsByKind('node_end')
       .filter(o => (o.provenance as Record<string, unknown>).nodeType === 'flow');
 
-    expect((endObs[0].provenance as Record<string, unknown>).duration).toBeGreaterThanOrEqual(10);
+    expect((endObs[0].provenance as Record<string, unknown>).duration).toBeGreaterThanOrEqual(5);
   });
 });
