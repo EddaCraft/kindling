@@ -9,6 +9,8 @@ Kindling captures observations (tool calls, diffs, commands, errors) from AI-ass
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 
+> **WARNING: This project is in active development and is not ready for public use.** APIs, data formats, and behavior may change without notice. Use at your own risk... or better yet star us and get notified when we launch.
+
 ## Why Kindling?
 
 AI-assisted development produces large volumes of transient activity (tool calls, diffs, agent runs) but loses context between sessions. Developers and local agents repeatedly re-discover the same information, leading to wasted time, architectural drift, and brittle workflows.
@@ -92,19 +94,25 @@ const capsule = service.openCapsule({
 });
 
 // Capture observations
-service.appendObservation({
-  kind: 'command',
-  content: 'npm test failed with auth error',
-  provenance: { command: 'npm test', exitCode: 1 },
-  scopeIds: { sessionId: 'session-1' },
-}, { capsuleId: capsule.id });
+service.appendObservation(
+  {
+    kind: 'command',
+    content: 'npm test failed with auth error',
+    provenance: { command: 'npm test', exitCode: 1 },
+    scopeIds: { sessionId: 'session-1' },
+  },
+  { capsuleId: capsule.id },
+);
 
-service.appendObservation({
-  kind: 'error',
-  content: 'JWT validation failed: token expired',
-  provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
-  scopeIds: { sessionId: 'session-1' },
-}, { capsuleId: capsule.id });
+service.appendObservation(
+  {
+    kind: 'error',
+    content: 'JWT validation failed: token expired',
+    provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
+    scopeIds: { sessionId: 'session-1' },
+  },
+  { capsuleId: capsule.id },
+);
 
 // Retrieve relevant context
 const results = service.retrieve({
@@ -125,16 +133,16 @@ db.close();
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@kindling/core`](./packages/kindling-core) | Domain types, capsule lifecycle, retrieval orchestration |
-| [`@kindling/store-sqlite`](./packages/kindling-store-sqlite) | SQLite persistence with FTS5 indexing |
-| [`@kindling/store-sqljs`](./packages/kindling-store-sqljs) | sql.js WASM store for browser compatibility |
-| [`@kindling/provider-local`](./packages/kindling-provider-local) | FTS-based retrieval with deterministic ranking |
-| [`@kindling/adapter-opencode`](./packages/kindling-adapter-opencode) | OpenCode session integration |
-| [`@kindling/adapter-pocketflow`](./packages/kindling-adapter-pocketflow) | PocketFlow workflow integration |
-| [`@kindling/adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration |
-| [`@kindling/cli`](./packages/kindling-cli) | Command-line tools for inspection and management |
+| Package                                                                    | Description                                              |
+| -------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [`@kindling/core`](./packages/kindling-core)                               | Domain types, capsule lifecycle, retrieval orchestration |
+| [`@kindling/store-sqlite`](./packages/kindling-store-sqlite)               | SQLite persistence with FTS5 indexing                    |
+| [`@kindling/store-sqljs`](./packages/kindling-store-sqljs)                 | sql.js WASM store for browser compatibility              |
+| [`@kindling/provider-local`](./packages/kindling-provider-local)           | FTS-based retrieval with deterministic ranking           |
+| [`@kindling/adapter-opencode`](./packages/kindling-adapter-opencode)       | OpenCode session integration                             |
+| [`@kindling/adapter-pocketflow`](./packages/kindling-adapter-pocketflow)   | PocketFlow workflow integration                          |
+| [`@kindling/adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration                            |
+| [`@kindling/cli`](./packages/kindling-cli)                                 | Command-line tools for inspection and management         |
 
 ## Architecture
 
@@ -195,15 +203,15 @@ kindling unpin pin_xyz789
 
 Atomic units of captured context:
 
-| Kind | Description |
-|------|-------------|
-| `tool_call` | AI tool invocations (Read, Edit, Bash, etc.) |
-| `command` | Shell commands with exit codes and output |
-| `file_diff` | File changes with paths |
-| `error` | Errors with stack traces |
-| `message` | User/assistant messages |
-| `node_start` / `node_end` | Workflow node lifecycle |
-| `node_output` / `node_error` | Workflow node results |
+| Kind                         | Description                                  |
+| ---------------------------- | -------------------------------------------- |
+| `tool_call`                  | AI tool invocations (Read, Edit, Bash, etc.) |
+| `command`                    | Shell commands with exit codes and output    |
+| `file_diff`                  | File changes with paths                      |
+| `error`                      | Errors with stack traces                     |
+| `message`                    | User/assistant messages                      |
+| `node_start` / `node_end`    | Workflow node lifecycle                      |
+| `node_output` / `node_error` | Workflow node results                        |
 
 ### Capsules
 
@@ -213,6 +221,7 @@ Bounded units of meaning that group observations:
 - **PocketFlowNode** - Single workflow node execution
 
 Each capsule has:
+
 - Type and intent (debug, implement, test, etc.)
 - Open/close lifecycle with automatic summary generation
 - Scope (sessionId, repoId, agentId, userId)
@@ -300,6 +309,7 @@ console.log(results.pins); // Includes the pinned error
 ## Non-Goals
 
 Kindling explicitly does **not**:
+
 - Decide what memory is authoritative (that's Edda's job)
 - Manage organizational lifecycle or approval workflows
 - Provide multi-user collaboration (yet)
