@@ -9,7 +9,7 @@ Kindling captures observations (tool calls, diffs, commands, errors) from AI-ass
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 
-> **WARNING: This project is in active development and is not ready for public use.** APIs, data formats, and behavior may change without notice. Use at your own risk.
+> **WARNING: This project is in active development and is not ready for public use.** APIs, data formats, and behavior may change without notice. Use at your own risk... or better yet star us and get notified when we launch.
 
 ## Why Kindling?
 
