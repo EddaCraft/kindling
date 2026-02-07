@@ -9,6 +9,8 @@ Kindling captures observations (tool calls, diffs, commands, errors) from AI-ass
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 
+> **WARNING: This project is in active development and is not ready for public use.** APIs, data formats, and behavior may change without notice. Use at your own risk.
+
 ## Why Kindling?
 
 AI-assisted development produces large volumes of transient activity (tool calls, diffs, agent runs) but loses context between sessions. Developers and local agents repeatedly re-discover the same information, leading to wasted time, architectural drift, and brittle workflows.
