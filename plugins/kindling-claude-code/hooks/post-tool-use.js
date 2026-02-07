@@ -9,7 +9,6 @@
 import {
   appendObservation,
   getOpenCapsuleForSession,
-  incrementCapsuleObservationCount,
 } from './lib/db.js';
 import { filterContent, filterToolResult, shouldCaptureTool } from './lib/filter.js';
 
@@ -64,11 +63,6 @@ process.stdin.on('end', () => {
       },
       capsuleId: capsule?.id,
     });
-
-    // Update capsule count
-    if (capsule) {
-      incrementCapsuleObservationCount(capsule.id);
-    }
 
     console.error(`[kindling] Captured ${toolName} -> ${observation.id.slice(0, 8)}`);
   } catch (error) {

@@ -11,7 +11,7 @@ Show statistics about your Kindling memory database.
 
 When the user runs `/memory status`:
 
-1. Read the kindling data files from `~/.kindling/`
+1. Open the SQLite database at `~/.kindling/kindling.db`
 2. Count observations, capsules, and pins
 3. Show recent session activity
 4. Display the database location
@@ -19,63 +19,52 @@ When the user runs `/memory status`:
 ## Implementation
 
 ```bash
-node -e "
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+node --input-type=module -e "
+import Database from 'better-sqlite3';
+import { join } from 'path';
+import { homedir } from 'os';
+import { existsSync } from 'fs';
 
-const dir = path.join(os.homedir(), '.kindling');
-const obsFile = path.join(dir, 'observations.jsonl');
-const capsFile = path.join(dir, 'capsules.json');
-const pinsFile = path.join(dir, 'pins.json');
+const dbPath = join(homedir(), '.kindling', 'kindling.db');
 
-if (!fs.existsSync(dir)) {
+if (!existsSync(dbPath)) {
   console.log('Kindling not initialized yet.');
-  console.log('Memory will be captured automatically as you use Claude Code.');
+  console.log('Run kindling init or memory will be captured automatically as you use Claude Code.');
   process.exit(0);
 }
 
-// Count observations
-let obsCount = 0;
-if (fs.existsSync(obsFile)) {
-  const content = fs.readFileSync(obsFile, 'utf-8');
-  obsCount = content.split('\n').filter(Boolean).length;
-}
+const db = new Database(dbPath, { readonly: true });
+db.pragma('journal_mode = WAL');
 
-// Load capsules
-let capsules = [];
-if (fs.existsSync(capsFile)) {
-  capsules = Object.values(JSON.parse(fs.readFileSync(capsFile, 'utf-8')));
-}
+const obsCount = db.prepare('SELECT COUNT(*) as count FROM observations').get().count;
+const capsuleCount = db.prepare('SELECT COUNT(*) as count FROM capsules').get().count;
+const openCount = db.prepare(\"SELECT COUNT(*) as count FROM capsules WHERE status = 'open'\").get().count;
+const closedCount = capsuleCount - openCount;
+const pinCount = db.prepare('SELECT COUNT(*) as count FROM pins WHERE expires_at IS NULL OR expires_at > ?').get(Date.now()).count;
 
-// Load pins
-let pins = [];
-if (fs.existsSync(pinsFile)) {
-  pins = JSON.parse(fs.readFileSync(pinsFile, 'utf-8'));
-}
+const recentSessions = db.prepare(\`
+  SELECT id, intent, status, opened_at, closed_at,
+    (SELECT COUNT(*) FROM capsule_observations WHERE capsule_id = capsules.id) as obs_count
+  FROM capsules
+  ORDER BY opened_at DESC
+  LIMIT 5
+\`).all();
 
-// Calculate stats
-const openCapsules = capsules.filter(c => c.status === 'open').length;
-const closedCapsules = capsules.filter(c => c.status === 'closed').length;
-
-// Get recent sessions
-const recentSessions = capsules
-  .sort((a, b) => (b.closedAt || b.openedAt) - (a.closedAt || a.openedAt))
-  .slice(0, 5);
+db.close();
 
 console.log('=== Kindling Memory Status ===\n');
 console.log('Observations: ' + obsCount);
-console.log('Sessions:     ' + capsules.length + ' (' + openCapsules + ' open, ' + closedCapsules + ' closed)');
-console.log('Pins:         ' + pins.length);
-console.log('Location:     ' + dir);
+console.log('Sessions:     ' + capsuleCount + ' (' + openCount + ' open, ' + closedCount + ' closed)');
+console.log('Pins:         ' + pinCount);
+console.log('Database:     ' + dbPath);
 console.log('');
 
 if (recentSessions.length > 0) {
   console.log('Recent Sessions:');
   recentSessions.forEach((c, i) => {
-    const date = new Date(c.openedAt).toLocaleDateString();
+    const date = new Date(c.opened_at).toLocaleDateString();
     const status = c.status === 'open' ? '(active)' : '';
-    console.log('  ' + (i+1) + '. ' + date + ' - ' + (c.observationCount || 0) + ' observations ' + status);
+    console.log('  ' + (i+1) + '. ' + date + ' - ' + c.obs_count + ' observations ' + status);
   });
 }
 "
@@ -89,7 +78,7 @@ if (recentSessions.length > 0) {
 Observations: 247
 Sessions:     12 (1 open, 11 closed)
 Pins:         3
-Location:     /home/user/.kindling
+Database:     /home/user/.kindling/kindling.db
 
 Recent Sessions:
   1. 1/27/2025 - 45 observations (active)
