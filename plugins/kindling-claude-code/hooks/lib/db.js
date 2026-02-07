@@ -402,18 +402,36 @@ export function closeCapsule(capsuleId) {
 }
 
 /**
+ * Normalize a raw capsule row from SQLite to camelCase with parsed scopeIds.
+ */
+function normalizeCapsule(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    type: row.type,
+    intent: row.intent,
+    status: row.status,
+    openedAt: row.opened_at,
+    closedAt: row.closed_at,
+    scopeIds: row.scope_ids ? JSON.parse(row.scope_ids) : {},
+  };
+}
+
+/**
  * Get open capsule for session
  */
 export function getOpenCapsuleForSession(sessionId) {
   const db = ensureDb();
 
-  return db.prepare(`
+  const row = db.prepare(`
     SELECT id, type, intent, status, opened_at, closed_at, scope_ids
     FROM capsules
     WHERE status = 'open' AND json_extract(scope_ids, '$.sessionId') = ?
     ORDER BY opened_at DESC
     LIMIT 1
   `).get(sessionId);
+
+  return normalizeCapsule(row);
 }
 
 /**
@@ -422,10 +440,12 @@ export function getOpenCapsuleForSession(sessionId) {
 export function getCapsule(capsuleId) {
   const db = ensureDb();
 
-  return db.prepare(`
+  const row = db.prepare(`
     SELECT id, type, intent, status, opened_at, closed_at, scope_ids
     FROM capsules WHERE id = ?
   `).get(capsuleId);
+
+  return normalizeCapsule(row);
 }
 
 /**
@@ -434,10 +454,12 @@ export function getCapsule(capsuleId) {
 export function getAllCapsules() {
   const db = ensureDb();
 
-  return db.prepare(`
+  const rows = db.prepare(`
     SELECT id, type, intent, status, opened_at, closed_at, scope_ids
     FROM capsules ORDER BY opened_at DESC
   `).all();
+
+  return rows.map(normalizeCapsule);
 }
 
 /**
