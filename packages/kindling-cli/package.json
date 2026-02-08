@@ -15,7 +15,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/test"
   ],
   "keywords": [
     "kindling",

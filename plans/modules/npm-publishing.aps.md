@@ -1,8 +1,8 @@
 # NPM Publishing Readiness
 
-| Scope | Owner  | Priority | Status  |
-| ----- | ------ | -------- | ------- |
-| NPM   | @aneki | high     | Planned |
+| Scope | Owner  | Priority | Status |
+| ----- | ------ | -------- | ------ |
+| NPM   | @aneki | high     | Ready  |
 
 ## Purpose
 
@@ -46,12 +46,12 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ## Acceptance Criteria
 
-- [ ] All 9 packages have complete metadata (author, repository, keywords, homepage, bugs)
-- [ ] All 9 packages have README.md files
-- [ ] Root CHANGELOG.md documents v0.1.0 release
-- [ ] `pnpm pack --dry-run` succeeds for all packages
-- [ ] GitHub Actions publish workflow exists and is valid
-- [ ] CLI binary is executable after installation
+- [x] All 9 packages have complete metadata (author, repository, keywords, homepage, bugs)
+- [x] All 9 packages have README.md files
+- [x] Root CHANGELOG.md documents v0.1.0 release
+- [x] `pnpm pack --dry-run` succeeds for all packages
+- [x] GitHub Actions publish workflow exists and is valid
+- [x] CLI binary is executable after installation
 
 ## Risks & Mitigations
 
@@ -65,6 +65,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-001: Add package metadata to all package.json files
 
+- **Status:** Complete
 - **Intent:** Ensure all packages meet npm publishing requirements and are discoverable
 - **Expected Outcome:** Each package has author, repository, keywords, homepage, bugs fields
 - **Scope:** All 9 package.json files
@@ -72,12 +73,9 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 - **Files:**
   - `packages/kindling-core/package.json`
   - `packages/kindling-store-sqlite/package.json`
-  - `packages/kindling-store-sqljs/package.json`
   - `packages/kindling-provider-local/package.json`
   - `packages/kindling-adapter-opencode/package.json`
   - `packages/kindling-adapter-pocketflow/package.json`
-  - `packages/kindling-adapter-claude-code/package.json`
-  - `packages/kindling-api-server/package.json`
   - `packages/kindling-cli/package.json`
 - **Dependencies:** (none)
 - **Validation:** `pnpm -r exec -- node -e "const p=require('./package.json'); if(!p.author||!p.repository||!p.keywords) process.exit(1)"`
@@ -86,18 +84,16 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-002: Create package README files
 
+- **Status:** Complete
 - **Intent:** Provide documentation for each package on npm
 - **Expected Outcome:** Each package has a README with installation, usage, and API overview
-- **Scope:** All packages missing READMEs
+- **Scope:** 5 packages (adapter-opencode already has README)
 - **Non-scope:** Comprehensive API documentation
 - **Files:**
   - `packages/kindling-core/README.md`
   - `packages/kindling-store-sqlite/README.md`
-  - `packages/kindling-store-sqljs/README.md`
   - `packages/kindling-provider-local/README.md`
   - `packages/kindling-adapter-pocketflow/README.md`
-  - `packages/kindling-adapter-claude-code/README.md`
-  - `packages/kindling-api-server/README.md`
   - `packages/kindling-cli/README.md`
 - **Dependencies:** (none)
 - **Validation:** All README.md files exist and are non-empty
@@ -106,6 +102,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-003: Create CHANGELOG.md
 
+- **Status:** Complete
 - **Intent:** Document release history for users and maintainers
 - **Expected Outcome:** Root CHANGELOG.md with v0.1.0 initial release notes
 - **Scope:** Root repository
@@ -118,6 +115,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-004: Add publish scripts and configuration
 
+- **Status:** Complete
 - **Intent:** Streamline the publishing process
 - **Expected Outcome:** Root package.json has prepublishOnly and release scripts; .npmrc configured
 - **Scope:** Root configuration
@@ -132,6 +130,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-005: Create GitHub Actions publish workflow
 
+- **Status:** Complete
 - **Intent:** Automate npm publishing on version tags
 - **Expected Outcome:** Workflow triggers on v\* tags, runs tests, publishes to npm
 - **Scope:** CI/CD configuration
@@ -144,6 +143,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-006: Verify CLI executable
 
+- **Status:** Complete
 - **Intent:** Ensure CLI works after npm installation
 - **Expected Outcome:** CLI has hashbang, is executable, --help works
 - **Scope:** CLI package
