@@ -8,8 +8,9 @@ Run this command:
 
 ```bash
 node -e "
-const { init, cleanup } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const { init, cleanup, getProjectRoot } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
 const cwd = process.cwd();
+const repoRoot = getProjectRoot(cwd);
 const pinId = process.argv[1] || '';
 
 if (!pinId) {
@@ -20,7 +21,7 @@ if (!pinId) {
 
 const { db, store } = init(cwd);
 try {
-  const pins = store.listActivePins({ repoId: cwd }, Date.now());
+  const pins = store.listActivePins({ repoId: repoRoot }, Date.now());
   const pin = pins.find(p => p.id.startsWith(pinId));
 
   if (!pin) {

@@ -8,8 +8,9 @@ Run this command:
 
 ```bash
 node -e "
-const { init, cleanup } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const { init, cleanup, getProjectRoot } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
 const cwd = process.cwd();
+const repoRoot = getProjectRoot(cwd);
 const obsId = process.argv[1] || '';
 
 if (!obsId) {
@@ -20,8 +21,8 @@ if (!obsId) {
 
 const { db, store } = init(cwd);
 try {
-  // Support partial ID match
-  const obs = db.prepare('SELECT id, kind, content FROM observations WHERE id LIKE ? LIMIT 1').get(obsId + '%');
+  // Support partial ID match, scoped to current project
+  const obs = db.prepare(\"SELECT id, kind, content FROM observations WHERE json_extract(scope_ids, '$.repoId') = ? AND id LIKE ? LIMIT 1\").get(repoRoot, obsId + '%');
 
   if (!obs) {
     console.log('Observation not found: ' + obsId);

@@ -2,3 +2,4 @@ node_modules/
 package-lock.json
 # Override root .gitignore: dist/ must be committed for the plugin to work
 !dist/
+!dist/**

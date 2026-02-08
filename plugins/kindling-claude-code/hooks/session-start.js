@@ -7,7 +7,7 @@
  * Exit 0 = success (never blocks session startup).
  */
 
-const { init, cleanup, readStdin } = require('./lib/init.js');
+const { init, cleanup, readStdin, getProjectRoot } = require('./lib/init.js');
 
 async function main() {
   const context = await readStdin();
@@ -15,7 +15,7 @@ async function main() {
   const sessionId = context.session_id || `session-${Date.now()}`;
   const cwd = context.cwd || process.cwd();
 
-  const { db, handlers, service, dbPath } = init(cwd);
+  const { db, store, handlers, service, dbPath } = init(cwd);
 
   try {
     // Open capsule for this session
@@ -26,33 +26,31 @@ async function main() {
     if (injectContext) {
       try {
         const maxResults = parseInt(process.env.KINDLING_MAX_CONTEXT || '10', 10);
-        const results = await service.retrieve({
-          query: '',
-          scopeIds: { repoId: cwd },
-          maxCandidates: maxResults,
-        });
+        const repoRoot = getProjectRoot(cwd);
 
         const items = [];
 
-        // Include pins
-        if (results.pins && results.pins.length > 0) {
+        // Include pins (via store API)
+        const pins = store.listActivePins({ repoId: repoRoot }, Date.now());
+        if (pins && pins.length > 0) {
           items.push('## Pinned Items');
-          for (const pin of results.pins) {
+          for (const pin of pins) {
             const preview = pin.content ? pin.content.substring(0, 200) : '(no content)';
             items.push(`- **${pin.note || 'Pin'}**: ${preview}`);
           }
         }
 
-        // Include recent candidates (observations from prior sessions)
-        if (results.candidates && results.candidates.length > 0) {
+        // Include recent observations (recency-based, no FTS query needed)
+        const recentObs = db.prepare(
+          "SELECT id, kind, content, ts FROM observations WHERE json_extract(scope_ids, '$.repoId') = ? AND redacted = 0 ORDER BY ts DESC LIMIT ?"
+        ).all(repoRoot, maxResults);
+
+        if (recentObs.length > 0) {
           items.push('## Recent Activity');
-          for (const candidate of results.candidates) {
-            const entity = candidate.entity || candidate;
-            const content = entity.content || '';
-            const kind = entity.kind || 'unknown';
-            const ts = entity.ts ? new Date(entity.ts).toLocaleString() : '';
-            const preview = content.substring(0, 300).replace(/\n/g, ' ');
-            items.push(`- [${ts}] ${kind}: ${preview}`);
+          for (const obs of recentObs) {
+            const ts = obs.ts ? new Date(obs.ts).toLocaleString() : '';
+            const preview = (obs.content || '').substring(0, 300).replace(/\n/g, ' ');
+            items.push(`- [${ts}] ${obs.kind}: ${preview}`);
           }
         }
 

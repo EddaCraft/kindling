@@ -8,9 +8,10 @@ Run this command:
 
 ```bash
 node -e "
-const { init, cleanup, kindling } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const { init, cleanup, getProjectRoot, kindling } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
 const { randomUUID } = require('crypto');
 const cwd = process.cwd();
+const repoRoot = getProjectRoot(cwd);
 const args = process.argv.slice(1).join(' ');
 
 // Parse TTL if present (e.g., '7d', '24h', '30m')
@@ -28,7 +29,7 @@ if (!note) note = 'Pinned observation';
 
 const { db, store } = init(cwd);
 try {
-  const lastObs = db.prepare('SELECT * FROM observations WHERE scope_repo_id = ? ORDER BY ts DESC LIMIT 1').get(cwd);
+  const lastObs = db.prepare(\"SELECT * FROM observations WHERE json_extract(scope_ids, '$.repoId') = ? ORDER BY ts DESC LIMIT 1\").get(repoRoot);
   if (!lastObs) {
     console.log('No observations to pin yet.');
     process.exit(0);
@@ -41,7 +42,7 @@ try {
     note: note,
     createdAt: Date.now(),
     expiresAt: ttlMs ? Date.now() + ttlMs : null,
-    scopeIds: { repoId: cwd },
+    scopeIds: { repoId: repoRoot },
   };
 
   store.insertPin(pin);

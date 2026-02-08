@@ -35,6 +35,11 @@ const requiredPackages = [
 for (const pkg of requiredPackages) {
   const distPath = path.join(packagesDir, pkg, 'dist');
   if (!fs.existsSync(distPath)) {
+    // Not in monorepo or packages not built — use existing bundle if available
+    if (fs.existsSync(outFile)) {
+      console.log('[kindling] Using existing bundle (monorepo packages not available).');
+      process.exit(0);
+    }
     console.error(`[kindling] Package ${pkg} not built. Run 'pnpm build' from the monorepo root first.`);
     process.exit(1);
   }
@@ -49,11 +54,16 @@ for (const pkg of requiredPackages) {
 
 // Read migration SQL files and generate an inline migration module
 const migrationsDir = path.join(packagesDir, 'kindling-store-sqlite', 'migrations');
-const migrationFiles = ['001_init.sql', '002_fts.sql', '003_indexes.sql'];
-const inlineMigrations = migrationFiles.map((file, i) => {
+const migrationFiles = fs
+  .readdirSync(migrationsDir)
+  .filter((f) => f.endsWith('.sql'))
+  .sort();
+const inlineMigrations = migrationFiles.map((file) => {
   const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
   const name = file.replace('.sql', '');
-  return `{ version: ${i + 1}, name: ${JSON.stringify(name)}, sql: ${JSON.stringify(sql)} }`;
+  const versionMatch = file.match(/^(\d+)_/);
+  const version = versionMatch ? parseInt(versionMatch[1], 10) : 0;
+  return `{ version: ${version}, name: ${JSON.stringify(name)}, sql: ${JSON.stringify(sql)} }`;
 });
 
 // Create inline migration module content

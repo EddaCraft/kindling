@@ -8,12 +8,13 @@ Run this command to search:
 
 ```bash
 node -e "
-const { init, cleanup } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const { init, cleanup, getProjectRoot } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
 const cwd = process.cwd();
+const repoRoot = getProjectRoot(cwd);
 const query = process.argv[1] || '';
 
 const { db, service } = init(cwd);
-service.retrieve({ query, scopeIds: { repoId: cwd }, maxCandidates: 15 })
+service.retrieve({ query, scopeIds: { repoId: repoRoot }, maxCandidates: 15 })
   .then(results => {
     const items = [];
     if (results.pins && results.pins.length > 0) {

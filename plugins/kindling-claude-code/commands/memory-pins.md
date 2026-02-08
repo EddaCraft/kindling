@@ -8,12 +8,13 @@ Run this command:
 
 ```bash
 node -e "
-const { init, cleanup } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const { init, cleanup, getProjectRoot } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
 const cwd = process.cwd();
+const repoRoot = getProjectRoot(cwd);
 const { db, store } = init(cwd);
 
 try {
-  const pins = store.listActivePins({ repoId: cwd }, Date.now());
+  const pins = store.listActivePins({ repoId: repoRoot }, Date.now());
 
   if (!pins || pins.length === 0) {
     console.log('No pins yet. Use /memory pin to pin important observations.');
@@ -28,10 +29,15 @@ try {
     console.log((i + 1) + '. [' + date + '] ' + (pin.note || 'Pin'));
     console.log('   ID: ' + pin.id.substring(0, 8));
 
-    const obs = store.getObservationById ? store.getObservationById(pin.targetId) : null;
+    let obs = null;
+    if (typeof store.getObservationById === 'function') {
+      obs = store.getObservationById(pin.targetId);
+    }
     if (obs) {
       const preview = (obs.content || '').substring(0, 150).replace(/\n/g, ' ');
       console.log('   ' + obs.kind + ': ' + preview + '...');
+    } else {
+      console.log('   Target: ' + pin.targetId.substring(0, 8));
     }
 
     if (pin.expiresAt) {

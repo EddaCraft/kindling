@@ -6,11 +6,25 @@
  */
 
 const { createHash } = require('crypto');
+const { execSync } = require('child_process');
 const { existsSync, mkdirSync } = require('fs');
 const { homedir } = require('os');
 const { join, resolve } = require('path');
 
 const kindling = require(join(__dirname, '..', '..', 'dist', 'kindling-bundle.cjs'));
+
+/**
+ * Resolve the project root directory.
+ * Uses git toplevel when available for stability (same hash regardless of
+ * which subdirectory Claude Code was launched from), falls back to resolved cwd.
+ */
+function getProjectRoot(cwd) {
+  try {
+    return execSync('git rev-parse --show-toplevel', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return resolve(cwd);
+  }
+}
 
 /**
  * Derive a project-scoped database path from the working directory.
@@ -26,7 +40,8 @@ function getDbPath(cwd) {
     return process.env.KINDLING_DB_PATH;
   }
 
-  const projectId = createHash('sha256').update(resolve(cwd)).digest('hex').slice(0, 12);
+  const root = getProjectRoot(cwd);
+  const projectId = createHash('sha256').update(root).digest('hex').slice(0, 12);
   const dir = join(homedir(), '.kindling', 'projects', projectId);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -78,4 +93,4 @@ function readStdin() {
   });
 }
 
-module.exports = { init, cleanup, readStdin, getDbPath, kindling };
+module.exports = { init, cleanup, readStdin, getDbPath, getProjectRoot, kindling };
