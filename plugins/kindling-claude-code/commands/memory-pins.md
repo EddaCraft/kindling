@@ -11,55 +11,58 @@ List all pinned observations with their notes.
 
 When the user runs `/memory pins`:
 
-1. Read pins from `~/.kindling/pins.json`
-2. For each pin, look up the observation
+1. Open the SQLite database at `~/.kindling/kindling.db`
+2. Query pins joined with their target observations
 3. Display pins with their notes and content preview
 
 ## Implementation
 
 ```bash
-node -e "
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+node --input-type=module -e "
+import Database from 'better-sqlite3';
+import { join } from 'path';
+import { homedir } from 'os';
+import { existsSync } from 'fs';
 
-const dir = path.join(os.homedir(), '.kindling');
-const obsFile = path.join(dir, 'observations.jsonl');
-const pinsFile = path.join(dir, 'pins.json');
+const dbPath = join(homedir(), '.kindling', 'kindling.db');
 
-if (!fs.existsSync(pinsFile)) {
+if (!existsSync(dbPath)) {
   console.log('No pins yet. Use /memory pin to pin important observations.');
   process.exit(0);
 }
 
-const pins = JSON.parse(fs.readFileSync(pinsFile, 'utf-8'));
+const db = new Database(dbPath, { readonly: true });
+db.pragma('journal_mode = WAL');
+
+const pins = db.prepare(\`
+  SELECT p.id, p.reason, p.created_at, p.target_id, p.target_type,
+         COALESCE(o.kind, 'summary') as kind,
+         COALESCE(o.content, s.content) as content
+  FROM pins p
+  LEFT JOIN observations o ON o.id = p.target_id AND p.target_type = 'observation'
+  LEFT JOIN summaries s ON s.id = p.target_id AND p.target_type = 'summary'
+  WHERE p.expires_at IS NULL OR p.expires_at > ?
+  ORDER BY p.created_at DESC
+\`).all(Date.now());
+
+db.close();
+
 if (pins.length === 0) {
   console.log('No pins yet. Use /memory pin to pin important observations.');
   process.exit(0);
 }
 
-// Load observations for lookup
-const obsMap = new Map();
-if (fs.existsSync(obsFile)) {
-  const lines = fs.readFileSync(obsFile, 'utf-8').split('\n').filter(Boolean);
-  lines.forEach(line => {
-    const obs = JSON.parse(line);
-    obsMap.set(obs.id, obs);
-  });
-}
-
 console.log('=== Pinned Observations ===\n');
 
 pins.forEach((pin, i) => {
-  const date = new Date(pin.createdAt).toLocaleDateString();
-  const obs = obsMap.get(pin.targetId);
+  const date = new Date(pin.created_at).toLocaleDateString();
 
-  console.log((i + 1) + '. [' + date + '] ' + pin.note);
+  console.log((i + 1) + '. [' + date + '] ' + (pin.reason || 'No note'));
   console.log('   ID: ' + pin.id.substring(0, 8));
 
-  if (obs) {
-    const preview = (obs.content?.substring(0, 150) || '').replace(/\n/g, ' ');
-    console.log('   ' + obs.kind + ': ' + preview + '...');
+  if (pin.content) {
+    const preview = pin.content.substring(0, 150).replace(/\n/g, ' ');
+    console.log('   ' + pin.kind + ': ' + preview + '...');
   } else {
     console.log('   (observation not found)');
   }

@@ -15,63 +15,56 @@ Pin the most recent observation to mark it as important. Pinned items are highli
 
 When the user runs `/memory pin [note]`:
 
-1. Read the most recent observation from `~/.kindling/observations.jsonl`
-2. Create a pin record linking to that observation
-3. Save the pin to `~/.kindling/pins.json`
+1. Open the SQLite database at `~/.kindling/kindling.db`
+2. Get the most recent observation
+3. Create a pin record linking to that observation
 4. Confirm to the user what was pinned
 
 ## Implementation
 
 ```bash
-node -e "
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const crypto = require('crypto');
+node --input-type=module -e "
+import Database from 'better-sqlite3';
+import { join } from 'path';
+import { homedir } from 'os';
+import { existsSync } from 'fs';
+import { randomUUID } from 'crypto';
 
-const dir = path.join(os.homedir(), '.kindling');
-const obsFile = path.join(dir, 'observations.jsonl');
-const pinsFile = path.join(dir, 'pins.json');
+const dbPath = join(homedir(), '.kindling', 'kindling.db');
+
+if (!existsSync(dbPath)) {
+  console.log('No observations to pin yet.');
+  process.exit(0);
+}
+
 const note = process.argv.slice(1).join(' ') || 'Pinned observation';
 
-if (!fs.existsSync(obsFile)) {
+const db = new Database(dbPath);
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+const lastObs = db.prepare('SELECT id, kind, content, ts FROM observations ORDER BY ts DESC LIMIT 1').get();
+if (!lastObs) {
   console.log('No observations to pin yet.');
+  db.close();
   process.exit(0);
-}
-
-// Get the most recent observation
-const lines = fs.readFileSync(obsFile, 'utf-8').split('\n').filter(Boolean);
-if (lines.length === 0) {
-  console.log('No observations to pin yet.');
-  process.exit(0);
-}
-
-const lastObs = JSON.parse(lines[lines.length - 1]);
-
-// Load existing pins
-let pins = [];
-if (fs.existsSync(pinsFile)) {
-  pins = JSON.parse(fs.readFileSync(pinsFile, 'utf-8'));
 }
 
 // Check if already pinned
-const alreadyPinned = pins.some(p => p.targetId === lastObs.id);
-if (alreadyPinned) {
+const existing = db.prepare('SELECT id FROM pins WHERE target_id = ?').get(lastObs.id);
+if (existing) {
   console.log('This observation is already pinned.');
+  db.close();
   process.exit(0);
 }
 
-// Create new pin
-const pin = {
-  id: crypto.randomUUID(),
-  targetType: 'observation',
-  targetId: lastObs.id,
-  note: note,
-  createdAt: Date.now(),
-};
+const pinId = randomUUID();
+db.prepare(\`
+  INSERT INTO pins (id, target_type, target_id, reason, created_at, scope_ids)
+  VALUES (?, 'observation', ?, ?, ?, '{}')
+\`).run(pinId, lastObs.id, note, Date.now());
 
-pins.push(pin);
-fs.writeFileSync(pinsFile, JSON.stringify(pins, null, 2));
+db.close();
 
 console.log('Pinned observation:');
 console.log('');

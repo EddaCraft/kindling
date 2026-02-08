@@ -202,7 +202,7 @@ Those concerns belong to downstream systems and are intentionally out of scope f
 - **Path:** ./modules/kindling-plugin-claude-code-v2.aps.md
 - **Scope:** PLUGIN-CC
 - **Owner:** @aneki
-- **Status:** Needs Rework
+- **Status:** Ready
 - **Priority:** critical
 - **Tags:** plugin, claude-code, quick-start, zero-config
 - **Dependencies:** (none - self-contained)
@@ -293,7 +293,7 @@ _No open questions at this time._
 
 ## What's Next
 
-**M1-M4: Complete.** All core packages (core, store-sqlite, provider-local, adapter-opencode, adapter-pocketflow, adapter-claude-code, cli) are implemented, building, and passing 596 tests.
+**M1-M4: Complete.** All core packages (core, store-sqlite, provider-local, adapter-opencode, adapter-pocketflow, adapter-claude-code, cli) are implemented, building, and have a fully passing automated test suite.
 
 **M5 Progress:**
 

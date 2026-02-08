@@ -221,12 +221,19 @@ describe('LocalFtsProvider', () => {
     });
 
     it('should safely handle adversarial SQL metacharacters in scope values', async () => {
-      const results = await provider.search({
+      // Verify data exists first (legit query returns results)
+      const legit = await provider.search({
+        query: 'authentication',
+        scopeIds: { sessionId: 's1' },
+      });
+      expect(legit.length).toBeGreaterThan(0);
+
+      // Adversarial scope value must not bypass filtering
+      const adversarial = await provider.search({
         query: 'authentication',
         scopeIds: { sessionId: "' OR '1'='1" },
       });
-
-      expect(results).toHaveLength(0);
+      expect(adversarial).toHaveLength(0);
     });
   });
 

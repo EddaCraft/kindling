@@ -14,7 +14,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - Removal of console.log from library code
 - SQL injection fix in provider scope filtering
 - FTS query error handling for malformed input
-- Wiring tokenBudget through the retrieval orchestrator
+- Deprecation of unused tokenBudget parameter (token-budgeted assembly is downstream)
 - Adapter contract definition (BaseAdapter interface)
 - Method name alias cleanup (insert/delete vs create/remove)
 
@@ -39,7 +39,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - Configurable logger option for store initialization
 - Parameterized SQL in provider scope filtering
 - Graceful FTS error handling (empty results on malformed queries)
-- Functional tokenBudget in retrieve() pipeline
+- Deprecated tokenBudget parameter with @deprecated JSDoc annotation
 - BaseAdapter interface/abstract class in @kindling/core
 - Consistent method naming across public API
 
@@ -56,7 +56,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - [ ] No console.log calls in library packages (core, store-sqlite, provider-local)
 - [ ] LocalFtsProvider uses parameterized queries for scope filtering
 - [ ] Malformed FTS queries return empty results instead of throwing
-- [ ] retrieve() with tokenBudget returns results within the specified budget
+- [ ] tokenBudget parameter is marked @deprecated with guidance to use maxCandidates
 - [ ] BaseAdapter interface exists in @kindling/core with documented contract
 - [ ] No duplicate method name aliases in public API (deprecated aliases still exist but marked)
 

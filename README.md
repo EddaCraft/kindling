@@ -76,6 +76,8 @@ npm install -g @kindling/cli              # or: pnpm add -g / yarn global add
 ## Quick Start
 
 ```typescript
+// Requires Node >= 20 with ESM (top-level await)
+import { randomUUID } from 'node:crypto';
 import { KindlingService } from '@kindling/core';
 import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
 import { LocalFtsProvider } from '@kindling/provider-local';
@@ -96,7 +98,7 @@ const capsule = service.openCapsule({
 // Capture observations
 service.appendObservation(
   {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     kind: 'command',
     content: 'npm test failed with auth error',
     provenance: { command: 'npm test', exitCode: 1 },
@@ -109,7 +111,7 @@ service.appendObservation(
 
 service.appendObservation(
   {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     kind: 'error',
     content: 'JWT validation failed: token expired',
     provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
