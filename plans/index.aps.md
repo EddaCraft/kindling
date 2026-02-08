@@ -232,7 +232,7 @@ Those concerns belong to downstream systems and are intentionally out of scope f
 - **Path:** ./modules/npm-publishing.aps.md
 - **Scope:** NPM
 - **Owner:** @aneki
-- **Status:** Planned
+- **Status:** Ready
 - **Priority:** high
 - **Tags:** npm, publishing, release, oss
 - **Dependencies:** (all packages)
@@ -262,7 +262,7 @@ Those concerns belong to downstream systems and are intentionally out of scope f
 - **Path:** ./modules/kindling-dx-hardening.aps.md
 - **Scope:** DX
 - **Owner:** @aneki
-- **Status:** Ready
+- **Status:** In Progress
 - **Priority:** high
 - **Tags:** dx, hardening, quality, integration
 - **Dependencies:** kindling-core, kindling-store-sqlite, kindling-provider-local
@@ -297,17 +297,19 @@ _No open questions at this time._
 
 **M5 Progress:**
 
-| Deliverable        | Status       | Next Action                                                                    |
-| ------------------ | ------------ | ------------------------------------------------------------------------------ |
-| Claude Code plugin | Needs Rework | Fix plugin format, wire to SQLite engine, add context injection (PLUGIN-CC-V2) |
-| CLI `serve`        | Complete     | —                                                                              |
-| CLI `init`         | Complete     | —                                                                              |
-| OpenCode plugin    | Draft        | Ready to start                                                                 |
+| Deliverable        | Status   | Next Action                          |
+| ------------------ | -------- | ------------------------------------ |
+| Claude Code plugin | Ready    | PR #15 open, awaiting review & merge |
+| CLI `serve`        | Complete | —                                    |
+| CLI `init`         | Complete | —                                    |
+| OpenCode plugin    | Draft    | Ready to start                       |
+
+**DX Hardening:** 5/7 tasks complete (DX-001–DX-005). Remaining: DX-006 (adapter contract), DX-007 (method aliases). PR #14 open.
+
+**npm-publishing:** All 6 tasks complete (metadata, READMEs, CHANGELOG, publish scripts, CI workflow, CLI verification). PR #16 open.
 
 **Critical Path:**
 
-1. **npm-publishing** — All packages are buildable and tested but not yet published to npm. This is the next critical step for OSS v0.1 release.
-2. **PLUGIN-OC-001:** Research OpenCode extension system
-   - Research how OpenCode extensions work
-   - Document event model and hook points
-   - Plan shared patterns with Claude Code plugin
+1. **Merge open PRs** — #14 (DX hardening), #15 (Claude Code plugin v2), #16 (npm publishing)
+2. **Claim @kindling npm scope** and publish v0.1.0
+3. **PLUGIN-OC-001:** Research OpenCode extension system

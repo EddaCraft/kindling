@@ -1,8 +1,8 @@
 # NPM Publishing Readiness
 
-| Scope | Owner  | Priority | Status  |
-| ----- | ------ | -------- | ------- |
-| NPM   | @aneki | high     | Planned |
+| Scope | Owner  | Priority | Status |
+| ----- | ------ | -------- | ------ |
+| NPM   | @aneki | high     | Ready  |
 
 ## Purpose
 
@@ -46,12 +46,12 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ## Acceptance Criteria
 
-- [ ] All 9 packages have complete metadata (author, repository, keywords, homepage, bugs)
-- [ ] All 9 packages have README.md files
-- [ ] Root CHANGELOG.md documents v0.1.0 release
-- [ ] `pnpm pack --dry-run` succeeds for all packages
-- [ ] GitHub Actions publish workflow exists and is valid
-- [ ] CLI binary is executable after installation
+- [x] All 9 packages have complete metadata (author, repository, keywords, homepage, bugs)
+- [x] All 9 packages have README.md files
+- [x] Root CHANGELOG.md documents v0.1.0 release
+- [x] `pnpm pack --dry-run` succeeds for all packages
+- [x] GitHub Actions publish workflow exists and is valid
+- [x] CLI binary is executable after installation
 
 ## Risks & Mitigations
 

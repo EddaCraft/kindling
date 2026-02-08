@@ -1,8 +1,8 @@
 # Kindling DX Hardening
 
-| Scope | Owner  | Priority | Status |
-| ----- | ------ | -------- | ------ |
-| DX    | @aneki | high     | Ready  |
+| Scope | Owner  | Priority | Status      |
+| ----- | ------ | -------- | ----------- |
+| DX    | @aneki | high     | In Progress |
 
 ## Purpose
 
@@ -52,11 +52,11 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 
 ## Acceptance Criteria
 
-- [ ] Root README Quick Start compiles without errors
-- [ ] No console.log calls in library packages (core, store-sqlite, provider-local)
-- [ ] LocalFtsProvider uses parameterized queries for scope filtering
-- [ ] Malformed FTS queries return empty results instead of throwing
-- [ ] tokenBudget parameter is marked @deprecated with guidance to use maxCandidates
+- [x] Root README Quick Start compiles without errors
+- [x] No console.log calls in library packages (core, store-sqlite, provider-local)
+- [x] LocalFtsProvider uses parameterized queries for scope filtering
+- [x] Malformed FTS queries return empty results instead of throwing
+- [x] tokenBudget parameter is marked @deprecated with guidance to use maxCandidates
 - [ ] BaseAdapter interface exists in @kindling/core with documented contract
 - [ ] No duplicate method name aliases in public API (deprecated aliases still exist but marked)
 
@@ -71,7 +71,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 
 ## Tasks
 
-### DX-001: Fix README Quick Start code examples
+### DX-001: Fix README Quick Start code examples — Complete: 2026-02-08
 
 - **Intent:** Fix all 4 compile errors in root README Quick Start so developers can copy-paste and run
 - **Expected Outcome:** Root README and individual package READMEs contain code examples that compile and run against current types
@@ -91,7 +91,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - Fix `results.providerHits` to `results.candidates`
 - Verify all package READMEs for consistency
 
-### DX-002: Remove console.log from library code
+### DX-002: Remove console.log from library code — Complete: 2026-02-08
 
 - **Intent:** Eliminate stdout side effects from library packages so consumers control their own logging
 - **Expected Outcome:** openDatabase() and runMigrations() are silent by default, with an optional logger/verbose config
@@ -110,7 +110,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - Default to silent operation
 - Update tests to verify silent default
 
-### DX-003: Fix SQL injection in provider
+### DX-003: Fix SQL injection in provider — Complete: 2026-02-08
 
 - **Intent:** Replace string interpolation with parameterized queries to prevent SQL injection in scope filtering
 - **Expected Outcome:** LocalFtsProvider.buildScopeFilters() uses parameterized queries for all dynamic values
@@ -128,7 +128,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - Add test with adversarial scope values (SQL metacharacters)
 - Verify existing provider tests pass
 
-### DX-004: Add FTS query error handling
+### DX-004: Add FTS query error handling — Complete: 2026-02-08
 
 - **Intent:** Prevent application crashes from malformed FTS search terms
 - **Expected Outcome:** Malformed FTS5 MATCH queries return empty results with a warning instead of throwing
@@ -147,7 +147,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - Add tests for malformed query inputs
 - Log caught errors at debug level (not stdout)
 
-### DX-005: Ensure retrieve() respects `limit` parameter for bounded results
+### DX-005: Ensure retrieve() respects `limit` parameter for bounded results — Complete: 2026-02-08
 
 - **Intent:** Make the `limit` parameter functional so consumers can bound retrieval output size
 - **Expected Outcome:** retrieve() with `limit` returns at most N results, consistent with Kindling's mechanical retrieval contract (bounded result sets, not token-budgeted assembly)
