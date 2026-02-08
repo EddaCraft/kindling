@@ -1,102 +1,46 @@
 ---
-name: memory search
-description: Search your session memory for past work
-arguments:
-  - name: query
-    description: What to search for
-    required: true
+description: Search your session memory for past work. Use when the user wants to find something from a previous session.
 ---
 
-# Memory Search
+Search through past Claude Code sessions to find relevant context.
 
-Search through your past Claude Code sessions to find relevant context.
-
-## Instructions
-
-When the user runs `/memory search <query>`:
-
-1. Open the SQLite database at `~/.kindling/kindling.db`
-2. Search observations using FTS5 full-text search
-3. Return the most relevant matching observations (up to 10)
-4. Format results showing: timestamp, tool/kind, and content preview
-
-## Implementation
+Run this command to search:
 
 ```bash
-node --input-type=module -e "
-import Database from 'better-sqlite3';
-import { join } from 'path';
-import { homedir } from 'os';
-import { existsSync } from 'fs';
+node -e "
+const { init, cleanup, getProjectRoot } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const cwd = process.cwd();
+const repoRoot = getProjectRoot(cwd);
+const query = process.argv[1] || '';
 
-const dbPath = join(homedir(), '.kindling', 'kindling.db');
-
-if (!existsSync(dbPath)) {
-  console.log('No memory found. Run kindling init or start using Claude Code to build your memory.');
-  process.exit(0);
-}
-
-const query = process.argv.slice(1).join(' ') || '';
-if (!query) {
-  console.log('Usage: /memory search <query>');
-  process.exit(0);
-}
-
-const db = new Database(dbPath, { readonly: true });
-db.pragma('journal_mode = WAL');
-
-// Sanitize for FTS5: quote each token so special chars are treated as literals
-const safeQuery = query.trim().split(/\\s+/).filter(Boolean)
-  .map(t => '\"' + t.replace(/\"/g, '\"\"') + '\"').join(' ') || '\"\"';
-
-let rows;
-try {
-  rows = db.prepare(\`
-    SELECT o.id, o.kind, o.content, o.ts
-    FROM observations_fts fts
-    JOIN observations o ON o.rowid = fts.rowid
-    WHERE observations_fts MATCH ?
-    ORDER BY fts.rank
-    LIMIT 10
-  \`).all(safeQuery);
-} catch (e) {
-  // Fallback to LIKE search if FTS5 still fails
-  rows = db.prepare(\`
-    SELECT id, kind, content, ts FROM observations
-    WHERE content LIKE '%' || ? || '%'
-    ORDER BY ts DESC LIMIT 10
-  \`).all(query);
-}
-
-db.close();
-
-if (rows.length === 0) {
-  console.log('No matches found for: ' + query);
-  process.exit(0);
-}
-
-console.log('Found ' + rows.length + ' matches:\n');
-rows.forEach((o, i) => {
-  const date = new Date(o.ts).toLocaleString();
-  const preview = o.content?.substring(0, 200).replace(/\n/g, ' ') || '';
-  console.log((i+1) + '. [' + date + '] ' + o.kind);
-  console.log('   ' + preview + (o.content?.length > 200 ? '...' : ''));
-  console.log('');
-});
-" "$@"
+const { db, service } = init(cwd);
+service.retrieve({ query, scopeIds: { repoId: repoRoot }, maxCandidates: 15 })
+  .then(results => {
+    const items = [];
+    if (results.pins && results.pins.length > 0) {
+      console.log('=== Pinned Items ===');
+      results.pins.forEach(p => {
+        const preview = (p.content || '').substring(0, 200).replace(/\n/g, ' ');
+        console.log('  [PIN] ' + (p.note || 'Pin') + ': ' + preview);
+      });
+      console.log('');
+    }
+    if (results.candidates && results.candidates.length > 0) {
+      console.log('=== Search Results ===');
+      results.candidates.forEach((c, i) => {
+        const e = c.entity || c;
+        const ts = e.ts ? new Date(e.ts).toLocaleString() : '';
+        const preview = (e.content || '').substring(0, 300).replace(/\n/g, ' ');
+        console.log((i+1) + '. [' + ts + '] ' + (e.kind || '') + ': ' + preview);
+      });
+    }
+    if ((!results.pins || results.pins.length === 0) && (!results.candidates || results.candidates.length === 0)) {
+      console.log('No results found for: ' + query);
+    }
+  })
+  .catch(err => console.error('Search error:', err.message))
+  .finally(() => { cleanup(db); });
+" "$ARGUMENTS"
 ```
 
-## Example Output
-
-```
-Found 3 matches:
-
-1. [1/27/2025, 2:30:45 PM] tool_call
-   Tool: Read File: /src/auth/validate.ts ...
-
-2. [1/27/2025, 2:28:12 PM] command
-   $ npm test -- auth ...
-
-3. [1/27/2025, 2:25:33 PM] file_diff
-   File: /src/auth/middleware.ts Action: Edited file ...
-```
+Show the results to the user in a readable format.

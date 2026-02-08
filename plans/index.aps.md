@@ -202,7 +202,7 @@ Those concerns belong to downstream systems and are intentionally out of scope f
 - **Path:** ./modules/kindling-plugin-claude-code-v2.aps.md
 - **Scope:** PLUGIN-CC
 - **Owner:** @aneki
-- **Status:** Ready
+- **Status:** Implemented
 - **Priority:** critical
 - **Tags:** plugin, claude-code, quick-start, zero-config
 - **Dependencies:** (none - self-contained)

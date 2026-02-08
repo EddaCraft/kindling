@@ -1,90 +1,56 @@
 ---
-name: memory pins
-description: Show all pinned observations
+description: List all pinned observations with their notes.
 ---
 
-# Memory Pins
+List all pinned observations with their notes and content preview.
 
-List all pinned observations with their notes.
-
-## Instructions
-
-When the user runs `/memory pins`:
-
-1. Open the SQLite database at `~/.kindling/kindling.db`
-2. Query pins joined with their target observations
-3. Display pins with their notes and content preview
-
-## Implementation
+Run this command:
 
 ```bash
-node --input-type=module -e "
-import Database from 'better-sqlite3';
-import { join } from 'path';
-import { homedir } from 'os';
-import { existsSync } from 'fs';
+node -e "
+const { init, cleanup, getProjectRoot } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const cwd = process.cwd();
+const repoRoot = getProjectRoot(cwd);
+const { db, store } = init(cwd);
 
-const dbPath = join(homedir(), '.kindling', 'kindling.db');
+try {
+  const pins = store.listActivePins({ repoId: repoRoot }, Date.now());
 
-if (!existsSync(dbPath)) {
-  console.log('No pins yet. Use /memory pin to pin important observations.');
-  process.exit(0);
-}
-
-const db = new Database(dbPath, { readonly: true });
-db.pragma('journal_mode = WAL');
-
-const pins = db.prepare(\`
-  SELECT p.id, p.reason, p.created_at, p.target_id, p.target_type,
-         COALESCE(o.kind, 'summary') as kind,
-         COALESCE(o.content, s.content) as content
-  FROM pins p
-  LEFT JOIN observations o ON o.id = p.target_id AND p.target_type = 'observation'
-  LEFT JOIN summaries s ON s.id = p.target_id AND p.target_type = 'summary'
-  WHERE p.expires_at IS NULL OR p.expires_at > ?
-  ORDER BY p.created_at DESC
-\`).all(Date.now());
-
-db.close();
-
-if (pins.length === 0) {
-  console.log('No pins yet. Use /memory pin to pin important observations.');
-  process.exit(0);
-}
-
-console.log('=== Pinned Observations ===\n');
-
-pins.forEach((pin, i) => {
-  const date = new Date(pin.created_at).toLocaleDateString();
-
-  console.log((i + 1) + '. [' + date + '] ' + (pin.reason || 'No note'));
-  console.log('   ID: ' + pin.id.substring(0, 8));
-
-  if (pin.content) {
-    const preview = pin.content.substring(0, 150).replace(/\n/g, ' ');
-    console.log('   ' + pin.kind + ': ' + preview + '...');
-  } else {
-    console.log('   (observation not found)');
+  if (!pins || pins.length === 0) {
+    console.log('No pins yet. Use /memory pin to pin important observations.');
+    process.exit(0);
   }
-  console.log('');
-});
 
-console.log('Use /memory unpin <id> to remove a pin.');
+  console.log('=== Pinned Observations ===');
+  console.log('');
+
+  pins.forEach((pin, i) => {
+    const date = new Date(pin.createdAt).toLocaleDateString();
+    console.log((i + 1) + '. [' + date + '] ' + (pin.note || 'Pin'));
+    console.log('   ID: ' + pin.id.substring(0, 8));
+
+    let obs = null;
+    if (typeof store.getObservationById === 'function') {
+      obs = store.getObservationById(pin.targetId);
+    }
+    if (obs) {
+      const preview = (obs.content || '').substring(0, 150).replace(/\n/g, ' ');
+      console.log('   ' + obs.kind + ': ' + preview + '...');
+    } else {
+      console.log('   Target: ' + pin.targetId.substring(0, 8));
+    }
+
+    if (pin.expiresAt) {
+      console.log('   Expires: ' + new Date(pin.expiresAt).toLocaleString());
+    }
+    console.log('');
+  });
+
+  console.log('Use /memory unpin <id> to remove a pin.');
+} finally {
+  cleanup(db);
+}
 "
 ```
 
-## Example Output
-
-```
-=== Pinned Observations ===
-
-1. [1/27/2025] Root cause fix for auth bug
-   ID: a3f2b1c4
-   file_diff: Tool: Edit File: /src/auth/validate.ts Action: Edited file...
-
-2. [1/26/2025] Important architecture decision
-   ID: 7e8d9f0a
-   message: We decided to use Redis for session storage because...
-
-Use /memory unpin <id> to remove a pin.
-```
+Show the results to the user.
