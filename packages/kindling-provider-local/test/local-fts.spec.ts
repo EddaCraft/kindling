@@ -20,7 +20,9 @@ describe('LocalFtsProvider', () => {
       unlinkSync(testDbPath);
       unlinkSync(`${testDbPath}-shm`);
       unlinkSync(`${testDbPath}-wal`);
-    } catch {}
+    } catch {
+      // ignore missing files
+    }
 
     db = openDatabase({ path: testDbPath });
     store = new SqliteKindlingStore(db);
@@ -33,7 +35,9 @@ describe('LocalFtsProvider', () => {
       unlinkSync(testDbPath);
       unlinkSync(`${testDbPath}-shm`);
       unlinkSync(`${testDbPath}-wal`);
-    } catch {}
+    } catch {
+      // ignore missing files
+    }
   });
 
   describe('FTS search', () => {
@@ -129,7 +133,7 @@ describe('LocalFtsProvider', () => {
       });
 
       expect(results).toHaveLength(2);
-      const ids = results.map(r => r.entity.id);
+      const ids = results.map((r) => r.entity.id);
       expect(ids).toContain(obsResult.value.id);
       expect(ids).toContain(summaryResult.value.id);
     });
@@ -214,6 +218,15 @@ describe('LocalFtsProvider', () => {
       });
 
       expect(results).toHaveLength(3);
+    });
+
+    it('should safely handle adversarial SQL metacharacters in scope values', async () => {
+      const results = await provider.search({
+        query: 'authentication',
+        scopeIds: { sessionId: "' OR '1'='1" },
+      });
+
+      expect(results).toHaveLength(0);
     });
   });
 
@@ -416,7 +429,7 @@ describe('LocalFtsProvider', () => {
 
     it('should weight recent observations higher', async () => {
       const now = Date.now();
-      const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
 
       const obs1Result = validateObservation({
         kind: 'message',
@@ -464,7 +477,7 @@ describe('LocalFtsProvider', () => {
         kind: 'message',
         content: 'authentication authentication',
         scopeIds: { sessionId: 's1' },
-        ts: now - (10 * 24 * 60 * 60 * 1000), // 10 days ago
+        ts: now - 10 * 24 * 60 * 60 * 1000, // 10 days ago
       });
 
       const obs3Result = validateObservation({
@@ -576,6 +589,44 @@ describe('LocalFtsProvider', () => {
   describe('Provider metadata', () => {
     it('should have correct provider name', () => {
       expect(provider.name).toBe('local-fts');
+    });
+  });
+
+  describe('Malformed query handling', () => {
+    it('should return empty results for "AND OR"', async () => {
+      const results = await provider.search({
+        query: 'AND OR',
+        scopeIds: {},
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('should return empty results for "*"', async () => {
+      const results = await provider.search({
+        query: '*',
+        scopeIds: {},
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('should return empty results for empty string', async () => {
+      const results = await provider.search({
+        query: '',
+        scopeIds: {},
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('should return empty results for unmatched parenthesis', async () => {
+      const results = await provider.search({
+        query: 'foo(bar',
+        scopeIds: {},
+      });
+
+      expect(results).toEqual([]);
     });
   });
 });

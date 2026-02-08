@@ -57,8 +57,6 @@ function getDefaultDbPath(): string {
 export function openDatabase(options: DatabaseOptions = {}): Database.Database {
   const dbPath = options.path ?? getDefaultDbPath();
 
-  console.log(`Opening database: ${dbPath}`);
-
   // Open database
   const db = new Database(dbPath, {
     verbose: options.verbose ? console.log : undefined,

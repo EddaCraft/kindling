@@ -27,7 +27,6 @@ interface FtsMatch {
   rank: number; // BM25 score (negative number, closer to 0 = better)
 }
 
-
 export class LocalFtsProvider implements RetrievalProvider {
   name = 'local-fts';
   private db: Database.Database;
@@ -44,13 +43,7 @@ export class LocalFtsProvider implements RetrievalProvider {
   }
 
   async search(options: ProviderSearchOptions): Promise<ProviderSearchResult[]> {
-    const {
-      query,
-      scopeIds,
-      maxResults = 50,
-      excludeIds = [],
-      includeRedacted = false,
-    } = options;
+    const { query, scopeIds, maxResults = 50, excludeIds = [], includeRedacted = false } = options;
 
     // 1. Find FTS matches from both observations and summaries
     const ftsMatches = this.findFtsMatches(query);
@@ -60,12 +53,7 @@ export class LocalFtsProvider implements RetrievalProvider {
     }
 
     // 2. Fetch entities and apply filters
-    const entities = this.fetchEntities(
-      ftsMatches,
-      scopeIds,
-      excludeIds,
-      includeRedacted
-    );
+    const entities = this.fetchEntities(ftsMatches, scopeIds, excludeIds, includeRedacted);
 
     if (entities.length === 0) {
       return [];
@@ -89,38 +77,46 @@ export class LocalFtsProvider implements RetrievalProvider {
     const matches: FtsMatch[] = [];
 
     // Query observations FTS
-    const obsStmt = this.db.prepare<[string]>(`
-      SELECT rowid, rank
-      FROM observations_fts
-      WHERE content MATCH ?
-      ORDER BY rank
-    `);
+    try {
+      const obsStmt = this.db.prepare<[string]>(`
+        SELECT rowid, rank
+        FROM observations_fts
+        WHERE content MATCH ?
+        ORDER BY rank
+      `);
 
-    const obsMatches = obsStmt.all(query) as Array<{ rowid: number; rank: number }>;
-    matches.push(
-      ...obsMatches.map(m => ({
-        rowid: m.rowid,
-        table_name: 'observations' as const,
-        rank: m.rank,
-      }))
-    );
+      const obsMatches = obsStmt.all(query) as Array<{ rowid: number; rank: number }>;
+      matches.push(
+        ...obsMatches.map((m) => ({
+          rowid: m.rowid,
+          table_name: 'observations' as const,
+          rank: m.rank,
+        })),
+      );
+    } catch {
+      // FTS5 syntax error — return empty matches for this table
+    }
 
     // Query summaries FTS
-    const sumStmt = this.db.prepare<[string]>(`
-      SELECT rowid, rank
-      FROM summaries_fts
-      WHERE content MATCH ?
-      ORDER BY rank
-    `);
+    try {
+      const sumStmt = this.db.prepare<[string]>(`
+        SELECT rowid, rank
+        FROM summaries_fts
+        WHERE content MATCH ?
+        ORDER BY rank
+      `);
 
-    const sumMatches = sumStmt.all(query) as Array<{ rowid: number; rank: number }>;
-    matches.push(
-      ...sumMatches.map(m => ({
-        rowid: m.rowid,
-        table_name: 'summaries' as const,
-        rank: m.rank,
-      }))
-    );
+      const sumMatches = sumStmt.all(query) as Array<{ rowid: number; rank: number }>;
+      matches.push(
+        ...sumMatches.map((m) => ({
+          rowid: m.rowid,
+          table_name: 'summaries' as const,
+          rank: m.rank,
+        })),
+      );
+    } catch {
+      // FTS5 syntax error — return empty matches for this table
+    }
 
     return matches;
   }
@@ -132,18 +128,18 @@ export class LocalFtsProvider implements RetrievalProvider {
     matches: FtsMatch[],
     scopeIds: ScopeIds,
     excludeIds: string[],
-    includeRedacted: boolean
+    includeRedacted: boolean,
   ): Array<{ entity: Observation | Summary; ftsMatch: FtsMatch }> {
     const results: Array<{ entity: Observation | Summary; ftsMatch: FtsMatch }> = [];
 
-    // Build scope filter SQL
-    const scopeFilters = this.buildScopeFilters(scopeIds);
-
     // Fetch observations
-    const obsMatches = matches.filter(m => m.table_name === 'observations');
+    const obsMatches = matches.filter((m) => m.table_name === 'observations');
     if (obsMatches.length > 0) {
-      const obsRowids = obsMatches.map(m => m.rowid);
+      const obsRowids = obsMatches.map((m) => m.rowid);
       const placeholders = obsRowids.map(() => '?').join(',');
+
+      // Build scope filter SQL with parameterized queries
+      const scopeFilter = this.buildScopeFilters(scopeIds);
 
       let obsQuery = `
         SELECT o.rowid, o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted
@@ -157,12 +153,12 @@ export class LocalFtsProvider implements RetrievalProvider {
       }
 
       // Apply scope filters
-      if (scopeFilters.length > 0) {
-        obsQuery += ` AND (${scopeFilters.join(' AND ')})`;
+      if (scopeFilter.clauses.length > 0) {
+        obsQuery += ` AND (${scopeFilter.clauses.join(' AND ')})`;
       }
 
       const obsStmt = this.db.prepare(obsQuery);
-      const observations = obsStmt.all(...obsRowids) as Array<{
+      const observations = obsStmt.all(...obsRowids, ...scopeFilter.params) as Array<{
         rowid: number;
         id: string;
         kind: string;
@@ -186,7 +182,7 @@ export class LocalFtsProvider implements RetrievalProvider {
           redacted: row.redacted === 1,
         };
 
-        const ftsMatch = obsMatches.find(m => m.rowid === row.rowid);
+        const ftsMatch = obsMatches.find((m) => m.rowid === row.rowid);
         if (ftsMatch) {
           results.push({ entity: observation, ftsMatch });
         }
@@ -194,12 +190,15 @@ export class LocalFtsProvider implements RetrievalProvider {
     }
 
     // Fetch summaries
-    const sumMatches = matches.filter(m => m.table_name === 'summaries');
+    const sumMatches = matches.filter((m) => m.table_name === 'summaries');
     if (sumMatches.length > 0) {
-      const sumRowids = sumMatches.map(m => m.rowid);
+      const sumRowids = sumMatches.map((m) => m.rowid);
       const placeholders = sumRowids.map(() => '?').join(',');
 
       // Join with capsules to get scope_ids for filtering
+      // Build scope filter with 'c' prefix so it references capsules.scope_ids
+      const sumScopeFilter = this.buildScopeFilters(scopeIds, 'c');
+
       let sumQuery = `
         SELECT s.rowid, s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at
         FROM summaries s
@@ -208,14 +207,12 @@ export class LocalFtsProvider implements RetrievalProvider {
       `;
 
       // Apply scope filters (on capsules.scope_ids)
-      if (scopeFilters.length > 0) {
-        // Replace 'scope_ids' with 'c.scope_ids' in filters
-        const capsuleScopeFilters = scopeFilters.map(f => f.replace('scope_ids', 'c.scope_ids'));
-        sumQuery += ` AND (${capsuleScopeFilters.join(' AND ')})`;
+      if (sumScopeFilter.clauses.length > 0) {
+        sumQuery += ` AND (${sumScopeFilter.clauses.join(' AND ')})`;
       }
 
       const sumStmt = this.db.prepare(sumQuery);
-      const summaries = sumStmt.all(...sumRowids) as Array<{
+      const summaries = sumStmt.all(...sumRowids, ...sumScopeFilter.params) as Array<{
         rowid: number;
         id: string;
         capsule_id: string;
@@ -237,7 +234,7 @@ export class LocalFtsProvider implements RetrievalProvider {
           createdAt: row.created_at,
         };
 
-        const ftsMatch = sumMatches.find(m => m.rowid === row.rowid);
+        const ftsMatch = sumMatches.find((m) => m.rowid === row.rowid);
         if (ftsMatch) {
           results.push({ entity: summary, ftsMatch });
         }
@@ -248,45 +245,47 @@ export class LocalFtsProvider implements RetrievalProvider {
   }
 
   /**
-   * Build scope filter SQL clauses
+   * Build scope filter SQL clauses with parameterized queries
    */
-  private buildScopeFilters(scopeIds: ScopeIds): string[] {
-    const filters: string[] = [];
+  private buildScopeFilters(
+    scopeIds: ScopeIds,
+    tablePrefix = '',
+  ): { clauses: string[]; params: unknown[] } {
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    const col = tablePrefix ? `${tablePrefix}.scope_ids` : 'scope_ids';
 
     if (scopeIds.sessionId !== undefined) {
-      filters.push(`json_extract(scope_ids, '$.sessionId') = '${this.escapeSql(scopeIds.sessionId)}'`);
+      clauses.push(`json_extract(${col}, '$.sessionId') = ?`);
+      params.push(scopeIds.sessionId);
     }
 
     if (scopeIds.repoId !== undefined) {
-      filters.push(`json_extract(scope_ids, '$.repoId') = '${this.escapeSql(scopeIds.repoId)}'`);
+      clauses.push(`json_extract(${col}, '$.repoId') = ?`);
+      params.push(scopeIds.repoId);
     }
 
     if (scopeIds.agentId !== undefined) {
-      filters.push(`json_extract(scope_ids, '$.agentId') = '${this.escapeSql(scopeIds.agentId)}'`);
+      clauses.push(`json_extract(${col}, '$.agentId') = ?`);
+      params.push(scopeIds.agentId);
     }
 
     if (scopeIds.userId !== undefined) {
-      filters.push(`json_extract(scope_ids, '$.userId') = '${this.escapeSql(scopeIds.userId)}'`);
+      clauses.push(`json_extract(${col}, '$.userId') = ?`);
+      params.push(scopeIds.userId);
     }
 
-    return filters;
-  }
-
-  /**
-   * Escape SQL string literals (basic escaping)
-   */
-  private escapeSql(value: string): string {
-    return value.replace(/'/g, "''");
+    return { clauses, params };
   }
 
   /**
    * Calculate combined score: FTS relevance + recency
    */
   private calculateScores(
-    entities: Array<{ entity: Observation | Summary; ftsMatch: FtsMatch }>
+    entities: Array<{ entity: Observation | Summary; ftsMatch: FtsMatch }>,
   ): ProviderSearchResult[] {
     // Find max/min FTS ranks for normalization (from returned entities only)
-    const ftsRanks = entities.map(e => e.ftsMatch.rank);
+    const ftsRanks = entities.map((e) => e.ftsMatch.rank);
     const minRank = Math.min(...ftsRanks); // Most negative (best)
     const maxRank = Math.max(...ftsRanks); // Closest to 0 (worst)
     const rankRange = maxRank - minRank;
@@ -297,17 +296,15 @@ export class LocalFtsProvider implements RetrievalProvider {
     return entities.map(({ entity, ftsMatch }) => {
       // Normalize FTS rank to 0.0-1.0 (higher = better)
       // FTS rank is negative, so we invert it
-      const ftsRelevance = rankRange > 0
-        ? (maxRank - ftsMatch.rank) / rankRange
-        : 1.0;
+      const ftsRelevance = rankRange > 0 ? (maxRank - ftsMatch.rank) / rankRange : 1.0;
 
       // Calculate recency score
       const entityTs = this.getTimestamp(entity);
       const ageDays = (now - entityTs) / (1000 * 60 * 60 * 24);
-      const recencyScore = Math.max(0, 1.0 - (ageDays / this.MAX_AGE_DAYS));
+      const recencyScore = Math.max(0, 1.0 - ageDays / this.MAX_AGE_DAYS);
 
       // Combined score
-      const score = (ftsRelevance * this.FTS_WEIGHT) + (recencyScore * this.RECENCY_WEIGHT);
+      const score = ftsRelevance * this.FTS_WEIGHT + recencyScore * this.RECENCY_WEIGHT;
 
       // Extract match context (snippet around match)
       const matchContext = this.extractMatchContext(entity);
@@ -338,9 +335,7 @@ export class LocalFtsProvider implements RetrievalProvider {
   /**
    * Extract snippet showing match context
    */
-  private extractMatchContext(
-    entity: Observation | Summary
-  ): string | undefined {
+  private extractMatchContext(entity: Observation | Summary): string | undefined {
     const content = entity.content;
     const maxLength = 100;
 
