@@ -1,31 +1,36 @@
 # Kindling Local Retrieval Provider
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| RETRIEVAL | @aneki | high | In Progress |
+| Scope     | Owner  | Priority | Status      |
+| --------- | ------ | -------- | ----------- |
+| RETRIEVAL | @aneki | high     | Implemented |
 
 ## Purpose
 
-Implements **deterministic local retrieval** over Kindling's system-of-record (SQLite). This provider is responsible for:
+Implements Kindling's **built-in mechanical retrieval layer** over the system-of-record (SQLite). This provider is responsible for:
 
-- Searching indexed content (FTS)
-- Applying ranking signals (scope, intent, recency, confidence)
-- Producing *explainable candidates* for Kindling Core's retrieval orchestrator
-- Ensuring stable ordering and predictable truncation behaviour
+- BM25 full-text search (statistical index property, not interpretation)
+- Scope filtering (session, repo, agent, user)
+- Recency/temporal filtering
+- Bounded result sets with stable ordering
 
-Kindling Core decides tiering (pins + current summary are non-evictable). This provider ranks only *candidate hits* returned from the store.
+This is the "SQLite FTS5" equivalent — good enough for standalone use. It asserts no meaning and performs no semantic interpretation. Relevance ranking beyond BM25, intent-aware retrieval, token-budgeted context assembly, and confidence scoring are explicitly out of scope for this layer and belong to downstream systems.
 
 ## In Scope
 
-- Candidate search over SQLite FTS (observations + summaries)
-- Ranking + stable sorting of candidates
-- Scope filtering (session/repo/agent/user)
-- Intent-aware boosts (when intent provided)
-- Explainability: each hit includes a concise reason and evidence references
+- BM25 full-text search over observations (and summaries stored on behalf)
+- Scope filtering (session/repo/agent/user) with AND semantics
+- Recency/temporal filtering (timestamp queries)
+- Stable sorting of results (BM25 score desc, ts desc, id asc)
+- Bounded result sets ("give me N matching results")
+- Evidence snippets for explainability
 
 ## Out of Scope
 
-- Token budgeting and tier enforcement (Kindling Core)
+- Relevance ranking beyond BM25 (downstream system responsibility)
+- Token-budgeted context assembly (downstream system responsibility)
+- Intent-aware boosts or confidence scoring (downstream system responsibility)
+- Summaries or condensation
+- Pattern detection
 - Semantic retrieval (embeddings) — Phase 2+
 - UI commands
 - Any write-side storage responsibilities
@@ -57,19 +62,19 @@ Where `ProviderHit` includes:
 
 ## Acceptance Criteria
 
-- [ ] Provider contract implemented with stable ordering
+- [x] Provider contract implemented with stable ordering
 - [x] FTS search returns relevant candidates within acceptable latency
-- [ ] Ranking matches expectations for common queries (resume work, find decision, find failure)
-- [ ] Evidence snippets are bounded and redaction-compliant
-- [ ] Ordering is deterministic given identical store state
+- [x] Ranking matches expectations for common queries (resume work, find decision, find failure)
+- [x] Evidence snippets are bounded and redaction-compliant
+- [x] Ordering is deterministic given identical store state
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| FTS relevance poor for short queries | Fallback to recency when query absent |
-| Ranking too clever / un-debuggable | Start boring; add signals only when proven |
-| Performance degrades at scale | Benchmark harness + guardrails |
+| Risk                                 | Mitigation                                 |
+| ------------------------------------ | ------------------------------------------ |
+| FTS relevance poor for short queries | Fallback to recency when query absent      |
+| Ranking too clever / un-debuggable   | Start boring; add signals only when proven |
+| Performance degrades at scale        | Benchmark harness + guardrails             |
 
 ## Tasks
 
@@ -110,28 +115,29 @@ Where `ProviderHit` includes:
 - `fallbackRecent(scopeIds, limit)` when query absent
 - Tests: empty on redacted content, respects scope constraints
 
-### RETRIEVAL-003: Implement ranking + explainability
+### RETRIEVAL-003: Implement stable sorting + evidence snippets
 
-- **Intent:** Turn raw FTS matches into predictable, explainable ranked hits
-- **Expected Outcome:** Ranking matches expectations across common use cases
+- **Intent:** Turn raw FTS matches into predictable, stable-ordered results with evidence
+- **Expected Outcome:** Results are deterministically ordered and include evidence snippets
 - **Scope:** `src/provider/`
-- **Non-scope:** Token budgeting
+- **Non-scope:** Intent-aware ranking, confidence scoring, token budgeting (all downstream system concerns)
 - **Files:** `src/provider/ranking.ts`, `src/provider/explain.ts`
 - **Dependencies:** RETRIEVAL-001, RETRIEVAL-002
 - **Validation:** `pnpm test -- provider.ranking`
 - **Confidence:** medium
-- **Risks:** Ranking rules need iteration based on dogfooding
+- **Risks:** Existing ranking code includes intent/confidence signals that need boundary review
 
 **Deliverables:**
 
 - `rankHits(hits, request)` implementing:
-  - Boosts: exact scope match (session > repo > agent/user)
-  - Boosts: intent match (if summary/capsule intent known)
-  - Boosts: recency (time decay)
-  - Demotes: low-confidence summaries
+  - BM25 score as primary signal
+  - Recency boost (time decay — mechanical, not interpretive)
+  - Scope match boost (session > repo — mechanical filter property)
   - Stable sort: score desc → ts desc → id asc
-- `why` generation rules (e.g. "matched command output from this session")
-- Tests with fixed fixtures for "resume work" and "why did tests fail" queries
+- Evidence snippet attachment
+- Tests with fixed fixtures
+
+> **Boundary note:** The current implementation includes intent-aware boosts and confidence-based demotes which cross into downstream system territory. These should be reviewed and either removed or annotated as v0.1 stopgaps.
 
 ### RETRIEVAL-004: Evidence snippet retrieval and safe truncation
 
@@ -171,9 +177,10 @@ Where `ProviderHit` includes:
 
 ## Decisions
 
-- **D-001:** Provider outputs are ranked *candidates*; Kindling Core enforces tiers and budgets
+- **D-001:** Provider returns bounded, mechanically-ordered results. Tiered assembly and token budgeting are downstream concerns.
 - **D-002:** Ordering must be stable and explainable; no stochastic ranking
 - **D-003:** Start with FTS + recency; add embeddings only when proven necessary
+- **D-004:** No intent inference or confidence scoring in this layer. Those signals belong to downstream systems.
 
 ## Notes
 

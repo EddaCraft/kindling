@@ -1,8 +1,8 @@
 # NPM Publishing Readiness
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| NPM | @aneki | high | Planned |
+| Scope | Owner  | Priority | Status  |
+| ----- | ------ | -------- | ------- |
+| NPM   | @aneki | high     | Planned |
 
 ## Purpose
 
@@ -46,8 +46,8 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ## Acceptance Criteria
 
-- [ ] All 6 packages have complete metadata (author, repository, keywords, homepage, bugs)
-- [ ] All 6 packages have README.md files
+- [ ] All 9 packages have complete metadata (author, repository, keywords, homepage, bugs)
+- [ ] All 9 packages have README.md files
 - [ ] Root CHANGELOG.md documents v0.1.0 release
 - [ ] `pnpm pack --dry-run` succeeds for all packages
 - [ ] GitHub Actions publish workflow exists and is valid
@@ -55,11 +55,11 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| better-sqlite3 build failures on user machines | Document build requirements in README |
-| Workspace protocol in published packages | pnpm handles workspace:* → version conversion on publish |
-| Missing npm credentials in CI | Document NPM_TOKEN setup in workflow |
+| Risk                                           | Mitigation                                                |
+| ---------------------------------------------- | --------------------------------------------------------- |
+| better-sqlite3 build failures on user machines | Document build requirements in README                     |
+| Workspace protocol in published packages       | pnpm handles workspace:\* → version conversion on publish |
+| Missing npm credentials in CI                  | Document NPM_TOKEN setup in workflow                      |
 
 ## Tasks
 
@@ -67,14 +67,17 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 - **Intent:** Ensure all packages meet npm publishing requirements and are discoverable
 - **Expected Outcome:** Each package has author, repository, keywords, homepage, bugs fields
-- **Scope:** All 6 package.json files
+- **Scope:** All 9 package.json files
 - **Non-scope:** Version changes, dependency updates
 - **Files:**
   - `packages/kindling-core/package.json`
   - `packages/kindling-store-sqlite/package.json`
+  - `packages/kindling-store-sqljs/package.json`
   - `packages/kindling-provider-local/package.json`
   - `packages/kindling-adapter-opencode/package.json`
   - `packages/kindling-adapter-pocketflow/package.json`
+  - `packages/kindling-adapter-claude-code/package.json`
+  - `packages/kindling-api-server/package.json`
   - `packages/kindling-cli/package.json`
 - **Dependencies:** (none)
 - **Validation:** `pnpm -r exec -- node -e "const p=require('./package.json'); if(!p.author||!p.repository||!p.keywords) process.exit(1)"`
@@ -85,13 +88,16 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 - **Intent:** Provide documentation for each package on npm
 - **Expected Outcome:** Each package has a README with installation, usage, and API overview
-- **Scope:** 5 packages (adapter-opencode already has README)
+- **Scope:** All packages missing READMEs
 - **Non-scope:** Comprehensive API documentation
 - **Files:**
   - `packages/kindling-core/README.md`
   - `packages/kindling-store-sqlite/README.md`
+  - `packages/kindling-store-sqljs/README.md`
   - `packages/kindling-provider-local/README.md`
   - `packages/kindling-adapter-pocketflow/README.md`
+  - `packages/kindling-adapter-claude-code/README.md`
+  - `packages/kindling-api-server/README.md`
   - `packages/kindling-cli/README.md`
 - **Dependencies:** (none)
 - **Validation:** All README.md files exist and are non-empty
@@ -127,7 +133,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 ### NPM-005: Create GitHub Actions publish workflow
 
 - **Intent:** Automate npm publishing on version tags
-- **Expected Outcome:** Workflow triggers on v* tags, runs tests, publishes to npm
+- **Expected Outcome:** Workflow triggers on v\* tags, runs tests, publishes to npm
 - **Scope:** CI/CD configuration
 - **Non-scope:** Semantic release, automatic version bumping
 - **Files:** `.github/workflows/publish.yml`
@@ -158,4 +164,4 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 - All packages are currently at v0.1.0
 - The @kindling npm scope must be claimed/verified before first publish
-- Workspace protocol (workspace:*) is automatically converted to actual versions by pnpm on publish
+- Workspace protocol (workspace:\*) is automatically converted to actual versions by pnpm on publish

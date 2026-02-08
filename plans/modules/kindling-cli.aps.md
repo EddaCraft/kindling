@@ -1,8 +1,8 @@
 # Kindling CLI
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| CLI | @aneki | medium | In Progress |
+| Scope | Owner  | Priority | Status      |
+| ----- | ------ | -------- | ----------- |
+| CLI   | @aneki | medium   | Implemented |
 
 ## Purpose
 
@@ -46,20 +46,20 @@ Provides a minimal command-line interface for Kindling, enabling inspection, deb
 
 ## Acceptance Criteria
 
-- [ ] CLI runs and displays help
-- [ ] `kindling status` shows DB location and counts
-- [ ] `kindling search` returns formatted results
-- [ ] `kindling list` shows entities with pagination
-- [ ] Pin management works end-to-end
-- [ ] Export/import round-trips successfully
+- [x] CLI runs and displays help
+- [x] `kindling status` shows DB location and counts
+- [x] `kindling search` returns formatted results
+- [x] `kindling list` shows entities with pagination
+- [x] Pin management works end-to-end
+- [x] Export/import round-trips successfully
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
+| Risk                          | Mitigation                                      |
+| ----------------------------- | ----------------------------------------------- |
 | Output formatting preferences | Human-readable default; JSON flag for scripting |
-| Large result sets | Pagination with sensible defaults |
-| DB not found | Clear error message with path hint |
+| Large result sets             | Pagination with sensible defaults               |
+| DB not found                  | Clear error message with path hint              |
 
 ## Tasks
 
@@ -144,3 +144,4 @@ Provides a minimal command-line interface for Kindling, enabling inspection, deb
 ## Notes
 
 - Keep the CLI simple and predictable. It's a debugging and power-user tool, not a primary interface.
+- CLI search uses Kindling's built-in mechanical retrieval (BM25 + scope + bounded results). When downstream systems are available, search can delegate to them for ranked/budgeted results.

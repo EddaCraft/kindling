@@ -1,29 +1,28 @@
 # Kindling PocketFlow Adapter
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| ADAPTER-PF | @aneki | medium | In Progress |
+| Scope      | Owner  | Priority | Status      |
+| ---------- | ------ | -------- | ----------- |
+| ADAPTER-PF | @aneki | medium   | Implemented |
 
 ## Purpose
 
-Transforms PocketFlow workflow execution into **high-signal memory capsules**. PocketFlow provides explicit node boundaries and intent-like structure, which makes capsule creation more reliable than heuristic time windows.
+Transforms PocketFlow **library** workflow execution into structured observations and capsules. PocketFlow provides explicit node boundaries which makes capsule creation more reliable than heuristic time windows.
 
 This adapter should:
 
-- Capture node lifecycle as observations
+- Capture node lifecycle as observations (node_start, node_output, node_error, node_end)
 - Create a capsule per node run (or per flow run if configured)
-- Attach node inputs/outputs as evidence
-- Emit confidence signals from execution structure (success/failure, downstream reuse)
+- Attach node inputs/outputs as evidence with provenance
 
 PocketFlow may be vendored internally (MIT license, explicitly supports copying source). The adapter boundary remains the same either way.
+
+> **Important distinction:** This adapter is for users of the PocketFlow _library_ in their own workflows who want Kindling capture. The PocketFlow _orchestration layer_ described in `docs/system-spec.md` is a separate system component that mediates agents and the memory stack. These coexist — this adapter is one of many integration points.
 
 ## In Scope
 
 - Node start/end event capture
-- Node input/output observation capture
+- Node input/output observation capture with provenance
 - Capsule creation per node
-- Intent derivation (from node name/type/config)
-- Confidence signals (basic)
 
 ## Out of Scope
 
@@ -52,15 +51,15 @@ PocketFlow may be vendored internally (MIT license, explicitly supports copying 
 - [x] PocketFlow vendoring/dependency approach documented
 - [x] Node lifecycle produces observations and capsules
 - [x] Intent derived from node metadata
-- [ ] Confidence signals reflect execution outcome
-- [ ] Outputs bounded and privacy-safe
+- [x] Confidence signals reflect execution outcome
+- [x] Outputs bounded and privacy-safe
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| PocketFlow API changes | Vendoring with pinned version |
-| Large node outputs | Truncation + allowlist |
+| Risk                        | Mitigation                           |
+| --------------------------- | ------------------------------------ |
+| PocketFlow API changes      | Vendoring with pinned version        |
+| Large node outputs          | Truncation + allowlist               |
 | Intent derivation too naive | Start simple; iterate based on usage |
 
 ## Tasks
@@ -104,26 +103,25 @@ PocketFlow may be vendored internally (MIT license, explicitly supports copying 
 - Capsule: type=`pocketflow_node`, intent derived from node label/config
 - Tests with minimal sample flow
 
-### ADAPTER-PF-003: Derive intent and confidence signals
+### ADAPTER-PF-003: Capture structured provenance from node metadata
 
-- **Intent:** Improve retrieval relevance using workflow structure instead of LLM guesswork
-- **Expected Outcome:** Capsules include intent tags and confidence hints for retrieval
+- **Intent:** Preserve workflow structure information in observation provenance for downstream use
+- **Expected Outcome:** Observations include node name, type, config, and execution outcome in provenance fields
 - **Scope:** `src/pocketflow/`
-- **Non-scope:** Ranking (provider responsibility)
-- **Files:** `src/pocketflow/intent.ts`, `src/pocketflow/confidence.ts`
+- **Non-scope:** Intent inference, confidence scoring (downstream system responsibilities)
+- **Files:** `src/pocketflow/provenance.ts`
 - **Dependencies:** ADAPTER-PF-002
-- **Validation:** `pnpm test -- pocketflow.intent`
-- **Confidence:** medium
-- **Risks:** Intent mapping may need iteration
+- **Validation:** `pnpm test -- pocketflow.provenance`
+- **Confidence:** high
+- **Risks:** Node metadata shape may vary across PocketFlow versions
 
 **Deliverables:**
 
-- Intent derivation rules (v1): mapping table from node naming conventions → intent
-- Confidence signals (v1):
-  - Success increases confidence
-  - Repeated failure decreases confidence
-  - Optional downstream reuse flag
+- Provenance extraction from node name, type, config
+- Execution outcome recording (success/failure/error) as raw facts
 - Tests with fixtures
+
+> **Boundary note:** Intent derivation and confidence scoring belong to downstream systems. This adapter captures raw structured facts; interpretation happens elsewhere.
 
 ### ADAPTER-PF-004: Output bounding and privacy defaults
 
@@ -144,8 +142,9 @@ PocketFlow may be vendored internally (MIT license, explicitly supports copying 
 
 ## Decisions
 
-- **D-001:** PocketFlow is treated as a workflow input source; Kindling core remains orchestration-agnostic
+- **D-001:** This adapter is for users of the PocketFlow _library_ in their own workflows. The vendored orchestration layer is a separate system component — not this adapter.
 - **D-002:** Capsules are node-scoped by default for highest signal
+- **D-003:** Adapter captures raw facts with provenance; intent inference and confidence scoring are downstream system responsibilities
 
 ## Notes
 
