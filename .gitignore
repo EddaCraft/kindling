@@ -147,4 +147,11 @@ vite.config.ts.timestamp-*
 # Agents files
 settings.local.json
 
+# Claude Code environment
+.claude/logs/
+.claude/settings.local.json
+.claude/.setup-meta
+.claude/autonomous-state.json
+.claude/memory.json
+
 .serena
