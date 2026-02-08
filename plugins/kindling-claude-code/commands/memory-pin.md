@@ -1,96 +1,63 @@
 ---
-name: memory pin
-description: Pin an important observation for easy retrieval
-arguments:
-  - name: note
-    description: Note describing why this is important
-    required: false
+description: Pin the most recent observation for easy retrieval. Optionally add a note and TTL (e.g., "7d" for 7 days).
 ---
 
-# Memory Pin
+Pin the most recent observation to mark it as important. Pinned items appear first in search results and context injection.
 
-Pin the most recent observation to mark it as important. Pinned items are highlighted in search results.
-
-## Instructions
-
-When the user runs `/memory pin [note]`:
-
-1. Read the most recent observation from `~/.kindling/observations.jsonl`
-2. Create a pin record linking to that observation
-3. Save the pin to `~/.kindling/pins.json`
-4. Confirm to the user what was pinned
-
-## Implementation
+Run this command:
 
 ```bash
 node -e "
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const crypto = require('crypto');
+const { init, cleanup, kindling } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const { randomUUID } = require('crypto');
+const cwd = process.cwd();
+const args = process.argv.slice(1).join(' ');
 
-const dir = path.join(os.homedir(), '.kindling');
-const obsFile = path.join(dir, 'observations.jsonl');
-const pinsFile = path.join(dir, 'pins.json');
-const note = process.argv.slice(1).join(' ') || 'Pinned observation';
-
-if (!fs.existsSync(obsFile)) {
-  console.log('No observations to pin yet.');
-  process.exit(0);
+// Parse TTL if present (e.g., '7d', '24h', '30m')
+let note = args;
+let ttlMs = null;
+const ttlMatch = args.match(/--ttl\s+(\d+)([dhm])/);
+if (ttlMatch) {
+  const val = parseInt(ttlMatch[1]);
+  const unit = ttlMatch[2];
+  const multipliers = { d: 86400000, h: 3600000, m: 60000 };
+  ttlMs = val * multipliers[unit];
+  note = args.replace(/--ttl\s+\d+[dhm]/, '').trim();
 }
+if (!note) note = 'Pinned observation';
 
-// Get the most recent observation
-const lines = fs.readFileSync(obsFile, 'utf-8').split('\n').filter(Boolean);
-if (lines.length === 0) {
-  console.log('No observations to pin yet.');
-  process.exit(0);
+const { db, store } = init(cwd);
+try {
+  const lastObs = db.prepare('SELECT * FROM observations WHERE scope_repo_id = ? ORDER BY ts DESC LIMIT 1').get(cwd);
+  if (!lastObs) {
+    console.log('No observations to pin yet.');
+    process.exit(0);
+  }
+
+  const pin = {
+    id: randomUUID(),
+    targetType: 'observation',
+    targetId: lastObs.id,
+    note: note,
+    createdAt: Date.now(),
+    expiresAt: ttlMs ? Date.now() + ttlMs : null,
+    scopeIds: { repoId: cwd },
+  };
+
+  store.insertPin(pin);
+
+  const preview = (lastObs.content || '').substring(0, 100).replace(/\n/g, ' ');
+  console.log('Pinned observation:');
+  console.log('  Kind: ' + lastObs.kind);
+  console.log('  Note: ' + note);
+  console.log('  Content: ' + preview + '...');
+  if (ttlMs) console.log('  Expires: ' + new Date(pin.expiresAt).toLocaleString());
+  console.log('');
+  console.log('Use /memory pins to see all pinned items.');
+} finally {
+  cleanup(db);
 }
-
-const lastObs = JSON.parse(lines[lines.length - 1]);
-
-// Load existing pins
-let pins = [];
-if (fs.existsSync(pinsFile)) {
-  pins = JSON.parse(fs.readFileSync(pinsFile, 'utf-8'));
-}
-
-// Check if already pinned
-const alreadyPinned = pins.some(p => p.targetId === lastObs.id);
-if (alreadyPinned) {
-  console.log('This observation is already pinned.');
-  process.exit(0);
-}
-
-// Create new pin
-const pin = {
-  id: crypto.randomUUID(),
-  targetType: 'observation',
-  targetId: lastObs.id,
-  note: note,
-  createdAt: Date.now(),
-};
-
-pins.push(pin);
-fs.writeFileSync(pinsFile, JSON.stringify(pins, null, 2));
-
-console.log('Pinned observation:');
-console.log('');
-console.log('  Kind: ' + lastObs.kind);
-console.log('  Note: ' + note);
-console.log('  Content: ' + (lastObs.content?.substring(0, 100) || '').replace(/\n/g, ' ') + '...');
-console.log('');
-console.log('Use /memory pins to see all pinned items.');
-" "$@"
+" "$ARGUMENTS"
 ```
 
-## Example Output
-
-```
-Pinned observation:
-
-  Kind: file_diff
-  Note: Root cause fix for auth bug
-  Content: Tool: Edit File: /src/auth/validate.ts Action: Edited file...
-
-Use /memory pins to see all pinned items.
-```
+Show the result to the user.

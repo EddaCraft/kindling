@@ -1,8 +1,8 @@
 # Kindling Claude Code Plugin v2
 
-| Scope     | Owner  | Priority | Status |
-| --------- | ------ | -------- | ------ |
-| PLUGIN-CC | @aneki | critical | Ready  |
+| Scope     | Owner  | Priority | Status      |
+| --------- | ------ | -------- | ----------- |
+| PLUGIN-CC | @aneki | critical | Implemented |
 
 ## Purpose
 
@@ -113,7 +113,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-V2-001: Fix plugin directory structure
 
-- **Status:** Ready
+- **Status:** Complete
 - **Intent:** Restructure plugin to match the official Claude Code plugin format so it is recognized and loaded correctly
 - **Expected Outcome:** Plugin loads in Claude Code without errors; hooks fire on the correct events; commands appear in the slash command list
 - **Scope:** `plugins/kindling-claude-code/`
@@ -133,7 +133,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-V2-002: Wire plugin to monorepo SQLite engine
 
-- **Status:** Ready
+- **Status:** Complete
 - **Intent:** Replace flat JSON file storage with the actual `@kindling/store-sqlite` and `@kindling/provider-local` packages so the plugin benefits from FTS5 search, WAL mode, and proper data management
 - **Expected Outcome:** All observations stored in SQLite via the KindlingService API; FTS5 search returns ranked results; no more JSON file contention
 - **Scope:** `plugins/kindling-claude-code/hooks/lib/`, `plugins/kindling-claude-code/dist/`
@@ -156,7 +156,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-V2-003: Add mechanical context injection on session start
 
-- **Status:** Ready
+- **Status:** Complete
 - **Intent:** On SessionStart, dump recent prior observations for the current project so new sessions start warm instead of cold
 - **Expected Outcome:** When a Claude Code session begins, the plugin queries previous session observations scoped to the current repo/project and outputs them via the hook output mechanism
 - **Scope:** `plugins/kindling-claude-code/hooks/`
@@ -179,7 +179,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-V2-004: Fix command implementations
 
-- **Status:** Ready
+- **Status:** Complete
 - **Intent:** Fix broken slash commands so they work correctly with the new SQLite-backed storage and follow Claude Code command format conventions
 - **Expected Outcome:** All `/memory` commands execute without ESM/CJS errors and return results from the SQLite store; new `/memory forget` command available; pins support TTL
 - **Scope:** `plugins/kindling-claude-code/commands/`
@@ -199,7 +199,7 @@ Change status to **Ready** when:
 
 ### PLUGIN-CC-V2-005: Add per-project isolation and install story
 
-- **Status:** Ready
+- **Status:** Complete
 - **Intent:** Ensure each project gets its own database and provide a clean install path that does not require cloning the entire monorepo
 - **Expected Outcome:** Projects do not share observation data by default; new users can install the plugin with a single command; configuration is documented
 - **Scope:** `plugins/kindling-claude-code/`

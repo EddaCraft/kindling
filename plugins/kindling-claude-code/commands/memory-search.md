@@ -1,75 +1,45 @@
 ---
-name: memory search
-description: Search your session memory for past work
-arguments:
-  - name: query
-    description: What to search for
-    required: true
+description: Search your session memory for past work. Use when the user wants to find something from a previous session.
 ---
 
-# Memory Search
+Search through past Claude Code sessions to find relevant context.
 
-Search through your past Claude Code sessions to find relevant context.
-
-## Instructions
-
-When the user runs `/memory search <query>`:
-
-1. Read the observations file at `~/.kindling/observations.jsonl`
-2. Search for observations where the content contains the query (case-insensitive)
-3. Return the most recent matching observations (up to 10)
-4. Format results showing: timestamp, tool/kind, and content preview
-
-## Implementation
+Run this command to search:
 
 ```bash
-# Read and search observations
 node -e "
-const fs = require('fs');
-const path = require('path');
-const file = path.join(require('os').homedir(), '.kindling', 'observations.jsonl');
+const { init, cleanup } = require('${CLAUDE_PLUGIN_ROOT}/hooks/lib/init.js');
+const cwd = process.cwd();
+const query = process.argv[1] || '';
 
-if (!fs.existsSync(file)) {
-  console.log('No memory found. Start using Claude Code to build your memory.');
-  process.exit(0);
-}
-
-const query = process.argv.slice(1).join(' ').toLowerCase() || '';
-const lines = fs.readFileSync(file, 'utf-8').split('\n').filter(Boolean);
-const observations = lines.map(l => JSON.parse(l));
-
-const matches = observations
-  .filter(o => o.content?.toLowerCase().includes(query))
-  .slice(-10)
-  .reverse();
-
-if (matches.length === 0) {
-  console.log('No matches found for: ' + query);
-  process.exit(0);
-}
-
-console.log('Found ' + matches.length + ' matches:\n');
-matches.forEach((o, i) => {
-  const date = new Date(o.ts).toLocaleString();
-  const preview = o.content?.substring(0, 200).replace(/\n/g, ' ') || '';
-  console.log((i+1) + '. [' + date + '] ' + o.kind);
-  console.log('   ' + preview + (o.content?.length > 200 ? '...' : ''));
-  console.log('');
-});
-" "$@"
+const { db, service } = init(cwd);
+service.retrieve({ query, scopeIds: { repoId: cwd }, maxCandidates: 15 })
+  .then(results => {
+    const items = [];
+    if (results.pins && results.pins.length > 0) {
+      console.log('=== Pinned Items ===');
+      results.pins.forEach(p => {
+        const preview = (p.content || '').substring(0, 200).replace(/\n/g, ' ');
+        console.log('  [PIN] ' + (p.note || 'Pin') + ': ' + preview);
+      });
+      console.log('');
+    }
+    if (results.candidates && results.candidates.length > 0) {
+      console.log('=== Search Results ===');
+      results.candidates.forEach((c, i) => {
+        const e = c.entity || c;
+        const ts = e.ts ? new Date(e.ts).toLocaleString() : '';
+        const preview = (e.content || '').substring(0, 300).replace(/\n/g, ' ');
+        console.log((i+1) + '. [' + ts + '] ' + (e.kind || '') + ': ' + preview);
+      });
+    }
+    if ((!results.pins || results.pins.length === 0) && (!results.candidates || results.candidates.length === 0)) {
+      console.log('No results found for: ' + query);
+    }
+  })
+  .catch(err => console.error('Search error:', err.message))
+  .finally(() => { cleanup(db); });
+" "$ARGUMENTS"
 ```
 
-## Example Output
-
-```
-Found 3 matches:
-
-1. [1/27/2025, 2:30:45 PM] tool_call
-   Tool: Read File: /src/auth/validate.ts ...
-
-2. [1/27/2025, 2:28:12 PM] command
-   $ npm test -- auth ...
-
-3. [1/27/2025, 2:25:33 PM] file_diff
-   File: /src/auth/middleware.ts Action: Edited file ...
-```
+Show the results to the user in a readable format.

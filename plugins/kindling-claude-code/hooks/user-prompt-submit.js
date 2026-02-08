@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Stop hook handler
+ * UserPromptSubmit hook handler
  *
- * Closes the session capsule when Claude Code stops.
- * Exit 0 = success (never blocks shutdown).
+ * Captures user messages as observations.
+ * Exit 0 = success (never blocks user input).
  */
 
 const { init, cleanup, readStdin } = require('./lib/init.js');
@@ -13,25 +13,29 @@ async function main() {
 
   const sessionId = context.session_id || 'unknown';
   const cwd = context.cwd || process.cwd();
+  const content = context.content || context.prompt || '';
+
+  if (!content.trim()) {
+    return;
+  }
 
   const { db, handlers } = init(cwd);
 
   try {
-    handlers.onStop({
+    handlers.onUserPromptSubmit({
       sessionId,
       cwd,
-      reason: context.stop_reason || context.reason,
-      summary: context.summary,
+      content,
     });
 
-    console.error(`[kindling] Session closed`);
+    console.error(`[kindling] Captured user message`);
   } finally {
     cleanup(db);
   }
 }
 
 main().catch((err) => {
-  console.error(`[kindling] Stop error: ${err.message}`);
+  console.error(`[kindling] UserPromptSubmit error: ${err.message}`);
 }).finally(() => {
   process.exit(0);
 });
