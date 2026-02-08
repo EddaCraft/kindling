@@ -76,14 +76,16 @@ npm install -g @kindling/cli              # or: pnpm add -g / yarn global add
 ## Quick Start
 
 ```typescript
+// Requires Node >= 20 with ESM (top-level await)
+import { randomUUID } from 'node:crypto';
 import { KindlingService } from '@kindling/core';
 import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
 import { LocalFtsProvider } from '@kindling/provider-local';
 
 // Initialise Kindling
-const db = openDatabase({ dbPath: './my-memory.db' });
+const db = openDatabase({ path: './my-memory.db' });
 const store = new SqliteKindlingStore(db);
-const provider = new LocalFtsProvider(store);
+const provider = new LocalFtsProvider(db);
 const service = new KindlingService({ store, provider });
 
 // Open a session capsule
@@ -96,31 +98,37 @@ const capsule = service.openCapsule({
 // Capture observations
 service.appendObservation(
   {
+    id: randomUUID(),
     kind: 'command',
     content: 'npm test failed with auth error',
     provenance: { command: 'npm test', exitCode: 1 },
     scopeIds: { sessionId: 'session-1' },
+    ts: Date.now(),
+    redacted: false,
   },
   { capsuleId: capsule.id },
 );
 
 service.appendObservation(
   {
+    id: randomUUID(),
     kind: 'error',
     content: 'JWT validation failed: token expired',
     provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
     scopeIds: { sessionId: 'session-1' },
+    ts: Date.now(),
+    redacted: false,
   },
   { capsuleId: capsule.id },
 );
 
 // Retrieve relevant context
-const results = service.retrieve({
+const results = await service.retrieve({
   query: 'authentication token',
   scopeIds: { sessionId: 'session-1' },
 });
 
-console.log('Found:', results.providerHits.length, 'relevant observations');
+console.log('Found:', results.candidates.length, 'relevant observations');
 
 // Close session with summary
 service.closeCapsule(capsule.id, {

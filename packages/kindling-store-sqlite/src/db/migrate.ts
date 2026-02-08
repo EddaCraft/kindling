@@ -49,9 +49,13 @@ function getMigrations(): Migration[] {
  */
 function getCurrentVersion(db: Database.Database): number {
   try {
-    const row = db.prepare(`
+    const row = db
+      .prepare(
+        `
       SELECT MAX(version) as version FROM schema_migrations
-    `).get() as { version: number | null };
+    `,
+      )
+      .get() as { version: number | null };
 
     return row?.version ?? 0;
   } catch {
@@ -71,7 +75,7 @@ function getCurrentVersion(db: Database.Database): number {
  * @param db - Database instance
  * @returns Number of migrations applied
  */
-export function runMigrations(db: Database.Database): number {
+export function runMigrations(db: Database.Database, logger?: (msg: string) => void): number {
   const currentVersion = getCurrentVersion(db);
   const migrations = getMigrations();
 
@@ -79,7 +83,7 @@ export function runMigrations(db: Database.Database): number {
 
   for (const migration of migrations) {
     if (migration.version > currentVersion) {
-      console.log(`Applying migration ${migration.name}...`);
+      logger?.(`Applying migration ${migration.name}...`);
 
       // Run migration in a transaction
       const applyMigration = db.transaction(() => {
@@ -89,14 +93,14 @@ export function runMigrations(db: Database.Database): number {
       applyMigration();
       applied++;
 
-      console.log(`✓ Applied migration ${migration.name}`);
+      logger?.(`Applied migration ${migration.name}`);
     }
   }
 
   if (applied === 0) {
-    console.log('Database is up to date');
+    logger?.('Database is up to date');
   } else {
-    console.log(`Applied ${applied} migration(s)`);
+    logger?.(`Applied ${applied} migration(s)`);
   }
 
   return applied;
@@ -113,7 +117,7 @@ export function getMigrationStatus(db: Database.Database): {
 } {
   const currentVersion = getCurrentVersion(db);
   const migrations = getMigrations();
-  const latestVersion = Math.max(...migrations.map(m => m.version));
+  const latestVersion = Math.max(...migrations.map((m) => m.version));
 
   const appliedMigrations: string[] = [];
   const pendingMigrations: string[] = [];
