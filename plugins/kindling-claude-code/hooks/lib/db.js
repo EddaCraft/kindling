@@ -402,6 +402,18 @@ export function closeCapsule(capsuleId) {
 }
 
 /**
+ * Safely parse scope_ids JSON, falling back to empty object on malformed data.
+ */
+function parseScopeIds(raw) {
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Normalize a raw capsule row from SQLite to camelCase with parsed scopeIds.
  */
 function normalizeCapsule(row) {
@@ -413,7 +425,7 @@ function normalizeCapsule(row) {
     status: row.status,
     openedAt: row.opened_at,
     closedAt: row.closed_at,
-    scopeIds: row.scope_ids ? JSON.parse(row.scope_ids) : {},
+    scopeIds: parseScopeIds(row.scope_ids),
   };
 }
 

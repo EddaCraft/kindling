@@ -47,21 +47,23 @@ const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-// Find pins by prefix match
-const pins = db.prepare('SELECT id, reason FROM pins WHERE id LIKE ? ORDER BY created_at DESC').all(pinId + '%');
+// Find pins by prefix match (bounded query)
+const matchCount = db.prepare('SELECT COUNT(*) as count FROM pins WHERE id LIKE ?').get(pinId + '%').count;
+const pins = db.prepare('SELECT id, reason FROM pins WHERE id LIKE ? ORDER BY created_at DESC LIMIT 10').all(pinId + '%');
 
-if (!pins || pins.length === 0) {
+if (matchCount === 0) {
   console.log('Pin not found: ' + pinId);
   console.log('Use /memory pins to see all pin IDs.');
   db.close();
   process.exit(0);
 }
 
-if (pins.length > 1) {
-  console.log('Ambiguous ID prefix, matches ' + pins.length + ' pins:');
+if (matchCount > 1) {
+  console.log('Ambiguous ID prefix, matches ' + matchCount + ' pins:');
   for (const p of pins) {
     console.log('  ' + p.id.substring(0, 8) + '  ' + (p.reason || 'No note'));
   }
+  if (matchCount > 10) console.log('  ... and ' + (matchCount - 10) + ' more');
   console.log('');
   console.log('Provide a longer prefix or the full pin ID.');
   db.close();
