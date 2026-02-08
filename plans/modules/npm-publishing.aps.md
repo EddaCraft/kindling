@@ -1,8 +1,8 @@
 # NPM Publishing Readiness
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| NPM | @aneki | high | Planned |
+| Scope | Owner  | Priority | Status |
+| ----- | ------ | -------- | ------ |
+| NPM   | @aneki | high     | Ready  |
 
 ## Purpose
 
@@ -46,25 +46,26 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ## Acceptance Criteria
 
-- [ ] All 6 packages have complete metadata (author, repository, keywords, homepage, bugs)
-- [ ] All 6 packages have README.md files
-- [ ] Root CHANGELOG.md documents v0.1.0 release
-- [ ] `pnpm pack --dry-run` succeeds for all packages
-- [ ] GitHub Actions publish workflow exists and is valid
-- [ ] CLI binary is executable after installation
+- [x] All 6 packages have complete metadata (author, repository, keywords, homepage, bugs)
+- [x] All 6 packages have README.md files
+- [x] Root CHANGELOG.md documents v0.1.0 release
+- [x] `pnpm pack --dry-run` succeeds for all packages
+- [x] GitHub Actions publish workflow exists and is valid
+- [x] CLI binary is executable after installation
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| better-sqlite3 build failures on user machines | Document build requirements in README |
-| Workspace protocol in published packages | pnpm handles workspace:* → version conversion on publish |
-| Missing npm credentials in CI | Document NPM_TOKEN setup in workflow |
+| Risk                                           | Mitigation                                                |
+| ---------------------------------------------- | --------------------------------------------------------- |
+| better-sqlite3 build failures on user machines | Document build requirements in README                     |
+| Workspace protocol in published packages       | pnpm handles workspace:\* → version conversion on publish |
+| Missing npm credentials in CI                  | Document NPM_TOKEN setup in workflow                      |
 
 ## Tasks
 
 ### NPM-001: Add package metadata to all package.json files
 
+- **Status:** Complete
 - **Intent:** Ensure all packages meet npm publishing requirements and are discoverable
 - **Expected Outcome:** Each package has author, repository, keywords, homepage, bugs fields
 - **Scope:** All 6 package.json files
@@ -83,6 +84,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-002: Create package README files
 
+- **Status:** Complete
 - **Intent:** Provide documentation for each package on npm
 - **Expected Outcome:** Each package has a README with installation, usage, and API overview
 - **Scope:** 5 packages (adapter-opencode already has README)
@@ -100,6 +102,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-003: Create CHANGELOG.md
 
+- **Status:** Complete
 - **Intent:** Document release history for users and maintainers
 - **Expected Outcome:** Root CHANGELOG.md with v0.1.0 initial release notes
 - **Scope:** Root repository
@@ -112,6 +115,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-004: Add publish scripts and configuration
 
+- **Status:** Complete
 - **Intent:** Streamline the publishing process
 - **Expected Outcome:** Root package.json has prepublishOnly and release scripts; .npmrc configured
 - **Scope:** Root configuration
@@ -126,8 +130,9 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-005: Create GitHub Actions publish workflow
 
+- **Status:** Complete
 - **Intent:** Automate npm publishing on version tags
-- **Expected Outcome:** Workflow triggers on v* tags, runs tests, publishes to npm
+- **Expected Outcome:** Workflow triggers on v\* tags, runs tests, publishes to npm
 - **Scope:** CI/CD configuration
 - **Non-scope:** Semantic release, automatic version bumping
 - **Files:** `.github/workflows/publish.yml`
@@ -138,6 +143,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ### NPM-006: Verify CLI executable
 
+- **Status:** Complete
 - **Intent:** Ensure CLI works after npm installation
 - **Expected Outcome:** CLI has hashbang, is executable, --help works
 - **Scope:** CLI package
@@ -158,4 +164,4 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 - All packages are currently at v0.1.0
 - The @kindling npm scope must be claimed/verified before first publish
-- Workspace protocol (workspace:*) is automatically converted to actual versions by pnpm on publish
+- Workspace protocol (workspace:\*) is automatically converted to actual versions by pnpm on publish

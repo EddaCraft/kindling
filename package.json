@@ -37,6 +37,9 @@
     "lint": "pnpm -r run lint",
     "type-check": "pnpm -r run type-check",
     "clean": "pnpm -r run clean && rm -rf node_modules",
+    "prepublishOnly": "pnpm run build && pnpm run test",
+    "publish:dry-run": "pnpm -r publish --dry-run --no-git-checks",
+    "publish:release": "pnpm -r publish --no-git-checks",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -46,12 +49,6 @@
     ],
     "*.{json,md,yml,yaml}": [
       "prettier --write"
-    ]
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "esbuild"
     ]
   },
   "devDependencies": {
