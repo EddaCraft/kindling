@@ -635,5 +635,32 @@ describe('LocalFtsProvider', () => {
 
       expect(results).toEqual([]);
     });
+
+    it('should return empty results for unbalanced quotes', async () => {
+      const results = await provider.search({
+        query: '"unclosed quote',
+        scopeIds: {},
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('should handle FTS5 column filter syntax gracefully', async () => {
+      const results = await provider.search({
+        query: 'content:',
+        scopeIds: {},
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('should handle consecutive operators gracefully', async () => {
+      const results = await provider.search({
+        query: 'NOT NOT NOT',
+        scopeIds: {},
+      });
+
+      expect(results).toEqual([]);
+    });
   });
 });
