@@ -1,21 +1,23 @@
 # Kindling Core
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| KINDLING | @aneki | high | In Progress |
+| Scope    | Owner  | Priority | Status      |
+| -------- | ------ | -------- | ----------- |
+| KINDLING | @aneki | high     | Implemented |
 
 ## Purpose
 
-Provides the shared domain model and orchestration logic for memory capture, capsule management, and retrieval. This is the spine of Kindling.
+Provides the shared domain model and orchestration logic for memory capture, capsule management, and mechanical retrieval. This is the spine of Kindling.
 
-Summarisation is conservative in v0.1: primary summaries occur on capsule close. Mid-capsule rollups are optional and triggered only by size or noise thresholds. Raw observations are retained by default.
+Kindling Core owns observation ingestion, capsule storage, and a built-in mechanical retrieval layer (BM25 + scope + bounded results). It does not generate summaries, infer intent, or perform ranked/budgeted context assembly — those responsibilities belong to downstream systems.
+
+When PocketFlow (the orchestration layer) is present, it drives capsule lifecycle (open/close). In standalone mode, Kindling manages its own capsule lifecycle.
 
 ## In Scope
 
 - Observation ingestion API
-- Capsule open/close lifecycle
-- Summary registration
-- Retrieval orchestration (pins + summaries + providers)
+- Capsule open/close lifecycle (standalone mode; PocketFlow drives when present)
+- Mechanical retrieval: BM25 FTS + scope filtering + bounded result sets
+- Storage of summaries and pins on behalf of downstream systems
 - Export/import coordination
 
 ## Out of Scope
@@ -36,7 +38,7 @@ Summarisation is conservative in v0.1: primary summaries occur on capsule close.
 
 - `appendObservation()` — record an observation
 - `openCapsule()` / `closeCapsule()` — capsule lifecycle
-- `retrieve()` — orchestrated retrieval with tiering
+- `retrieve()` — mechanical retrieval (BM25 + scope + bounded results)
 
 ## Boundary Rules
 
@@ -53,10 +55,10 @@ Summarisation is conservative in v0.1: primary summaries occur on capsule close.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Type churn during early development | Lock types after M1; use migrations for schema |
-| Capsule lifecycle edge cases | Explicit timeout + adapter-driven close signals |
+| Risk                                | Mitigation                                      |
+| ----------------------------------- | ----------------------------------------------- |
+| Type churn during early development | Lock types after M1; use migrations for schema  |
+| Capsule lifecycle edge cases        | Explicit timeout + adapter-driven close signals |
 
 ## Tasks
 
@@ -96,17 +98,19 @@ Summarisation is conservative in v0.1: primary summaries occur on capsule close.
 - **Confidence:** high
 - **Risks:** Provenance schema may need iteration
 
-### KINDLING-004: Retrieval orchestration
+### KINDLING-004: Mechanical retrieval layer
 
-- **Intent:** Combine pins, summaries, and provider candidates into a single retrieval response
-- **Expected Outcome:** Retrieval is deterministic, scoped, and explainable; tiering enforced
+- **Intent:** Provide bounded, scope-filtered retrieval over captured observations
+- **Expected Outcome:** Retrieval is deterministic, scoped, and explainable; returns bounded result sets via BM25 + recency + scope filtering
 - **Scope:** `src/retrieval/`
-- **Non-scope:** Ranking logic (provider), storage queries (store)
+- **Non-scope:** Ranked/budgeted context assembly, intent-aware retrieval, summary generation (all downstream system concerns)
 - **Files:** `src/retrieval/orchestrator.ts`, `src/retrieval/tiering.ts`
 - **Dependencies:** KINDLING-001, RETRIEVAL-001
 - **Validation:** `pnpm test -- retrieval`
 - **Confidence:** medium
-- **Risks:** Tiering rules may need tuning
+- **Risks:** Existing tiered retrieval code includes features beyond mechanical scope; may need refactoring
+
+> **Boundary note:** The current implementation includes tiered retrieval (pins + summaries + candidates) which straddles the boundary. For v0.1, this exists as a stopgap. The mechanical contract is: BM25 FTS, recency/temporal filtering, scope-filtered queries, session-start context dump, bounded result sets.
 
 ### KINDLING-005: Export/import coordination
 
@@ -122,9 +126,10 @@ Summarisation is conservative in v0.1: primary summaries occur on capsule close.
 
 ## Decisions
 
-- **D-001:** Summarisation is conservative; primary summaries on capsule close only
-- **D-002:** Capsules auto-close on natural end signals; explicit close otherwise with timeout
-- **D-003:** Retrieval tiering: pins and current summary are non-evictable
+- **D-001:** Summary generation is a downstream system responsibility. Kindling stores summaries on behalf but does not generate them. (v0.1 may include a conservative stopgap.)
+- **D-002:** Capsules auto-close on natural end signals; explicit close otherwise with timeout. PocketFlow drives lifecycle when present; Kindling manages standalone.
+- **D-003:** Retrieval is mechanical: BM25 + scope + bounded results. Tiered retrieval (pins + summaries + candidates) exists as a v0.1 stopgap; ranked/budgeted assembly is a downstream responsibility.
+- **D-004:** Pins are stored by Kindling on behalf of downstream systems (durability assertions). Pin CRUD remains in Kindling for standalone use.
 
 ## Notes
 

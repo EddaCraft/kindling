@@ -1,8 +1,8 @@
 # Kindling Claude Code Adapter
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| ADAPTER-CC | @aneki | high | Draft |
+| Scope      | Owner  | Priority | Status      |
+| ---------- | ------ | -------- | ----------- |
+| ADAPTER-CC | @aneki | high     | Implemented |
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Ingests Claude Code sessions and tool activity into Kindling via the hooks syste
 
 - Observations (tool calls, command runs, file diffs, errors, messages)
 - Session capsules (open on SessionStart, close on Stop)
-- Context injection for retrieval (populate session context from prior memory)
+- Mechanical context injection on session start (last session's observations for same repo)
 
 The adapter enables continuity between Claude Code sessions: "Remember what you built yesterday."
 
@@ -51,26 +51,26 @@ The adapter enables continuity between Claude Code sessions: "Remember what you 
 
 ## Claude Code Hook Events
 
-| Hook | Trigger | Kindling Action |
-|------|---------|-----------------|
-| SessionStart | Session begins | Open capsule |
-| PreToolUse | Before tool call | (optional) Log intent |
-| PostToolUse | After tool call | Append observation |
-| Stop | Session ends | Close capsule with summary |
-| SubagentStop | Subagent completes | Append node_end observation |
-| UserPromptSubmit | User sends message | Append message observation |
-| PreCompact | Before context compaction | Trigger mid-capsule summary |
+| Hook             | Trigger                   | Kindling Action                                                |
+| ---------------- | ------------------------- | -------------------------------------------------------------- |
+| SessionStart     | Session begins            | Open capsule                                                   |
+| PreToolUse       | Before tool call          | (optional) Log intent                                          |
+| PostToolUse      | After tool call           | Append observation                                             |
+| Stop             | Session ends              | Close capsule with summary                                     |
+| SubagentStop     | Subagent completes        | Append node_end observation                                    |
+| UserPromptSubmit | User sends message        | Append message observation                                     |
+| PreCompact       | Before context compaction | (reserved — summary generation is a downstream responsibility) |
 
 ## Observation Mapping
 
-| Claude Code Event | Observation Kind | Provenance Fields |
-|-------------------|------------------|-------------------|
-| PostToolUse (Read) | tool_call | toolName, filePath, result snippet |
-| PostToolUse (Write/Edit) | file_diff | toolName, filePath, before/after |
-| PostToolUse (Bash) | command | command, exitCode, output snippet |
-| PostToolUse (error) | error | toolName, errorMessage, stack |
-| UserPromptSubmit | message | role=user, content |
-| SubagentStop | node_end | agentType, output summary |
+| Claude Code Event        | Observation Kind | Provenance Fields                  |
+| ------------------------ | ---------------- | ---------------------------------- |
+| PostToolUse (Read)       | tool_call        | toolName, filePath, result snippet |
+| PostToolUse (Write/Edit) | file_diff        | toolName, filePath, before/after   |
+| PostToolUse (Bash)       | command          | command, exitCode, output snippet  |
+| PostToolUse (error)      | error            | toolName, errorMessage, stack      |
+| UserPromptSubmit         | message          | role=user, content                 |
+| SubagentStop             | node_end         | agentType, output summary          |
 
 ## Ready Checklist
 
@@ -141,24 +141,27 @@ Change status to **Ready** when:
   - Extract relevant provenance per tool type
 - Tests: each tool type maps correctly
 
-### ADAPTER-CC-004: Implement context retrieval injection
+### ADAPTER-CC-004: Implement mechanical context injection on session start
 
-- **Intent:** Populate session context with relevant prior memory on session start
-- **Expected Outcome:** New sessions automatically have access to relevant prior context
+- **Intent:** Provide previous session context on session start using Kindling's mechanical retrieval (temporal, not ranked)
+- **Expected Outcome:** New sessions start with last session's observations for the same repo, formatted as structured context
 - **Scope:** `packages/kindling-adapter-claude-code/src/`
-- **Non-scope:** Retrieval implementation (kindling-core)
+- **Non-scope:** Ranked/budgeted context assembly (downstream system responsibility)
 - **Files:** `src/hooks/context.ts`, `src/test/context.test.ts`
 - **Dependencies:** ADAPTER-CC-002
 - **Validation:** `pnpm --filter @kindling/adapter-claude-code test`
 - **Confidence:** medium
-- **Risks:** Context injection point in Claude Code hooks unclear
+- **Risks:** Context injection point in Claude Code hooks unclear; injected context may be too large
 
 **Deliverables:**
 
 - `src/hooks/context.ts`:
-  - `getSessionContext(scopeIds) → retrieve(query, scopeIds)`
-  - Format retrieved context for Claude Code consumption
-- Tests: context retrieval returns formatted results
+  - `getSessionContext(scopeIds)` → mechanical retrieval scoped to current repo (BM25 + recency)
+  - Format as structured markdown for Claude Code consumption
+  - Configurable max result count
+- Tests: context retrieval returns formatted results; empty when no prior data
+
+> **Boundary note:** This is a mechanical session-start context dump (temporal, not ranked). Intelligent context assembly with relevance ranking and token budgeting is a downstream responsibility.
 
 ### ADAPTER-CC-005: Safety defaults and filtering
 
@@ -201,18 +204,18 @@ Change status to **Ready** when:
 ## Decisions
 
 - **D-001:** Adapter uses hooks system exclusively; no modification to Claude Code internals
-- **D-002:** Default behaviour is session capsule per Claude Code session
-- **D-003:** Context injection is opt-in to avoid performance impact
+- **D-002:** Default behaviour is session capsule per Claude Code session. When the orchestration layer is present, it drives capsule lifecycle.
+- **D-003:** Context injection is opt-in to avoid performance impact. Injection is mechanical (session-start dump), not ranked/budgeted.
 - **D-004:** Filtering is conservative; better to miss some data than capture secrets
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Claude Code hooks API changes | Mapping table isolates changes |
-| Secret leakage in observations | Conservative filtering, truncation |
-| Performance impact from observation capture | Async writes, batching if needed |
-| Context injection latency | Make injection optional, cache recent results |
+| Risk                                        | Mitigation                                    |
+| ------------------------------------------- | --------------------------------------------- |
+| Claude Code hooks API changes               | Mapping table isolates changes                |
+| Secret leakage in observations              | Conservative filtering, truncation            |
+| Performance impact from observation capture | Async writes, batching if needed              |
+| Context injection latency                   | Make injection optional, cache recent results |
 
 ## Notes
 
