@@ -293,7 +293,7 @@ _No open questions at this time._
 
 ## What's Next
 
-**M1-M4: Complete.** All core packages (core, store-sqlite, provider-local, adapter-opencode, adapter-pocketflow, adapter-claude-code, cli) are implemented, building, and passing 596 tests.
+**M1-M4: Complete.** All core packages (core, store-sqlite, provider-local, adapter-opencode, adapter-pocketflow, adapter-claude-code, cli) are implemented, building, and have a fully passing automated test suite.
 
 **M5 Progress:**
 

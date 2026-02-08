@@ -13,6 +13,9 @@ import type { Pin } from './pin.js';
 export interface RetrieveOptions {
   query: string;
   scopeIds: ScopeIds;
+  /**
+   * @deprecated Use maxCandidates for bounded result sets. Token-budgeted assembly is a downstream system responsibility.
+   */
   tokenBudget?: number;
   maxCandidates?: number;
   includeRedacted?: boolean;

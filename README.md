@@ -76,14 +76,16 @@ npm install -g @kindling/cli              # or: pnpm add -g / yarn global add
 ## Quick Start
 
 ```typescript
+// Requires Node >= 20 with ESM (top-level await)
+import { randomUUID } from 'node:crypto';
 import { KindlingService } from '@kindling/core';
 import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
 import { LocalFtsProvider } from '@kindling/provider-local';
 
 // Initialise Kindling
-const db = openDatabase({ dbPath: './my-memory.db' });
+const db = openDatabase({ path: './my-memory.db' });
 const store = new SqliteKindlingStore(db);
-const provider = new LocalFtsProvider(store);
+const provider = new LocalFtsProvider(db);
 const service = new KindlingService({ store, provider });
 
 // Open a session capsule
@@ -94,27 +96,39 @@ const capsule = service.openCapsule({
 });
 
 // Capture observations
-service.appendObservation({
-  kind: 'command',
-  content: 'npm test failed with auth error',
-  provenance: { command: 'npm test', exitCode: 1 },
-  scopeIds: { sessionId: 'session-1' },
-}, { capsuleId: capsule.id });
+service.appendObservation(
+  {
+    id: randomUUID(),
+    kind: 'command',
+    content: 'npm test failed with auth error',
+    provenance: { command: 'npm test', exitCode: 1 },
+    scopeIds: { sessionId: 'session-1' },
+    ts: Date.now(),
+    redacted: false,
+  },
+  { capsuleId: capsule.id },
+);
 
-service.appendObservation({
-  kind: 'error',
-  content: 'JWT validation failed: token expired',
-  provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
-  scopeIds: { sessionId: 'session-1' },
-}, { capsuleId: capsule.id });
+service.appendObservation(
+  {
+    id: randomUUID(),
+    kind: 'error',
+    content: 'JWT validation failed: token expired',
+    provenance: { stack: 'Error: Token expired\n  at validateToken.ts:42' },
+    scopeIds: { sessionId: 'session-1' },
+    ts: Date.now(),
+    redacted: false,
+  },
+  { capsuleId: capsule.id },
+);
 
 // Retrieve relevant context
-const results = service.retrieve({
+const results = await service.retrieve({
   query: 'authentication token',
   scopeIds: { sessionId: 'session-1' },
 });
 
-console.log('Found:', results.providerHits.length, 'relevant observations');
+console.log('Found:', results.candidates.length, 'relevant observations');
 
 // Close session with summary
 service.closeCapsule(capsule.id, {
@@ -127,16 +141,16 @@ db.close();
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@kindling/core`](./packages/kindling-core) | Domain types, capsule lifecycle, retrieval orchestration |
-| [`@kindling/store-sqlite`](./packages/kindling-store-sqlite) | SQLite persistence with FTS5 indexing |
-| [`@kindling/store-sqljs`](./packages/kindling-store-sqljs) | sql.js WASM store for browser compatibility |
-| [`@kindling/provider-local`](./packages/kindling-provider-local) | FTS-based retrieval with deterministic ranking |
-| [`@kindling/adapter-opencode`](./packages/kindling-adapter-opencode) | OpenCode session integration |
-| [`@kindling/adapter-pocketflow`](./packages/kindling-adapter-pocketflow) | PocketFlow workflow integration |
-| [`@kindling/adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration |
-| [`@kindling/cli`](./packages/kindling-cli) | Command-line tools for inspection and management |
+| Package                                                                    | Description                                              |
+| -------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [`@kindling/core`](./packages/kindling-core)                               | Domain types, capsule lifecycle, retrieval orchestration |
+| [`@kindling/store-sqlite`](./packages/kindling-store-sqlite)               | SQLite persistence with FTS5 indexing                    |
+| [`@kindling/store-sqljs`](./packages/kindling-store-sqljs)                 | sql.js WASM store for browser compatibility              |
+| [`@kindling/provider-local`](./packages/kindling-provider-local)           | FTS-based retrieval with deterministic ranking           |
+| [`@kindling/adapter-opencode`](./packages/kindling-adapter-opencode)       | OpenCode session integration                             |
+| [`@kindling/adapter-pocketflow`](./packages/kindling-adapter-pocketflow)   | PocketFlow workflow integration                          |
+| [`@kindling/adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration                            |
+| [`@kindling/cli`](./packages/kindling-cli)                                 | Command-line tools for inspection and management         |
 
 ## Architecture
 
@@ -197,15 +211,15 @@ kindling unpin pin_xyz789
 
 Atomic units of captured context:
 
-| Kind | Description |
-|------|-------------|
-| `tool_call` | AI tool invocations (Read, Edit, Bash, etc.) |
-| `command` | Shell commands with exit codes and output |
-| `file_diff` | File changes with paths |
-| `error` | Errors with stack traces |
-| `message` | User/assistant messages |
-| `node_start` / `node_end` | Workflow node lifecycle |
-| `node_output` / `node_error` | Workflow node results |
+| Kind                         | Description                                  |
+| ---------------------------- | -------------------------------------------- |
+| `tool_call`                  | AI tool invocations (Read, Edit, Bash, etc.) |
+| `command`                    | Shell commands with exit codes and output    |
+| `file_diff`                  | File changes with paths                      |
+| `error`                      | Errors with stack traces                     |
+| `message`                    | User/assistant messages                      |
+| `node_start` / `node_end`    | Workflow node lifecycle                      |
+| `node_output` / `node_error` | Workflow node results                        |
 
 ### Capsules
 
@@ -215,6 +229,7 @@ Bounded units of meaning that group observations:
 - **PocketFlowNode** - Single workflow node execution
 
 Each capsule has:
+
 - Type and intent (debug, implement, test, etc.)
 - Open/close lifecycle with automatic summary generation
 - Scope (sessionId, repoId, agentId, userId)
@@ -302,6 +317,7 @@ console.log(results.pins); // Includes the pinned error
 ## Non-Goals
 
 Kindling explicitly does **not**:
+
 - Decide what memory is authoritative (that's Edda's job)
 - Manage organizational lifecycle or approval workflows
 - Provide multi-user collaboration (yet)
