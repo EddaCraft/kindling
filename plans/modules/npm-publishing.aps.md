@@ -46,8 +46,8 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 
 ## Acceptance Criteria
 
-- [x] All 6 packages have complete metadata (author, repository, keywords, homepage, bugs)
-- [x] All 6 packages have README.md files
+- [x] All 9 packages have complete metadata (author, repository, keywords, homepage, bugs)
+- [x] All 9 packages have README.md files
 - [x] Root CHANGELOG.md documents v0.1.0 release
 - [x] `pnpm pack --dry-run` succeeds for all packages
 - [x] GitHub Actions publish workflow exists and is valid
@@ -68,7 +68,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 - **Status:** Complete
 - **Intent:** Ensure all packages meet npm publishing requirements and are discoverable
 - **Expected Outcome:** Each package has author, repository, keywords, homepage, bugs fields
-- **Scope:** All 6 package.json files
+- **Scope:** All 9 package.json files
 - **Non-scope:** Version changes, dependency updates
 - **Files:**
   - `packages/kindling-core/package.json`
