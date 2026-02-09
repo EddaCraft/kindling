@@ -7,14 +7,14 @@
 
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
-import { KindlingService } from '@kindling/core';
+import { KindlingService } from '@eddacraft/kindling-core';
 import type {
   Observation,
   RetrieveOptions,
   OpenCapsuleOptions,
   CloseCapsuleOptions,
   ExportBundle,
-} from '@kindling/core';
+} from '@eddacraft/kindling-core';
 
 export interface ServerConfig {
   service: KindlingService;

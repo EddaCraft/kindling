@@ -1,19 +1,19 @@
-# @kindling/provider-local
+# @eddacraft/kindling-provider-local
 
 Local FTS-based retrieval provider for Kindling with deterministic, explainable ranking.
 
-[![npm version](https://img.shields.io/npm/v/@kindling/provider-local.svg)](https://www.npmjs.com/package/@kindling/provider-local)
+[![npm version](https://img.shields.io/npm/v/@eddacraft/kindling-provider-local.svg)](https://www.npmjs.com/package/@eddacraft/kindling-provider-local)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
 ```bash
-npm install @kindling/provider-local
+npm install @eddacraft/kindling-provider-local
 ```
 
 ## Overview
 
-`@kindling/provider-local` implements the `RetrievalProvider` interface using SQLite FTS5:
+`@eddacraft/kindling-provider-local` implements the `RetrievalProvider` interface using SQLite FTS5:
 
 - **FTS5 Search** - Full-text search with BM25 ranking
 - **Recency Weighting** - Recent observations score higher
@@ -23,8 +23,8 @@ npm install @kindling/provider-local
 ## Usage
 
 ```typescript
-import { LocalFtsProvider } from '@kindling/provider-local';
-import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
+import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
+import { openDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 
 // Initialize
 const db = openDatabase({ dbPath: './kindling.db' });
@@ -82,19 +82,19 @@ interface ProviderSearchResult {
 
 ## Characteristics
 
-| Property | Value |
-|----------|-------|
-| **Name** | `local-fts` |
-| **Deterministic** | Yes |
-| **Latency** | < 50ms typical |
-| **Max Results** | Configurable (default: 50) |
+| Property          | Value                      |
+| ----------------- | -------------------------- |
+| **Name**          | `local-fts`                |
+| **Deterministic** | Yes                        |
+| **Latency**       | < 50ms typical             |
+| **Max Results**   | Configurable (default: 50) |
 
 ## Integration with Core
 
 ```typescript
-import { CapsuleManager } from '@kindling/core';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalFtsProvider } from '@kindling/provider-local';
+import { CapsuleManager } from '@eddacraft/kindling-core';
+import { SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
+import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
 
 const store = new SqliteKindlingStore(db);
 const provider = new LocalFtsProvider(store);
@@ -110,8 +110,8 @@ const results = manager.retrieve({
 
 ## Related Packages
 
-- [`@kindling/core`](../kindling-core) - Domain types and `RetrievalProvider` interface
-- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite store with FTS indexes
+- [`@eddacraft/kindling-core`](../kindling-core) - Domain types and `RetrievalProvider` interface
+- [`@eddacraft/kindling-store-sqlite`](../kindling-store-sqlite) - SQLite store with FTS indexes
 
 ## License
 

@@ -17,6 +17,7 @@ All data is stored locally using embedded SQLite with FTS5—no cloud dependenci
 **The problem**: LLMs have limited context windows and no memory between sessions. Your AI assistant forgets everything it learned in the previous conversation.
 
 **How Kindling helps**:
+
 - Captures what tools were called, what files were changed, what errors occurred
 - Organizes context by session, repository, and user
 - Retrieves relevant past context when starting a new session
@@ -31,6 +32,7 @@ All data is stored locally using embedded SQLite with FTS5—no cloud dependenci
 **The problem**: Agent A generates output that Agent B needs, but there's no standard way to share context, track what happened, or recover from failures.
 
 **How Kindling helps**:
+
 - Each agent's work is captured as observations in capsules
 - Agents can retrieve context from other agents' work
 - Pin important observations for guaranteed inclusion in context
@@ -45,6 +47,7 @@ All data is stored locally using embedded SQLite with FTS5—no cloud dependenci
 **The problem**: When an AI node fails or produces unexpected output, debugging is difficult because there's no record of what the AI "saw" or "decided."
 
 **How Kindling helps**:
+
 - Automatically creates capsules for each workflow node execution
 - Records inputs, outputs, errors, and timing
 - Tracks intent (what the node was trying to do) and confidence (how reliable its output is)
@@ -59,6 +62,7 @@ All data is stored locally using embedded SQLite with FTS5—no cloud dependenci
 **The problem**: You return to a project and can't remember what you were working on, what you tried, or what was broken.
 
 **How Kindling helps**:
+
 - Automatically captures your development session as you work
 - Retrieves "what was I doing?" context when you return
 - Summarizes past sessions and key decisions
@@ -73,6 +77,7 @@ All data is stored locally using embedded SQLite with FTS5—no cloud dependenci
 **The problem**: Cloud-based memory solutions require sending potentially sensitive code, errors, and development context to third-party servers.
 
 **How Kindling helps**:
+
 - All data stored locally in SQLite
 - No cloud dependencies
 - Export/import for backup and migration
@@ -87,6 +92,7 @@ All data is stored locally using embedded SQLite with FTS5—no cloud dependenci
 **The problem**: LLMs are black boxes. When they give wrong answers, you don't know what context led to the mistake.
 
 **How Kindling helps**:
+
 - Three-tiered retrieval with provenance: pins (user-controlled), current summary, provider hits (FTS results)
 - Each piece of retrieved context includes metadata about where it came from
 - Deterministic ranking means you can reproduce and audit context selection
@@ -111,11 +117,12 @@ All data is stored locally using embedded SQLite with FTS5—no cloud dependenci
 
 Kindling integrates through **adapters**:
 
-| Adapter | Use Case |
-|---------|----------|
-| `@kindling/adapter-opencode` | OpenCode session integration |
-| `@kindling/adapter-pocketflow` | PocketFlow workflow nodes |
-| Custom adapters | Any AI system with tool calls, commands, or outputs |
+| Adapter                                   | Use Case                                            |
+| ----------------------------------------- | --------------------------------------------------- |
+| `@eddacraft/kindling-adapter-opencode`    | OpenCode session integration                        |
+| `@eddacraft/kindling-adapter-pocketflow`  | PocketFlow workflow nodes                           |
+| `@eddacraft/kindling-adapter-claude-code` | Claude Code hooks integration                       |
+| Custom adapters                           | Any AI system with tool calls, commands, or outputs |
 
 ## Key Concepts
 
@@ -127,10 +134,12 @@ Kindling integrates through **adapters**:
 ## Getting Started
 
 ```typescript
-import { KindlingService } from '@kindling/core';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalFtsProvider } from '@kindling/provider-local';
-import { openDatabase } from '@kindling/store-sqlite';
+import {
+  KindlingService,
+  SqliteKindlingStore,
+  LocalFtsProvider,
+  openDatabase,
+} from '@eddacraft/kindling';
 
 // Initialize
 const db = openDatabase({ path: './kindling.db' });
@@ -146,15 +155,18 @@ const capsule = service.openCapsule({
 });
 
 // Capture an observation
-service.appendObservation({
-  id: 'obs-1',
-  kind: 'command',
-  content: 'npm test failed with ECONNREFUSED',
-  provenance: { command: 'npm test', exitCode: 1 },
-  ts: Date.now(),
-  scopeIds: { sessionId: 'session-1' },
-  redacted: false,
-}, { capsuleId: capsule.id });
+service.appendObservation(
+  {
+    id: 'obs-1',
+    kind: 'command',
+    content: 'npm test failed with ECONNREFUSED',
+    provenance: { command: 'npm test', exitCode: 1 },
+    ts: Date.now(),
+    scopeIds: { sessionId: 'session-1' },
+    redacted: false,
+  },
+  { capsuleId: capsule.id },
+);
 
 // Later, retrieve context
 const results = await service.retrieve({
@@ -167,6 +179,7 @@ const results = await service.retrieve({
 ## Summary
 
 Use Kindling when you need:
+
 - **Memory** for AI systems across sessions
 - **Local** storage without cloud dependencies
 - **Explainable** context with provenance

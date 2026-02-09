@@ -51,7 +51,7 @@ export interface BaseAdapter {
 
 ### BaseSessionAdapter Abstract Class
 
-Lives in `@kindling/core/src/adapter/base-adapter.ts`:
+Lives in `@eddacraft/kindling-core/src/adapter/base-adapter.ts`:
 
 - Manages session → capsule mapping
 - Implements `handleEvent()` dispatch
@@ -103,13 +103,13 @@ export class ClaudeCodeAdapter extends BaseSessionAdapter {
 
 ### ADAPTER-FW-001: Define AdapterEvent types
 
-- Create `@kindling/core/src/adapter/types.ts`
+- Create `@eddacraft/kindling-core/src/adapter/types.ts`
 - Define `AdapterEvent`, `AdapterEventType`, `BaseAdapter` interface
 - Export from core index
 
 ### ADAPTER-FW-002: Implement BaseSessionAdapter
 
-- Create `@kindling/core/src/adapter/base-adapter.ts`
+- Create `@eddacraft/kindling-core/src/adapter/base-adapter.ts`
 - Implement session lifecycle management
 - Implement event dispatch and observation creation
 - Add override points for platform-specific logic (formatContent, mapEventToKind)
@@ -117,7 +117,7 @@ export class ClaudeCodeAdapter extends BaseSessionAdapter {
 
 ### ADAPTER-FW-003: Create event receiver utility
 
-- Create `@kindling/core/src/adapter/event-receiver.ts`
+- Create `@eddacraft/kindling-core/src/adapter/event-receiver.ts`
 - Implement HTTP mode (simple JSON POST endpoint)
 - Implement stdin mode (newline-delimited JSON)
 - Implement file watch mode (tail -f style)

@@ -7,8 +7,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@kindling/core': resolve(__dirname, '../kindling-core/src/index.ts'),
-      '@kindling/store-sqlite': resolve(__dirname, '../kindling-store-sqlite/src/index.ts'),
+      '@eddacraft/kindling-core': resolve(__dirname, '../kindling-core/src/index.ts'),
+      '@eddacraft/kindling-store-sqlite': resolve(
+        __dirname,
+        '../kindling-store-sqlite/src/index.ts',
+      ),
     },
   },
 });

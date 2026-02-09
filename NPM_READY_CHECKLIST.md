@@ -5,8 +5,10 @@ This document summarizes the npm publishing preparation for Kindling packages.
 ## ✅ Completed Tasks
 
 ### 1. Package Metadata
+
 All packages now include:
-- ✅ `name` - Scoped package names (@kindling/*)
+
+- ✅ `name` - Scoped package names (@kindling/\*)
 - ✅ `version` - 0.1.0
 - ✅ `description` - Clear package descriptions
 - ✅ `keywords` - Searchable keywords for npm
@@ -18,6 +20,7 @@ All packages now include:
 - ✅ `publishConfig.access` - Set to "public"
 
 ### 2. Build Configuration
+
 - ✅ All packages have TypeScript build setup
 - ✅ All packages compile successfully
 - ✅ Dist folders generated for all packages
@@ -25,13 +28,14 @@ All packages now include:
 - ✅ `files` field specifies what to include in published packages
 
 ### 3. Documentation
+
 - ✅ README.md created for all packages:
-  - `@kindling/core` - Core domain model documentation
-  - `@kindling/store-sqlite` - SQLite storage documentation
-  - `@kindling/provider-local` - Local retrieval documentation
-  - `@kindling/adapter-opencode` - OpenCode adapter documentation (existing)
-  - `@kindling/adapter-pocketflow` - PocketFlow adapter documentation
-  - `@kindling/cli` - CLI documentation
+  - `@eddacraft/kindling-core` - Core domain model documentation
+  - `@eddacraft/kindling-store-sqlite` - SQLite storage documentation
+  - `@eddacraft/kindling-provider-local` - Local retrieval documentation
+  - `@eddacraft/kindling-adapter-opencode` - OpenCode adapter documentation (existing)
+  - `@eddacraft/kindling-adapter-pocketflow` - PocketFlow adapter documentation
+  - `@eddacraft/kindling-cli` - CLI documentation
 
 - ✅ Root README.md already comprehensive
 - ✅ LICENSE file present (Apache-2.0)
@@ -39,13 +43,16 @@ All packages now include:
 - ✅ This checklist document
 
 ### 4. Package Structure
+
 All packages include:
+
 - ✅ `dist/` - Compiled JavaScript and type definitions
 - ✅ `README.md` - Package-specific documentation
 - ✅ `package.json` - Properly configured metadata
 - ✅ Source maps for debugging
 
 ### 5. CLI Package
+
 - ✅ Created CLI entry point (`cli.ts`)
 - ✅ Configured bin field in package.json
 - ✅ Added shebang for executable
@@ -53,40 +60,43 @@ All packages include:
 - ✅ Placeholder commands for future implementation
 
 ### 6. Dependencies
+
 - ✅ Internal dependencies use `workspace:*` (pnpm converts on publish)
 - ✅ External dependencies properly versioned
 - ✅ No missing dependencies
 - ✅ DevDependencies separated from runtime dependencies
 
 ### 7. Files Configuration
+
 Each package `files` field includes:
+
 - ✅ `dist` - Compiled output
 - ✅ `migrations` (store-sqlite only) - Database migrations
 - ✅ README.md, LICENSE, package.json (automatically included by npm)
 
 ## 📦 Packages Ready for Publishing
 
-1. **@kindling/core** (v0.1.0)
+1. **@eddacraft/kindling-core** (v0.1.0)
    - Core domain model and orchestration
    - 94 files, ~130KB unpacked
 
-2. **@kindling/store-sqlite** (v0.1.0)
+2. **@eddacraft/kindling-store-sqlite** (v0.1.0)
    - SQLite storage with FTS5
    - 33 files
 
-3. **@kindling/provider-local** (v0.1.0)
+3. **@eddacraft/kindling-provider-local** (v0.1.0)
    - Local FTS-based retrieval
    - Files ready
 
-4. **@kindling/adapter-opencode** (v0.1.0)
+4. **@eddacraft/kindling-adapter-opencode** (v0.1.0)
    - OpenCode session adapter
    - 54 files
 
-5. **@kindling/adapter-pocketflow** (v0.1.0)
+5. **@eddacraft/kindling-adapter-pocketflow** (v0.1.0)
    - PocketFlow workflow adapter
    - Files ready
 
-6. **@kindling/cli** (v0.1.0)
+6. **@eddacraft/kindling-cli** (v0.1.0)
    - Command-line interface
    - 14 files
 
@@ -107,13 +117,17 @@ pnpm publish -r --access public
 ## ⚠️ Known Issues
 
 ### Dependency Structure
-`@kindling/core` defines interfaces that `@kindling/store-sqlite` and `@kindling/provider-local` implement:
+
+`@eddacraft/kindling-core` defines interfaces that `@eddacraft/kindling-store-sqlite` and `@eddacraft/kindling-provider-local` implement:
+
 - **Core is independent** - No runtime dependencies on store or provider
 - **Store/Provider depend on core** - They implement core's interfaces
 - **No circular dependencies** - Clear dependency flow from implementations to core
 
 ### CLI Implementation
+
 The CLI is minimally functional:
+
 - ✅ `kindling status` - Works
 - ⚠️ `kindling search` - Placeholder (not implemented)
 - ⚠️ `kindling list` - Placeholder (not implemented)
@@ -158,6 +172,7 @@ Detailed planning documentation is available in the APS format:
 **Module:** [plans/modules/npm-publishing.aps.md](plans/modules/npm-publishing.aps.md)
 
 **Execution Steps:**
+
 - [NPM-001](plans/execution/NPM-001.steps.md) - Package metadata
 - [NPM-002](plans/execution/NPM-002.steps.md) - Package READMEs
 - [NPM-003](plans/execution/NPM-003.steps.md) - CHANGELOG.md

@@ -4,7 +4,7 @@
  * Searches memory and returns relevant context
  */
 
-import type { RetrieveResult, ScopeIds } from '@kindling/core';
+import type { RetrieveResult, ScopeIds } from '@eddacraft/kindling-core';
 
 /**
  * Retrieval service interface
@@ -38,7 +38,7 @@ export interface SearchOptions {
  */
 export async function memorySearch(
   service: RetrievalService,
-  options: SearchOptions
+  options: SearchOptions,
 ): Promise<RetrieveResult> {
   const { query, scopeIds, maxResults = 10 } = options;
 
@@ -63,7 +63,7 @@ export function formatSearchResults(result: RetrieveResult): string {
   lines.push('');
   lines.push(`Query: "${result.provenance.query}"`);
   lines.push(
-    `Found: ${result.provenance.totalCandidates} results (showing ${result.provenance.returnedCandidates})`
+    `Found: ${result.provenance.totalCandidates} results (showing ${result.provenance.returnedCandidates})`,
   );
   lines.push('');
 
@@ -88,9 +88,7 @@ export function formatSearchResults(result: RetrieveResult): string {
     lines.push('📝 Current Session Summary:');
     lines.push('');
     lines.push(`  ${result.currentSummary.content}`);
-    lines.push(
-      `  Confidence: ${(result.currentSummary.confidence * 100).toFixed(0)}%`
-    );
+    lines.push(`  Confidence: ${(result.currentSummary.confidence * 100).toFixed(0)}%`);
     lines.push('');
   }
 

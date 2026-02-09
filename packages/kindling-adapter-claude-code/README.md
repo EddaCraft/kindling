@@ -1,4 +1,4 @@
-# @kindling/adapter-claude-code
+# @eddacraft/kindling-adapter-claude-code
 
 Claude Code adapter for Kindling - capture tool calls and session context via hooks for memory continuity.
 
@@ -16,14 +16,14 @@ All captured events become searchable observations in Kindling, enabling context
 ## Installation
 
 ```bash
-npm install @kindling/adapter-claude-code @kindling/core @kindling/store-sqlite
+npm install @eddacraft/kindling-adapter-claude-code @eddacraft/kindling-core @eddacraft/kindling-store-sqlite
 ```
 
 ## Quick Start
 
 ```typescript
-import { createHookHandlers } from '@kindling/adapter-claude-code';
-import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
+import { createHookHandlers } from '@eddacraft/kindling-adapter-claude-code';
+import { openDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 
 // Initialize store
 const db = openDatabase({ dbPath: '~/.kindling/kindling.db' });
@@ -88,13 +88,13 @@ const handlers = createHookHandlers(store, {
 
 ### Hook Handlers
 
-| Handler | Hook | Description |
-|---------|------|-------------|
-| `onSessionStart` | SessionStart | Opens a session capsule |
-| `onPostToolUse` | PostToolUse | Captures tool calls as observations |
-| `onStop` | Stop | Closes the session capsule |
-| `onUserPromptSubmit` | UserPromptSubmit | Captures user messages |
-| `onSubagentStop` | SubagentStop | Captures subagent completions |
+| Handler              | Hook             | Description                         |
+| -------------------- | ---------------- | ----------------------------------- |
+| `onSessionStart`     | SessionStart     | Opens a session capsule             |
+| `onPostToolUse`      | PostToolUse      | Captures tool calls as observations |
+| `onStop`             | Stop             | Closes the session capsule          |
+| `onUserPromptSubmit` | UserPromptSubmit | Captures user messages              |
+| `onSubagentStop`     | SubagentStop     | Captures subagent completions       |
 
 ### Utility Methods
 
@@ -112,13 +112,13 @@ const manager = handlers.getSessionManager();
 
 ## Event Mapping
 
-| Claude Code Event | Observation Kind | Description |
-|-------------------|------------------|-------------|
-| PostToolUse (Write/Edit) | `file_diff` | File modifications |
-| PostToolUse (Bash) | `command` | Shell commands |
-| PostToolUse (other) | `tool_call` | Tool invocations |
-| UserPromptSubmit | `message` | User messages |
-| SubagentStop | `node_end` | Subagent completions |
+| Claude Code Event        | Observation Kind | Description          |
+| ------------------------ | ---------------- | -------------------- |
+| PostToolUse (Write/Edit) | `file_diff`      | File modifications   |
+| PostToolUse (Bash)       | `command`        | Shell commands       |
+| PostToolUse (other)      | `tool_call`      | Tool invocations     |
+| UserPromptSubmit         | `message`        | User messages        |
+| SubagentStop             | `node_end`       | Subagent completions |
 
 ## Content Filtering
 
@@ -129,7 +129,11 @@ The adapter includes safety features to prevent accidental capture of sensitive 
 - **Path exclusions**: Files in `.git/`, `node_modules/`, `.env`, etc. are flagged
 
 ```typescript
-import { filterContent, maskSecrets, isExcludedPath } from '@kindling/adapter-claude-code';
+import {
+  filterContent,
+  maskSecrets,
+  isExcludedPath,
+} from '@eddacraft/kindling-adapter-claude-code';
 
 // Filter content with secret masking
 const safe = filterContent('api_key=secret123');
@@ -144,7 +148,7 @@ isExcludedPath('/project/.env'); // true
 You can also use the lower-level APIs directly:
 
 ```typescript
-import { SessionManager, mapEvent } from '@kindling/adapter-claude-code';
+import { SessionManager, mapEvent } from '@eddacraft/kindling-adapter-claude-code';
 
 // Create session manager
 const manager = new SessionManager(store);

@@ -102,7 +102,6 @@ function getDefaultDbPath() {
 }
 function openDatabase(options = {}) {
   const dbPath = options.path ?? getDefaultDbPath();
-  console.log(`Opening database: ${dbPath}`);
   const db = new import_better_sqlite3.default(dbPath, {
     verbose: options.verbose ? console.log : void 0,
     readonly: options.readonly ?? false
@@ -871,30 +870,36 @@ var LocalFtsProvider = class {
    */
   findFtsMatches(query) {
     const matches = [];
-    const obsStmt = this.db.prepare(`
-      SELECT rowid, rank
-      FROM observations_fts
-      WHERE content MATCH ?
-      ORDER BY rank
-    `);
-    const obsMatches = obsStmt.all(query);
-    matches.push(...obsMatches.map((m) => ({
-      rowid: m.rowid,
-      table_name: "observations",
-      rank: m.rank
-    })));
-    const sumStmt = this.db.prepare(`
-      SELECT rowid, rank
-      FROM summaries_fts
-      WHERE content MATCH ?
-      ORDER BY rank
-    `);
-    const sumMatches = sumStmt.all(query);
-    matches.push(...sumMatches.map((m) => ({
-      rowid: m.rowid,
-      table_name: "summaries",
-      rank: m.rank
-    })));
+    try {
+      const obsStmt = this.db.prepare(`
+        SELECT rowid, rank
+        FROM observations_fts
+        WHERE content MATCH ?
+        ORDER BY rank
+      `);
+      const obsMatches = obsStmt.all(query);
+      matches.push(...obsMatches.map((m) => ({
+        rowid: m.rowid,
+        table_name: "observations",
+        rank: m.rank
+      })));
+    } catch {
+    }
+    try {
+      const sumStmt = this.db.prepare(`
+        SELECT rowid, rank
+        FROM summaries_fts
+        WHERE content MATCH ?
+        ORDER BY rank
+      `);
+      const sumMatches = sumStmt.all(query);
+      matches.push(...sumMatches.map((m) => ({
+        rowid: m.rowid,
+        table_name: "summaries",
+        rank: m.rank
+      })));
+    } catch {
+    }
     return matches;
   }
   /**
@@ -902,11 +907,11 @@ var LocalFtsProvider = class {
    */
   fetchEntities(matches, scopeIds, excludeIds, includeRedacted) {
     const results = [];
-    const scopeFilters = this.buildScopeFilters(scopeIds);
     const obsMatches = matches.filter((m) => m.table_name === "observations");
     if (obsMatches.length > 0) {
       const obsRowids = obsMatches.map((m) => m.rowid);
       const placeholders = obsRowids.map(() => "?").join(",");
+      const scopeFilter = this.buildScopeFilters(scopeIds);
       let obsQuery = `
         SELECT o.rowid, o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted
         FROM observations o
@@ -915,11 +920,11 @@ var LocalFtsProvider = class {
       if (!includeRedacted) {
         obsQuery += ` AND o.redacted = 0`;
       }
-      if (scopeFilters.length > 0) {
-        obsQuery += ` AND (${scopeFilters.join(" AND ")})`;
+      if (scopeFilter.clauses.length > 0) {
+        obsQuery += ` AND (${scopeFilter.clauses.join(" AND ")})`;
       }
       const obsStmt = this.db.prepare(obsQuery);
-      const observations = obsStmt.all(...obsRowids);
+      const observations = obsStmt.all(...obsRowids, ...scopeFilter.params);
       for (const row of observations) {
         if (excludeIds.includes(row.id))
           continue;
@@ -942,18 +947,18 @@ var LocalFtsProvider = class {
     if (sumMatches.length > 0) {
       const sumRowids = sumMatches.map((m) => m.rowid);
       const placeholders = sumRowids.map(() => "?").join(",");
+      const sumScopeFilter = this.buildScopeFilters(scopeIds, "c");
       let sumQuery = `
         SELECT s.rowid, s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at
         FROM summaries s
         INNER JOIN capsules c ON s.capsule_id = c.id
         WHERE s.rowid IN (${placeholders})
       `;
-      if (scopeFilters.length > 0) {
-        const capsuleScopeFilters = scopeFilters.map((f) => f.replace("scope_ids", "c.scope_ids"));
-        sumQuery += ` AND (${capsuleScopeFilters.join(" AND ")})`;
+      if (sumScopeFilter.clauses.length > 0) {
+        sumQuery += ` AND (${sumScopeFilter.clauses.join(" AND ")})`;
       }
       const sumStmt = this.db.prepare(sumQuery);
-      const summaries = sumStmt.all(...sumRowids);
+      const summaries = sumStmt.all(...sumRowids, ...sumScopeFilter.params);
       for (const row of summaries) {
         if (excludeIds.includes(row.id))
           continue;
@@ -974,29 +979,29 @@ var LocalFtsProvider = class {
     return results;
   }
   /**
-   * Build scope filter SQL clauses
+   * Build scope filter SQL clauses with parameterized queries
    */
-  buildScopeFilters(scopeIds) {
-    const filters = [];
+  buildScopeFilters(scopeIds, tablePrefix = "") {
+    const clauses = [];
+    const params = [];
+    const col = tablePrefix ? `${tablePrefix}.scope_ids` : "scope_ids";
     if (scopeIds.sessionId !== void 0) {
-      filters.push(`json_extract(scope_ids, '$.sessionId') = '${this.escapeSql(scopeIds.sessionId)}'`);
+      clauses.push(`json_extract(${col}, '$.sessionId') = ?`);
+      params.push(scopeIds.sessionId);
     }
     if (scopeIds.repoId !== void 0) {
-      filters.push(`json_extract(scope_ids, '$.repoId') = '${this.escapeSql(scopeIds.repoId)}'`);
+      clauses.push(`json_extract(${col}, '$.repoId') = ?`);
+      params.push(scopeIds.repoId);
     }
     if (scopeIds.agentId !== void 0) {
-      filters.push(`json_extract(scope_ids, '$.agentId') = '${this.escapeSql(scopeIds.agentId)}'`);
+      clauses.push(`json_extract(${col}, '$.agentId') = ?`);
+      params.push(scopeIds.agentId);
     }
     if (scopeIds.userId !== void 0) {
-      filters.push(`json_extract(scope_ids, '$.userId') = '${this.escapeSql(scopeIds.userId)}'`);
+      clauses.push(`json_extract(${col}, '$.userId') = ?`);
+      params.push(scopeIds.userId);
     }
-    return filters;
-  }
-  /**
-   * Escape SQL string literals (basic escaping)
-   */
-  escapeSql(value) {
-    return value.replace(/'/g, "''");
+    return { clauses, params };
   }
   /**
    * Calculate combined score: FTS relevance + recency

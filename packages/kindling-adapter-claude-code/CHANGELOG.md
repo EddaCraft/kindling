@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial release of `@kindling/adapter-claude-code`
+- Initial release of `@eddacraft/kindling-adapter-claude-code`
 - Hook handlers for Claude Code integration:
   - `onSessionStart` - Opens session capsules
   - `onPostToolUse` - Captures tool calls as observations

@@ -8,12 +8,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import type {
-  Capsule,
-  CapsuleStore,
-  Observation,
-  ID,
-} from '@kindling/core';
+import type { Capsule, CapsuleStore, Observation, ID } from '@eddacraft/kindling-core';
 import type { ClaudeCodeEvent } from './events.js';
 import { mapEvent } from './mapping.js';
 
@@ -69,7 +64,7 @@ export class SessionManager {
     private store: CapsuleStore & {
       insertObservation(observation: Observation): void;
       attachObservationToCapsule(capsuleId: ID, observationId: ID): void;
-    }
+    },
   ) {}
 
   /**

@@ -4,10 +4,10 @@
 
 import { homedir } from 'os';
 import { join } from 'path';
-import { openDatabase } from '@kindling/store-sqlite';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalFtsProvider } from '@kindling/provider-local';
-import { KindlingService } from '@kindling/core';
+import { openDatabase } from '@eddacraft/kindling-store-sqlite';
+import { SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
+import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
+import { KindlingService } from '@eddacraft/kindling-core';
 import type Database from 'better-sqlite3';
 
 /**
@@ -41,7 +41,10 @@ export function initializeService(dbPath?: string): {
  */
 export function formatTimestamp(ts: number): string {
   const date = new Date(ts);
-  return date.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+  return date
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d{3}Z$/, '');
 }
 
 /**

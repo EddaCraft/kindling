@@ -1,5 +1,5 @@
 {
-  "name": "@kindling/provider-local",
+  "name": "@eddacraft/kindling-provider-local",
   "version": "0.1.0",
   "description": "Local FTS-based retrieval provider for Kindling with deterministic, explainable ranking",
   "type": "module",
@@ -45,8 +45,8 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@kindling/core": "workspace:*",
-    "@kindling/store-sqlite": "workspace:*"
+    "@eddacraft/kindling-core": "workspace:*",
+    "@eddacraft/kindling-store-sqlite": "workspace:*"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",

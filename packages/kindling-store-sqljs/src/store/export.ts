@@ -5,13 +5,7 @@
  */
 
 import type { Database, QueryExecResult } from 'sql.js';
-import type {
-  Observation,
-  Capsule,
-  Summary,
-  Pin,
-  ScopeIds,
-} from '@kindling/core';
+import type { Observation, Capsule, Summary, Pin, ScopeIds } from '@eddacraft/kindling-core';
 
 /**
  * Export dataset containing all entities
@@ -55,7 +49,7 @@ function getAll<T>(result: QueryExecResult[]): T[] {
   }
 
   const columns = result[0].columns;
-  return result[0].values.map(values => {
+  return result[0].values.map((values) => {
     const row: Record<string, unknown> = {};
     for (let i = 0; i < columns.length; i++) {
       row[columns[i]] = values[i];
@@ -67,10 +61,7 @@ function getAll<T>(result: QueryExecResult[]): T[] {
 /**
  * Export all entities from the database
  */
-export function exportDatabase(
-  db: Database,
-  options: ExportOptions = {}
-): ExportDataset {
+export function exportDatabase(db: Database, options: ExportOptions = {}): ExportDataset {
   const { scope, includeRedacted = false, limit } = options;
 
   // Build scope filter
@@ -142,7 +133,7 @@ export function exportDatabase(
     redacted: number;
   }>(obsResult);
 
-  const observations: Observation[] = obsRows.map(row => ({
+  const observations: Observation[] = obsRows.map((row) => ({
     id: row.id,
     kind: row.kind as Observation['kind'],
     content: row.content,
@@ -172,13 +163,13 @@ export function exportDatabase(
     scope_ids: string;
   }>(capsuleResult);
 
-  const capsules: Capsule[] = capsuleRows.map(row => {
+  const capsules: Capsule[] = capsuleRows.map((row) => {
     const obsIdsResult = db.exec(
       `SELECT observation_id
        FROM capsule_observations
        WHERE capsule_id = ?
        ORDER BY seq ASC`,
-      [row.id]
+      [row.id],
     );
     const obsIds = getAll<{ observation_id: string }>(obsIdsResult);
 
@@ -190,7 +181,7 @@ export function exportDatabase(
       openedAt: row.opened_at,
       closedAt: row.closed_at ?? undefined,
       scopeIds: JSON.parse(row.scope_ids),
-      observationIds: obsIds.map(o => o.observation_id),
+      observationIds: obsIds.map((o) => o.observation_id),
     };
   });
 
@@ -215,7 +206,7 @@ export function exportDatabase(
     evidence_refs: string;
   }>(summaryResult);
 
-  const summaries: Summary[] = summaryRows.map(row => ({
+  const summaries: Summary[] = summaryRows.map((row) => ({
     id: row.id,
     capsuleId: row.capsule_id,
     content: row.content,
@@ -244,7 +235,7 @@ export function exportDatabase(
     scope_ids: string;
   }>(pinResult);
 
-  const pins: Pin[] = pinRows.map(row => ({
+  const pins: Pin[] = pinRows.map((row) => ({
     id: row.id,
     targetType: row.target_type as 'observation' | 'summary',
     targetId: row.target_id,
@@ -268,10 +259,7 @@ export function exportDatabase(
 /**
  * Import entities into the database
  */
-export function importDatabase(
-  db: Database,
-  dataset: ExportDataset
-): ImportResult {
+export function importDatabase(db: Database, dataset: ExportDataset): ImportResult {
   const errors: string[] = [];
   let obsCount = 0;
   let capsuleCount = 0;
@@ -300,7 +288,7 @@ export function importDatabase(
             obs.ts,
             JSON.stringify(obs.scopeIds),
             obs.redacted ? 1 : 0,
-          ]
+          ],
         );
         if (db.getRowsModified() > 0) obsCount++;
       } catch (err) {
@@ -322,7 +310,7 @@ export function importDatabase(
             capsule.openedAt,
             capsule.closedAt ?? null,
             JSON.stringify(capsule.scopeIds),
-          ]
+          ],
         );
         if (db.getRowsModified() > 0) {
           capsuleCount++;
@@ -332,7 +320,7 @@ export function importDatabase(
             db.run(
               `INSERT OR IGNORE INTO capsule_observations (capsule_id, observation_id, seq)
                VALUES (?, ?, ?)`,
-              [capsule.id, obsId, seq]
+              [capsule.id, obsId, seq],
             );
           });
         }
@@ -354,7 +342,7 @@ export function importDatabase(
             summary.confidence,
             summary.createdAt,
             JSON.stringify(summary.evidenceRefs),
-          ]
+          ],
         );
         if (db.getRowsModified() > 0) summaryCount++;
       } catch (err) {
@@ -376,7 +364,7 @@ export function importDatabase(
             pin.createdAt,
             pin.expiresAt ?? null,
             JSON.stringify(pin.scopeIds),
-          ]
+          ],
         );
         if (db.getRowsModified() > 0) pinCount++;
       } catch (err) {

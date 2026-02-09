@@ -78,6 +78,7 @@ Closes #42
 ```
 
 Prefixes:
+
 - `feat:` - New feature
 - `fix:` - Bug fix
 - `docs:` - Documentation only
@@ -116,6 +117,7 @@ If you're unsure whether something is in scope, open an issue to discuss before 
 ### Feature Requests
 
 For net-new functionality, start with a design conversation. Open an issue describing:
+
 - The problem you're solving
 - Your proposed approach (optional)
 - Why it belongs in Kindling
@@ -127,11 +129,12 @@ The maintainers will help decide whether it should move forward. Please wait for
 ```
 kindling/
 ├── packages/
-│   ├── kindling-core/          # Domain model & orchestration
-│   ├── kindling-store-sqlite/  # SQLite persistence
-│   ├── kindling-provider-local/# FTS retrieval
+│   ├── kindling/               # Main package (core + sqlite + provider + server)
+│   ├── kindling-core/          # Domain types & KindlingService
+│   ├── kindling-store-sqljs/   # Browser/WASM store
 │   ├── kindling-adapter-opencode/
 │   ├── kindling-adapter-pocketflow/
+│   ├── kindling-adapter-claude-code/
 │   └── kindling-cli/           # CLI tools
 ├── docs/                       # Documentation
 └── plans/                      # Planning documents (APS)

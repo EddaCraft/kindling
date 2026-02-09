@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { openDatabase, closeDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
+import { openDatabase, closeDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 import { LocalFtsProvider } from '../src/index.js';
-import { validateObservation, validateCapsule, validateSummary } from '@kindling/core';
+import { validateObservation, validateCapsule, validateSummary } from '@eddacraft/kindling-core';
 import type Database from 'better-sqlite3';
 import { unlinkSync } from 'fs';
 

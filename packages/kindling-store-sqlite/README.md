@@ -1,19 +1,19 @@
-# @kindling/store-sqlite
+# @eddacraft/kindling-store-sqlite
 
 SQLite persistence layer for Kindling with FTS5 full-text search and WAL mode.
 
-[![npm version](https://img.shields.io/npm/v/@kindling/store-sqlite.svg)](https://www.npmjs.com/package/@kindling/store-sqlite)
+[![npm version](https://img.shields.io/npm/v/@eddacraft/kindling-store-sqlite.svg)](https://www.npmjs.com/package/@eddacraft/kindling-store-sqlite)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
 ```bash
-npm install @kindling/store-sqlite
+npm install @eddacraft/kindling-store-sqlite
 ```
 
 ## Overview
 
-`@kindling/store-sqlite` provides the persistence layer for Kindling using embedded SQLite:
+`@eddacraft/kindling-store-sqlite` provides the persistence layer for Kindling using embedded SQLite:
 
 - **WAL Mode** - Write-ahead logging for concurrent access
 - **FTS5 Indexing** - Full-text search on observations and summaries
@@ -25,7 +25,7 @@ npm install @kindling/store-sqlite
 ### Opening a Database
 
 ```typescript
-import { openDatabase, closeDatabase } from '@kindling/store-sqlite';
+import { openDatabase, closeDatabase } from '@eddacraft/kindling-store-sqlite';
 
 // Open with file path
 const db = openDatabase({ dbPath: './kindling.db' });
@@ -40,7 +40,7 @@ closeDatabase(db);
 ### Using the Store
 
 ```typescript
-import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
+import { openDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 
 const db = openDatabase({ dbPath: './kindling.db' });
 const store = new SqliteKindlingStore(db);
@@ -89,7 +89,7 @@ const results = store.searchObservations({
 Migrations run automatically when opening the database:
 
 ```typescript
-import { openDatabase, getMigrationStatus } from '@kindling/store-sqlite';
+import { openDatabase, getMigrationStatus } from '@eddacraft/kindling-store-sqlite';
 
 const db = openDatabase({ dbPath: './kindling.db' });
 
@@ -102,7 +102,7 @@ console.log('Pending migrations:', status.pending);
 ### Export/Import
 
 ```typescript
-import { exportDatabase, importBundle } from '@kindling/store-sqlite';
+import { exportDatabase, importBundle } from '@eddacraft/kindling-store-sqlite';
 
 // Export all data
 const bundle = exportDatabase(db, {
@@ -117,24 +117,24 @@ importBundle(targetDb, bundle);
 
 The store manages these tables:
 
-| Table | Purpose |
-|-------|---------|
-| `observations` | Atomic event records |
-| `observations_fts` | FTS5 index for observation content |
-| `capsules` | Bounded units of meaning |
-| `capsule_observations` | Join table with ordering |
-| `summaries` | Capsule summaries |
-| `summaries_fts` | FTS5 index for summary content |
-| `pins` | User-marked important items |
-| `schema_migrations` | Migration version tracking |
+| Table                  | Purpose                            |
+| ---------------------- | ---------------------------------- |
+| `observations`         | Atomic event records               |
+| `observations_fts`     | FTS5 index for observation content |
+| `capsules`             | Bounded units of meaning           |
+| `capsule_observations` | Join table with ordering           |
+| `summaries`            | Capsule summaries                  |
+| `summaries_fts`        | FTS5 index for summary content     |
+| `pins`                 | User-marked important items        |
+| `schema_migrations`    | Migration version tracking         |
 
 ## Configuration
 
 ```typescript
 interface DatabaseOptions {
-  dbPath: string;           // File path or ':memory:'
-  walMode?: boolean;        // Enable WAL mode (default: true)
-  busyTimeout?: number;     // Busy timeout in ms (default: 5000)
+  dbPath: string; // File path or ':memory:'
+  walMode?: boolean; // Enable WAL mode (default: true)
+  busyTimeout?: number; // Busy timeout in ms (default: 5000)
 }
 ```
 
@@ -145,8 +145,8 @@ interface DatabaseOptions {
 
 ## Related Packages
 
-- [`@kindling/core`](../kindling-core) - Domain types and interfaces
-- [`@kindling/provider-local`](../kindling-provider-local) - FTS retrieval using this store
+- [`@eddacraft/kindling-core`](../kindling-core) - Domain types and interfaces
+- [`@eddacraft/kindling-provider-local`](../kindling-provider-local) - FTS retrieval using this store
 
 ## License
 

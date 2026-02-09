@@ -4,7 +4,7 @@
  * Maps Claude Code hook events to Kindling observations with provenance.
  */
 
-import type { ObservationKind, ObservationInput } from '@kindling/core';
+import type { ObservationKind, ObservationInput } from '@eddacraft/kindling-core';
 import type { ClaudeCodeEvent } from './events.js';
 import { extractProvenance } from './provenance.js';
 import { filterContent, filterToolResult } from './filter.js';

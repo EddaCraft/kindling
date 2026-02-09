@@ -91,7 +91,7 @@ Change status to **Ready** when:
 - **Non-scope:** Capsule lifecycle, retrieval injection
 - **Files:** `src/mapping.ts`, `src/test/mapping.test.ts`
 - **Dependencies:** (none)
-- **Validation:** `pnpm --filter @kindling/adapter-claude-code test`
+- **Validation:** `pnpm --filter @eddacraft/kindling-adapter-claude-code test`
 - **Confidence:** high
 
 **Deliverables:**
@@ -111,7 +111,7 @@ Change status to **Ready** when:
 - **Non-scope:** Capsule implementation (kindling-core)
 - **Files:** `src/hooks/session.ts`, `src/test/session.test.ts`
 - **Dependencies:** ADAPTER-CC-001
-- **Validation:** `pnpm --filter @kindling/adapter-claude-code test`
+- **Validation:** `pnpm --filter @eddacraft/kindling-adapter-claude-code test`
 - **Confidence:** high
 
 **Deliverables:**
@@ -130,7 +130,7 @@ Change status to **Ready** when:
 - **Non-scope:** PreToolUse (optional logging only)
 - **Files:** `src/hooks/tool-use.ts`, `src/test/tool-use.test.ts`
 - **Dependencies:** ADAPTER-CC-001, ADAPTER-CC-002
-- **Validation:** `pnpm --filter @kindling/adapter-claude-code test`
+- **Validation:** `pnpm --filter @eddacraft/kindling-adapter-claude-code test`
 - **Confidence:** high
 
 **Deliverables:**
@@ -149,7 +149,7 @@ Change status to **Ready** when:
 - **Non-scope:** Ranked/budgeted context assembly (downstream system responsibility)
 - **Files:** `src/hooks/context.ts`, `src/test/context.test.ts`
 - **Dependencies:** ADAPTER-CC-002
-- **Validation:** `pnpm --filter @kindling/adapter-claude-code test`
+- **Validation:** `pnpm --filter @eddacraft/kindling-adapter-claude-code test`
 - **Confidence:** medium
 - **Risks:** Context injection point in Claude Code hooks unclear; injected context may be too large
 
@@ -171,7 +171,7 @@ Change status to **Ready** when:
 - **Non-scope:** Redaction implementation (STORAGE-003)
 - **Files:** `src/filter.ts`, `src/test/filter.test.ts`, `README.md`
 - **Dependencies:** ADAPTER-CC-003
-- **Validation:** `pnpm --filter @kindling/adapter-claude-code test`
+- **Validation:** `pnpm --filter @eddacraft/kindling-adapter-claude-code test`
 - **Confidence:** medium
 
 **Deliverables:**
@@ -191,7 +191,7 @@ Change status to **Ready** when:
 - **Non-scope:** Actual npm publishing
 - **Files:** `package.json`, `tsconfig.json`, `README.md`, `CHANGELOG.md`
 - **Dependencies:** ADAPTER-CC-001 through ADAPTER-CC-005
-- **Validation:** `pnpm --filter @kindling/adapter-claude-code build && pnpm --filter @kindling/adapter-claude-code test`
+- **Validation:** `pnpm --filter @eddacraft/kindling-adapter-claude-code build && pnpm --filter @eddacraft/kindling-adapter-claude-code test`
 - **Confidence:** high
 
 **Deliverables:**

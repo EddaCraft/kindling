@@ -1,6 +1,6 @@
-# @kindling/store-sqljs
+# @eddacraft/kindling-store-sqljs
 
-WASM-based SQLite persistence layer for Kindling using [sql.js](https://sql.js.org/). This package provides browser and cross-platform compatibility as a drop-in replacement for `@kindling/store-sqlite`.
+WASM-based SQLite persistence layer for Kindling using [sql.js](https://sql.js.org/). This package provides browser and cross-platform compatibility as a drop-in replacement for `@eddacraft/kindling-store-sqlite`.
 
 ## When to Use
 
@@ -10,7 +10,7 @@ Use this package when:
 - Running in environments without native compilation support (e.g., some serverless platforms)
 - Need a **portable** solution that works everywhere JavaScript runs
 
-Use `@kindling/store-sqlite` instead when:
+Use `@eddacraft/kindling-store-sqlite` instead when:
 
 - Running in **Node.js** with native compilation available
 - **Performance** is critical (native is 2-10x faster)
@@ -19,7 +19,7 @@ Use `@kindling/store-sqlite` instead when:
 ## Installation
 
 ```bash
-pnpm add @kindling/store-sqljs
+pnpm add @eddacraft/kindling-store-sqljs
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ pnpm add @kindling/store-sqljs
 ### Basic Usage
 
 ```typescript
-import { openDatabase, SqljsKindlingStore } from '@kindling/store-sqljs';
+import { openDatabase, SqljsKindlingStore } from '@eddacraft/kindling-store-sqljs';
 
 // Open database (async - needs to load WASM)
 const db = await openDatabase();
@@ -51,13 +51,13 @@ store.insertObservation({
 import {
   openDatabase,
   SqljsKindlingStore,
-  IndexedDBPersistence
-} from '@kindling/store-sqljs';
+  IndexedDBPersistence,
+} from '@eddacraft/kindling-store-sqljs';
 
 const persistence = new IndexedDBPersistence({
-  dbName: 'my-app',      // IndexedDB database name
+  dbName: 'my-app', // IndexedDB database name
   storeName: 'databases', // Object store name
-  key: 'kindling',       // Key for this database
+  key: 'kindling', // Key for this database
 });
 
 // Load existing data or start fresh
@@ -77,7 +77,7 @@ By default, sql.js loads WASM from its CDN. For production, you should host the 
 
 ```typescript
 const db = await openDatabase({
-  locateFile: (file) => `/wasm/${file}`,  // Your hosted path
+  locateFile: (file) => `/wasm/${file}`, // Your hosted path
 });
 ```
 
@@ -92,9 +92,9 @@ const db = await openDatabase({
 ### With KindlingService
 
 ```typescript
-import { KindlingService } from '@kindling/core';
-import { LocalFtsProvider } from '@kindling/provider-local';
-import { openDatabase, SqljsKindlingStore } from '@kindling/store-sqljs';
+import { KindlingService } from '@eddacraft/kindling-core';
+import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
+import { openDatabase, SqljsKindlingStore } from '@eddacraft/kindling-store-sqljs';
 
 const db = await openDatabase();
 const store = new SqljsKindlingStore(db);
@@ -118,10 +118,10 @@ Opens and initializes a Kindling database.
 
 ```typescript
 interface DatabaseOptions {
-  data?: Uint8Array;           // Initial database data
-  locateFile?: (file: string) => string;  // WASM file locator
-  skipMigrations?: boolean;    // Skip running migrations
-  verbose?: boolean;           // Enable logging
+  data?: Uint8Array; // Initial database data
+  locateFile?: (file: string) => string; // WASM file locator
+  skipMigrations?: boolean; // Skip running migrations
+  verbose?: boolean; // Enable logging
 }
 ```
 
@@ -135,7 +135,7 @@ Exports the database to a `Uint8Array` for persistence.
 
 ### Store Class
 
-`SqljsKindlingStore` implements the `KindlingStore` interface from `@kindling/core`:
+`SqljsKindlingStore` implements the `KindlingStore` interface from `@eddacraft/kindling-core`:
 
 - `insertObservation(observation)` - Insert an observation
 - `createCapsule(capsule)` - Create a capsule
@@ -165,10 +165,10 @@ const persistence = new IndexedDBPersistence({
   key: 'main',
 });
 
-await persistence.save(data);    // Save Uint8Array
-await persistence.load();        // Load Uint8Array | undefined
-await persistence.exists();      // Check if exists
-await persistence.delete();      // Delete stored data
+await persistence.save(data); // Save Uint8Array
+await persistence.load(); // Load Uint8Array | undefined
+await persistence.exists(); // Check if exists
+await persistence.delete(); // Delete stored data
 ```
 
 #### `MemoryPersistence`
@@ -181,15 +181,15 @@ const persistence = new MemoryPersistence();
 
 ## Differences from store-sqlite
 
-| Feature | store-sqlite | store-sqljs |
-|---------|-------------|-------------|
-| Environment | Node.js only | Browser + Node.js |
-| Performance | Native speed | 2-10x slower |
-| Memory | Memory-mapped | Entire DB in memory |
-| Persistence | Automatic (file) | Manual (export/save) |
-| WAL mode | Supported | Not supported |
-| Initialization | Synchronous | Asynchronous |
-| Bundle size | Native binary | ~1.5MB WASM |
+| Feature        | store-sqlite     | store-sqljs          |
+| -------------- | ---------------- | -------------------- |
+| Environment    | Node.js only     | Browser + Node.js    |
+| Performance    | Native speed     | 2-10x slower         |
+| Memory         | Memory-mapped    | Entire DB in memory  |
+| Persistence    | Automatic (file) | Manual (export/save) |
+| WAL mode       | Supported        | Not supported        |
+| Initialization | Synchronous      | Asynchronous         |
+| Bundle size    | Native binary    | ~1.5MB WASM          |
 
 ## FTS5 Support
 
@@ -211,7 +211,7 @@ const db = await openDatabase({ enableFts: false });
 const db = await openDatabase();
 ```
 
-When FTS5 is not available, you can still use the store - you just won't have full-text search capabilities. The `@kindling/provider-local` FTS provider won't work, but you can implement alternative retrieval strategies.
+When FTS5 is not available, you can still use the store - you just won't have full-text search capabilities. The `@eddacraft/kindling-provider-local` FTS provider won't work, but you can implement alternative retrieval strategies.
 
 ## License
 

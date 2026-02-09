@@ -5,8 +5,8 @@
  *
  * @example
  * ```typescript
- * import { createHookHandlers } from '@kindling/adapter-claude-code';
- * import { SqliteKindlingStore, openDatabase } from '@kindling/store-sqlite';
+ * import { createHookHandlers } from '@eddacraft/kindling-adapter-claude-code';
+ * import { SqliteKindlingStore, openDatabase } from '@eddacraft/kindling-store-sqlite';
  *
  * const db = openDatabase({ dbPath: '~/.kindling/kindling.db' });
  * const store = new SqliteKindlingStore(db);

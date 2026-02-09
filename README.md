@@ -4,7 +4,7 @@
 
 Kindling captures observations (tool calls, diffs, commands, errors) from AI-assisted workflows, organizes them into capsules (bounded units of meaning), and makes context retrievable with deterministic, explainable results—all running locally with no external services.
 
-[![npm version](https://img.shields.io/npm/v/@kindling/core.svg)](https://www.npmjs.com/package/@kindling/core)
+[![npm version](https://img.shields.io/npm/v/@eddacraft/kindling.svg)](https://www.npmjs.com/package/@eddacraft/kindling)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
@@ -29,46 +29,34 @@ Kindling provides **continuity without judgement**. It captures what happened, p
 
 ### Node.js (recommended)
 
+The main package bundles core, SQLite store, local provider, and API server:
+
 ```bash
-# npm
-npm install @kindling/core @kindling/store-sqlite @kindling/provider-local
-
-# pnpm
-pnpm add @kindling/core @kindling/store-sqlite @kindling/provider-local
-
-# yarn
-yarn add @kindling/core @kindling/store-sqlite @kindling/provider-local
+npm install @eddacraft/kindling
 ```
 
 ### Browser (WASM)
 
-For browser environments, use `@kindling/store-sqljs` instead of `@kindling/store-sqlite`:
+For browser environments, use the lightweight core with the sql.js store:
 
 ```bash
-# npm
-npm install @kindling/core @kindling/store-sqljs @kindling/provider-local
-
-# pnpm
-pnpm add @kindling/core @kindling/store-sqljs @kindling/provider-local
-
-# yarn
-yarn add @kindling/core @kindling/store-sqljs @kindling/provider-local
+npm install @eddacraft/kindling-core @eddacraft/kindling-store-sqljs
 ```
 
 ### Optional packages
 
 ```bash
 # OpenCode session adapter
-npm install @kindling/adapter-opencode    # or: pnpm add / yarn add
+npm install @eddacraft/kindling-adapter-opencode
 
 # Claude Code hooks adapter
-npm install @kindling/adapter-claude-code # or: pnpm add / yarn add
+npm install @eddacraft/kindling-adapter-claude-code
 
 # PocketFlow workflow adapter
-npm install @kindling/adapter-pocketflow  # or: pnpm add / yarn add
+npm install @eddacraft/kindling-adapter-pocketflow
 
 # CLI tools (global install)
-npm install -g @kindling/cli              # or: pnpm add -g / yarn global add
+npm install -g @eddacraft/kindling-cli
 ```
 
 ## Quick Start
@@ -76,9 +64,12 @@ npm install -g @kindling/cli              # or: pnpm add -g / yarn global add
 ```typescript
 // Requires Node >= 20 with ESM (top-level await)
 import { randomUUID } from 'node:crypto';
-import { KindlingService } from '@kindling/core';
-import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalFtsProvider } from '@kindling/provider-local';
+import {
+  KindlingService,
+  openDatabase,
+  SqliteKindlingStore,
+  LocalFtsProvider,
+} from '@eddacraft/kindling';
 
 // Initialise Kindling
 const db = openDatabase({ path: './my-memory.db' });
@@ -139,16 +130,15 @@ db.close();
 
 ## Packages
 
-| Package                                                                    | Description                                              |
-| -------------------------------------------------------------------------- | -------------------------------------------------------- |
-| [`@kindling/core`](./packages/kindling-core)                               | Domain types, capsule lifecycle, retrieval orchestration |
-| [`@kindling/store-sqlite`](./packages/kindling-store-sqlite)               | SQLite persistence with FTS5 indexing                    |
-| [`@kindling/store-sqljs`](./packages/kindling-store-sqljs)                 | sql.js WASM store for browser compatibility              |
-| [`@kindling/provider-local`](./packages/kindling-provider-local)           | FTS-based retrieval with deterministic ranking           |
-| [`@kindling/adapter-opencode`](./packages/kindling-adapter-opencode)       | OpenCode session integration                             |
-| [`@kindling/adapter-pocketflow`](./packages/kindling-adapter-pocketflow)   | PocketFlow workflow integration                          |
-| [`@kindling/adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration                            |
-| [`@kindling/cli`](./packages/kindling-cli)                                 | Command-line tools for inspection and management         |
+| Package                                                                              | Description                                                              |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| [`@eddacraft/kindling`](./packages/kindling)                                         | **Main package**: core + SQLite store + provider + API server            |
+| [`@eddacraft/kindling-core`](./packages/kindling-core)                               | Lightweight types + KindlingService (for adapter authors, browser users) |
+| [`@eddacraft/kindling-cli`](./packages/kindling-cli)                                 | Command-line tools for inspection and management                         |
+| [`@eddacraft/kindling-store-sqljs`](./packages/kindling-store-sqljs)                 | sql.js WASM store for browser compatibility                              |
+| [`@eddacraft/kindling-adapter-opencode`](./packages/kindling-adapter-opencode)       | OpenCode session integration                                             |
+| [`@eddacraft/kindling-adapter-pocketflow`](./packages/kindling-adapter-pocketflow)   | PocketFlow workflow integration                                          |
+| [`@eddacraft/kindling-adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration                                            |
 
 ## Architecture
 
@@ -161,24 +151,26 @@ db.close();
          │                 │                     │
          └─────────────────┴─────────────────────┘
                    ▼
-        ┌──────────────────────┐
-        │  KindlingService     │  ← Orchestration
-        │  (@kindling/core)    │
-        └──────────┬───────────┘
-                   │
-      ┌────────────┴──────────────┐
-      ▼                           ▼
-┌──────────────┐          ┌─────────────────────┐
-│ SqliteStore  │          │ LocalRetrieval      │
-│ (persistence)│          │ Provider (search)   │
-└──────┬───────┘          └──────────┬──────────┘
-       │                             │
-       └──────────┬──────────────────┘
-                  ▼
-       ┌─────────────────────┐
-       │  SQLite Database    │
-       │  (WAL + FTS5)       │
-       └─────────────────────┘
+     ┌──────────────────────────────┐
+     │  @eddacraft/kindling         │  ← Main package
+     │  ┌────────────────────────┐  │
+     │  │  KindlingService       │  │
+     │  │  (kindling-core)       │  │
+     │  └──────────┬─────────────┘  │
+     │             │                │
+     │  ┌──────────┴────────────┐   │
+     │  ▼                       ▼   │
+     │  SqliteStore    LocalFts     │
+     │  (persistence)  Provider     │
+     │  └──────┬───────┴──────┘     │
+     │         ▼                    │
+     │  ┌─────────────────────┐     │
+     │  │  SQLite Database    │     │
+     │  │  (WAL + FTS5)       │     │
+     │  └─────────────────────┘     │
+     │                              │
+     │  API Server (Fastify)        │
+     └──────────────────────────────┘
 ```
 
 ## CLI Usage
@@ -247,7 +239,7 @@ Deterministic, explainable retrieval with 3 tiers:
 Resume work without re-explaining context:
 
 ```typescript
-import { SessionManager } from '@kindling/adapter-opencode';
+import { SessionManager } from '@eddacraft/kindling-adapter-opencode';
 
 const manager = new SessionManager(store);
 
@@ -271,7 +263,7 @@ const context = service.retrieve({
 Capture high-signal workflow executions:
 
 ```typescript
-import { NodeAdapter, NodeStatus } from '@kindling/adapter-pocketflow';
+import { NodeAdapter, NodeStatus } from '@eddacraft/kindling-adapter-pocketflow';
 
 const adapter = new NodeAdapter({ service, repoId: 'my-app' });
 

@@ -25,7 +25,8 @@
     { "path": "./packages/kindling-adapter-claude-code" },
     { "path": "./packages/kindling-api-server" },
     { "path": "./packages/kindling-store-sqljs" },
-    { "path": "./packages/kindling-cli" }
+    { "path": "./packages/kindling-cli" },
+    { "path": "./packages/kindling" }
   ],
   "exclude": ["node_modules", "dist", "**/vendor/**"]
 }

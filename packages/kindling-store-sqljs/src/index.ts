@@ -2,7 +2,7 @@
  * Kindling sql.js Store
  *
  * WASM-based SQLite store for browser and cross-platform compatibility.
- * Drop-in replacement for @kindling/store-sqlite in environments where
+ * Drop-in replacement for @eddacraft/kindling-store-sqlite in environments where
  * native bindings are not available.
  */
 

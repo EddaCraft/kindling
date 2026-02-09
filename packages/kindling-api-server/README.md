@@ -1,16 +1,18 @@
-# @kindling/api-server
+# @eddacraft/kindling-server
 
 HTTP API server for Kindling - enables multi-agent concurrency and web-based access.
 
 ## When to Use
 
 **Use the API server when:**
+
 - Running 5+ concurrent agents
 - Agents are in different languages/environments
 - Using web-based agents (Claude Code Web, Cursor Web)
 - Need centralized write coordination
 
 **Don't use when:**
+
 - Single agent or 2-4 agents with occasional writes (direct SDK is simpler)
 - Maximum performance is critical (API adds network overhead)
 
@@ -23,10 +25,10 @@ HTTP API server for Kindling - enables multi-agent concurrency and web-based acc
 kindling serve --port 8080 --db ~/.kindling/project.db
 
 # Or programmatically
-import { startServer } from '@kindling/api-server';
-import { openDatabase, SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalFtsProvider } from '@kindling/provider-local';
-import { KindlingService } from '@kindling/core';
+import { startServer } from '@eddacraft/kindling-server';
+import { openDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
+import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
+import { KindlingService } from '@eddacraft/kindling-core';
 
 const db = openDatabase({ path: './kindling.db' });
 const store = new SqliteKindlingStore(db);
@@ -44,7 +46,7 @@ await startServer({
 ### Use from Agents (TypeScript)
 
 ```typescript
-import { KindlingApiClient } from '@kindling/api-server/client';
+import { KindlingApiClient } from '@eddacraft/kindling-server/client';
 
 const client = new KindlingApiClient('http://localhost:8080');
 
@@ -56,15 +58,18 @@ const capsule = await client.openCapsule({
 });
 
 // Append observations
-await client.appendObservation({
-  id: 'obs-1',
-  kind: 'command',
-  content: 'npm test',
-  provenance: { command: 'npm test', exitCode: 1 },
-  ts: Date.now(),
-  scopeIds: { sessionId: 'agent-1' },
-  redacted: false,
-}, { capsuleId: capsule.id });
+await client.appendObservation(
+  {
+    id: 'obs-1',
+    kind: 'command',
+    content: 'npm test',
+    provenance: { command: 'npm test', exitCode: 1 },
+    ts: Date.now(),
+    scopeIds: { sessionId: 'agent-1' },
+    redacted: false,
+  },
+  { capsuleId: capsule.id },
+);
 
 // Retrieve context
 const results = await client.retrieve({
@@ -118,17 +123,20 @@ curl -X POST http://localhost:8080/api/pins \
 ## API Endpoints
 
 ### Health Check
+
 ```
 GET /health
 ```
 
 ### Retrieve Context
+
 ```
 POST /api/retrieve
 Body: RetrieveOptions
 ```
 
 ### Capsules
+
 ```
 POST /api/capsules                    # Open capsule
 POST /api/capsules/:id/close          # Close capsule
@@ -136,18 +144,21 @@ GET  /api/capsules/:id               # Get capsule (not implemented yet)
 ```
 
 ### Observations
+
 ```
 POST   /api/observations              # Append observation
 DELETE /api/observations/:id          # Forget observation
 ```
 
 ### Pins
+
 ```
 POST   /api/pins                      # Create pin
 DELETE /api/pins/:id                  # Remove pin
 ```
 
 ### Export/Import
+
 ```
 POST /api/export                      # Export bundle
 POST /api/import                      # Import bundle
@@ -166,6 +177,7 @@ Web Agent → Extension → localhost:8080 → Kindling DB
 ```
 
 The extension:
+
 - Runs in browser context
 - Can make fetch() calls to localhost
 - Forwards requests/responses between web agent and API server
@@ -178,15 +190,18 @@ If the web agent supports Model Context Protocol:
 // MCP server wraps Kindling API
 import { Server } from '@modelcontextprotocol/sdk';
 
-const server = new Server({
-  name: 'kindling-mcp',
-  version: '1.0.0',
-}, {
-  capabilities: {
-    resources: {},
-    tools: {},
+const server = new Server(
+  {
+    name: 'kindling-mcp',
+    version: '1.0.0',
   },
-});
+  {
+    capabilities: {
+      resources: {},
+      tools: {},
+    },
+  },
+);
 
 // Register Kindling tools
 server.tool('kindling_retrieve', async (args) => {
@@ -220,6 +235,7 @@ server.tool('kindling_retrieve', async (args) => {
 ```
 
 **Benefits:**
+
 - Single DB connection (no lock contention)
 - Language-agnostic (HTTP)
 - Centralized coordination

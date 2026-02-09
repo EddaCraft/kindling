@@ -1,5 +1,5 @@
 {
-  "name": "@kindling/adapter-pocketflow",
+  "name": "@eddacraft/kindling-adapter-pocketflow",
   "version": "0.1.0",
   "description": "PocketFlow workflow adapter for Kindling - capture node executions with intent and confidence",
   "type": "module",
@@ -46,7 +46,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@kindling/core": "workspace:*"
+    "@eddacraft/kindling-core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

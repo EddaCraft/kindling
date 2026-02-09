@@ -1,19 +1,19 @@
-# @kindling/core
+# @eddacraft/kindling-core
 
 Core domain model and orchestration for Kindling - local memory engine for AI-assisted development.
 
-[![npm version](https://img.shields.io/npm/v/@kindling/core.svg)](https://www.npmjs.com/package/@kindling/core)
+[![npm version](https://img.shields.io/npm/v/@eddacraft/kindling-core.svg)](https://www.npmjs.com/package/@eddacraft/kindling-core)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
 ```bash
-npm install @kindling/core
+npm install @eddacraft/kindling-core
 ```
 
 ## Overview
 
-`@kindling/core` provides the domain types, capsule lifecycle management, and retrieval orchestration for Kindling. It defines the core abstractions that other packages implement:
+`@eddacraft/kindling-core` provides the domain types, capsule lifecycle management, and retrieval orchestration for Kindling. It defines the core abstractions that other packages implement:
 
 - **Observations** - Atomic records of captured events
 - **Capsules** - Bounded units of meaning that group observations
@@ -34,21 +34,21 @@ import {
   Summary,
   Pin,
   ScopeIds,
-  
+
   // Capsule lifecycle
   CapsuleManager,
   openCapsule,
   closeCapsule,
-  
+
   // Retrieval
   RetrieveOptions,
   RetrieveResult,
   RetrievalProvider,
-  
+
   // Utilities
   ok,
   err,
-} from '@kindling/core';
+} from '@eddacraft/kindling-core';
 ```
 
 ## Core Types
@@ -117,8 +117,8 @@ interface ScopeIds {
 ## Capsule Lifecycle
 
 ```typescript
-import { CapsuleManager } from '@kindling/core';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
+import { CapsuleManager } from '@eddacraft/kindling-core';
+import { SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 
 const manager = new CapsuleManager(store);
 
@@ -142,7 +142,7 @@ manager.close(capsule.id, {
 ## Retrieval
 
 ```typescript
-import { RetrieveOptions, RetrieveResult } from '@kindling/core';
+import { RetrieveOptions, RetrieveResult } from '@eddacraft/kindling-core';
 
 const options: RetrieveOptions = {
   query: 'authentication',
@@ -165,7 +165,7 @@ const result: RetrieveResult = {
 Kindling uses a Result type for validation:
 
 ```typescript
-import { Result, ok, err } from '@kindling/core';
+import { Result, ok, err } from '@eddacraft/kindling-core';
 
 function validate(input: unknown): Result<Observation> {
   if (!isValid(input)) {
@@ -177,10 +177,10 @@ function validate(input: unknown): Result<Observation> {
 
 ## Related Packages
 
-- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite persistence
-- [`@kindling/provider-local`](../kindling-provider-local) - FTS retrieval
-- [`@kindling/adapter-opencode`](../kindling-adapter-opencode) - OpenCode integration
-- [`@kindling/adapter-pocketflow`](../kindling-adapter-pocketflow) - PocketFlow integration
+- [`@eddacraft/kindling-store-sqlite`](../kindling-store-sqlite) - SQLite persistence
+- [`@eddacraft/kindling-provider-local`](../kindling-provider-local) - FTS retrieval
+- [`@eddacraft/kindling-adapter-opencode`](../kindling-adapter-opencode) - OpenCode integration
+- [`@eddacraft/kindling-adapter-pocketflow`](../kindling-adapter-pocketflow) - PocketFlow integration
 
 ## License
 

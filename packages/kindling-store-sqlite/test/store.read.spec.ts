@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { openDatabase, closeDatabase, SqliteKindlingStore } from '../src/index.js';
-import { validateObservation, validateCapsule, validateSummary } from '@kindling/core';
+import { validateObservation, validateCapsule, validateSummary } from '@eddacraft/kindling-core';
 import type Database from 'better-sqlite3';
 import { unlinkSync } from 'fs';
 
@@ -18,7 +18,9 @@ describe('SqliteKindlingStore - Read Path', () => {
       unlinkSync(testDbPath);
       unlinkSync(`${testDbPath}-shm`);
       unlinkSync(`${testDbPath}-wal`);
-    } catch {}
+    } catch {
+      /* cleanup */
+    }
 
     db = openDatabase({ path: testDbPath });
     store = new SqliteKindlingStore(db);
@@ -30,7 +32,9 @@ describe('SqliteKindlingStore - Read Path', () => {
       unlinkSync(testDbPath);
       unlinkSync(`${testDbPath}-shm`);
       unlinkSync(`${testDbPath}-wal`);
-    } catch {}
+    } catch {
+      /* cleanup */
+    }
   });
 
   describe('getOpenCapsuleForSession', () => {
@@ -128,10 +132,7 @@ describe('SqliteKindlingStore - Read Path', () => {
       store.insertObservation(obs1Result.value);
       store.insertObservation(obs2Result.value);
 
-      const snippets = store.getEvidenceSnippets(
-        [obs1Result.value.id, obs2Result.value.id],
-        50
-      );
+      const snippets = store.getEvidenceSnippets([obs1Result.value.id, obs2Result.value.id], 50);
 
       expect(snippets).toHaveLength(2);
       expect(snippets[0].snippet).toBe('Short content');
@@ -203,13 +204,13 @@ describe('SqliteKindlingStore - Read Path', () => {
     it('should filter by sessionId', () => {
       const results = store.queryObservations({ sessionId: 's1' });
       expect(results).toHaveLength(2);
-      expect(results.map(o => o.content).sort()).toEqual(['obs1', 'obs3']);
+      expect(results.map((o) => o.content).sort()).toEqual(['obs1', 'obs3']);
     });
 
     it('should filter by repoId', () => {
       const results = store.queryObservations({ repoId: '/repo1' });
       expect(results).toHaveLength(2);
-      expect(results.map(o => o.content).sort()).toEqual(['obs1', 'obs2']);
+      expect(results.map((o) => o.content).sort()).toEqual(['obs1', 'obs2']);
     });
 
     it('should filter by time range', () => {

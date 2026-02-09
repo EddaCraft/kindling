@@ -1,19 +1,19 @@
-# @kindling/adapter-pocketflow
+# @eddacraft/kindling-adapter-pocketflow
 
 PocketFlow workflow adapter for Kindling - capture node executions with intent and confidence.
 
-[![npm version](https://img.shields.io/npm/v/@kindling/adapter-pocketflow.svg)](https://www.npmjs.com/package/@kindling/adapter-pocketflow)
+[![npm version](https://img.shields.io/npm/v/@eddacraft/kindling-adapter-pocketflow.svg)](https://www.npmjs.com/package/@eddacraft/kindling-adapter-pocketflow)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
 ```bash
-npm install @kindling/adapter-pocketflow
+npm install @eddacraft/kindling-adapter-pocketflow
 ```
 
 ## Overview
 
-`@kindling/adapter-pocketflow` integrates Kindling with PocketFlow workflows:
+`@eddacraft/kindling-adapter-pocketflow` integrates Kindling with PocketFlow workflows:
 
 - **Node-Level Capsules** - Each node execution creates a capsule
 - **Automatic Capture** - Records `node_start`, `node_output`, `node_error`, `node_end` events
@@ -25,8 +25,8 @@ npm install @kindling/adapter-pocketflow
 ### Node Adapter
 
 ```typescript
-import { NodeAdapter, NodeStatus } from '@kindling/adapter-pocketflow';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
+import { NodeAdapter, NodeStatus } from '@eddacraft/kindling-adapter-pocketflow';
+import { SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 
 const store = new SqliteKindlingStore(db);
 const adapter = new NodeAdapter({
@@ -58,7 +58,7 @@ adapter.onNodeEnd({
 ### Flow Integration
 
 ```typescript
-import { KindlingFlow, KindlingNode } from '@kindling/adapter-pocketflow';
+import { KindlingFlow, KindlingNode } from '@eddacraft/kindling-adapter-pocketflow';
 
 // Extend KindlingNode for automatic capture
 class MyTestNode extends KindlingNode {
@@ -84,24 +84,24 @@ await flow.run({ pattern: '**/*.test.ts' });
 
 ## Captured Events
 
-| Event | When | Content |
-|-------|------|---------|
-| `node_start` | Node begins execution | Node ID, name, input |
-| `node_output` | Node produces output | Output data |
-| `node_error` | Node throws error | Error message, stack |
-| `node_end` | Node completes | Final status, output, duration |
+| Event         | When                  | Content                        |
+| ------------- | --------------------- | ------------------------------ |
+| `node_start`  | Node begins execution | Node ID, name, input           |
+| `node_output` | Node produces output  | Output data                    |
+| `node_error`  | Node throws error     | Error message, stack           |
+| `node_end`    | Node completes        | Final status, output, duration |
 
 ## Intent Inference
 
 Node names are parsed to infer capsule intent:
 
-| Node Name | Inferred Intent |
-|-----------|-----------------|
-| `run-tests` | `test` |
-| `build-app` | `build` |
-| `deploy-production` | `deploy` |
-| `fix-auth-bug` | `debug` |
-| `implement-feature` | `implement` |
+| Node Name           | Inferred Intent |
+| ------------------- | --------------- |
+| `run-tests`         | `test`          |
+| `build-app`         | `build`         |
+| `deploy-production` | `deploy`        |
+| `fix-auth-bug`      | `debug`         |
+| `implement-feature` | `implement`     |
 
 ## Confidence Scoring
 
@@ -109,13 +109,19 @@ Confidence is tracked based on node success/failure history:
 
 ```typescript
 // First run: neutral confidence
-{ confidence: 0.5 }
+{
+  confidence: 0.5;
+}
 
 // Consistent success: higher confidence
-{ confidence: 0.85 }
+{
+  confidence: 0.85;
+}
 
 // Recent failures: lower confidence
-{ confidence: 0.3 }
+{
+  confidence: 0.3;
+}
 ```
 
 ## Configuration
@@ -126,12 +132,12 @@ interface NodeAdapterOptions {
   repoId: string;
   agentId?: string;
   userId?: string;
-  
+
   // Intent inference
   intentMapping?: Record<string, string>;
-  
+
   // Confidence tracking
-  confidenceWindow?: number;  // Default: 10 runs
+  confidenceWindow?: number; // Default: 10 runs
 }
 ```
 
@@ -148,9 +154,9 @@ See the [PocketFlow documentation](./vendor/pocketflow/docs/) for details.
 
 ## Related Packages
 
-- [`@kindling/core`](../kindling-core) - Domain types and capsule lifecycle
-- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite persistence
-- [`@kindling/adapter-opencode`](../kindling-adapter-opencode) - OpenCode session adapter
+- [`@eddacraft/kindling-core`](../kindling-core) - Domain types and capsule lifecycle
+- [`@eddacraft/kindling-store-sqlite`](../kindling-store-sqlite) - SQLite persistence
+- [`@eddacraft/kindling-adapter-opencode`](../kindling-adapter-opencode) - OpenCode session adapter
 
 ## License
 

@@ -2,11 +2,11 @@
  * Serve command - Start API server for multi-agent access
  */
 
-import { openDatabase } from '@kindling/store-sqlite';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalFtsProvider } from '@kindling/provider-local';
-import { KindlingService } from '@kindling/core';
-import { startServer } from '@kindling/api-server';
+import { openDatabase } from '@eddacraft/kindling-store-sqlite';
+import { SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
+import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
+import { KindlingService } from '@eddacraft/kindling-core';
+import { startServer } from '@eddacraft/kindling-server';
 import { getDefaultDbPath } from '../utils.js';
 
 export interface ServeOptions {

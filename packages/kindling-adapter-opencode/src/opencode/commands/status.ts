@@ -4,7 +4,7 @@
  * Shows memory system status and statistics
  */
 
-import type { ScopeIds } from '@kindling/core';
+import type { ScopeIds } from '@eddacraft/kindling-core';
 
 /**
  * Store interface for status command
@@ -14,7 +14,7 @@ export interface StatusStore {
     scopeIds?: Partial<ScopeIds>,
     fromTs?: number,
     toTs?: number,
-    limit?: number
+    limit?: number,
   ): { id: string }[];
 
   getCapsules(scopeIds?: Partial<ScopeIds>): { id: string; status: string }[];
@@ -51,10 +51,7 @@ export interface StatusResult {
  * @param options - Command options
  * @returns Status result
  */
-export function memoryStatus(
-  store: StatusStore,
-  options: StatusOptions = {}
-): StatusResult {
+export function memoryStatus(store: StatusStore, options: StatusOptions = {}): StatusResult {
   const { scopeIds, dbPath } = options;
 
   // Count observations
@@ -62,8 +59,8 @@ export function memoryStatus(
 
   // Count capsules
   const capsules = store.getCapsules(scopeIds);
-  const open = capsules.filter(c => c.status === 'open').length;
-  const closed = capsules.filter(c => c.status === 'closed').length;
+  const open = capsules.filter((c) => c.status === 'open').length;
+  const closed = capsules.filter((c) => c.status === 'closed').length;
 
   // Count summaries and get latest
   const summaries = store.getSummaries(scopeIds);
@@ -100,7 +97,7 @@ export function formatStatus(result: StatusResult): string {
   lines.push('');
   lines.push(`Observations: ${result.observations}`);
   lines.push(
-    `Capsules: ${result.capsules.total} (${result.capsules.open} open, ${result.capsules.closed} closed)`
+    `Capsules: ${result.capsules.total} (${result.capsules.open} open, ${result.capsules.closed} closed)`,
   );
   lines.push(`Summaries: ${result.summaries}`);
   lines.push(`Pins: ${result.pins}`);

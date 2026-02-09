@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Observation, Capsule } from '@kindling/core';
+import type { Observation, Capsule } from '@eddacraft/kindling-core';
 import {
   KindlingNode,
   KindlingFlow,
@@ -41,7 +41,7 @@ class MockPocketFlowStore implements PocketFlowStore {
   }
 
   getObservationsByKind(kind: string): Observation[] {
-    return this.observations.filter(o => o.kind === kind);
+    return this.observations.filter((o) => o.kind === kind);
   }
 
   reset(): void {
@@ -129,7 +129,7 @@ describe('KindlingNode', () => {
       await node.prep(context);
 
       // Simulate some work
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       await node.post(context, undefined, { result: 'success' });
 
@@ -143,9 +143,9 @@ describe('KindlingNode', () => {
       const node = new KindlingNode({ name: 'failing-node' });
       await node.prep(context);
 
-      await expect(
-        node.execFallback(undefined, new Error('Test error'))
-      ).rejects.toThrow('Test error');
+      await expect(node.execFallback(undefined, new Error('Test error'))).rejects.toThrow(
+        'Test error',
+      );
 
       const errorObs = store.getObservationsByKind('node_error');
       expect(errorObs.length).toBe(1);
@@ -290,12 +290,14 @@ describe('KindlingFlow', () => {
     await flow.prep(context);
 
     // Flow should create its own capsule
-    const flowCapsule = store.capsules.find(c =>
-      store.getObservationsByKind('node_start')
-        .some(o =>
-          store.capsuleObservations.get(c.id)?.includes(o.id) &&
-          (o.provenance as Record<string, unknown>).nodeType === 'flow'
-        )
+    const flowCapsule = store.capsules.find((c) =>
+      store
+        .getObservationsByKind('node_start')
+        .some(
+          (o) =>
+            store.capsuleObservations.get(c.id)?.includes(o.id) &&
+            (o.provenance as Record<string, unknown>).nodeType === 'flow',
+        ),
     );
     expect(flowCapsule).toBeDefined();
     expect(flowCapsule?.intent).toBe('workflow');
@@ -308,13 +310,15 @@ describe('KindlingFlow', () => {
     await flow.prep(context);
     await flow.post(context, undefined, undefined);
 
-    const startObs = store.getObservationsByKind('node_start')
-      .filter(o => (o.provenance as Record<string, unknown>).nodeType === 'flow');
+    const startObs = store
+      .getObservationsByKind('node_start')
+      .filter((o) => (o.provenance as Record<string, unknown>).nodeType === 'flow');
     expect(startObs.length).toBe(1);
     expect(startObs[0].content).toContain('test-flow');
 
-    const endObs = store.getObservationsByKind('node_end')
-      .filter(o => (o.provenance as Record<string, unknown>).nodeType === 'flow');
+    const endObs = store
+      .getObservationsByKind('node_end')
+      .filter((o) => (o.provenance as Record<string, unknown>).nodeType === 'flow');
     expect(endObs.length).toBe(1);
   });
 
@@ -334,11 +338,12 @@ describe('KindlingFlow', () => {
     const flow = new KindlingFlow(node, { name: 'test-flow' });
 
     await flow.prep(context);
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     await flow.post(context, undefined, undefined);
 
-    const endObs = store.getObservationsByKind('node_end')
-      .filter(o => (o.provenance as Record<string, unknown>).nodeType === 'flow');
+    const endObs = store
+      .getObservationsByKind('node_end')
+      .filter((o) => (o.provenance as Record<string, unknown>).nodeType === 'flow');
 
     expect((endObs[0].provenance as Record<string, unknown>).duration).toBeGreaterThanOrEqual(5);
   });

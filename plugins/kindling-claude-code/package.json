@@ -1,5 +1,5 @@
 {
-  "name": "@kindling/plugin-claude-code",
+  "name": "@eddacraft/kindling-plugin-claude-code",
   "version": "0.1.0",
   "description": "Memory continuity for Claude Code — remember what you worked on across sessions",
   "author": "EddaCraft",

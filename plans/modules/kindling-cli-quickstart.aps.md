@@ -1,8 +1,8 @@
 # Kindling CLI Quick Start
 
-| Scope | Owner | Priority | Status |
-|-------|-------|----------|--------|
-| CLI-QS | @aneki | medium | Complete: 2025-01-29 |
+| Scope  | Owner  | Priority | Status               |
+| ------ | ------ | -------- | -------------------- |
+| CLI-QS | @aneki | medium   | Complete: 2025-01-29 |
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Add `kindling init` and `kindling serve` commands to the CLI for quick setup:
 
 ```bash
 # One command to set up everything
-npx @kindling/cli init
+npx @eddacraft/kindling-cli init
 
 # Optional: API server for programmatic access
 kindling serve
@@ -42,7 +42,7 @@ This bridges the gap between "zero-config plugin" and "full TypeScript integrati
 1. User has npm/pnpm installed
 
 2. User runs:
-   npx @kindling/cli init
+   npx @eddacraft/kindling-cli init
 
    Output:
    ✓ Created database at ~/.kindling/kindling.db
@@ -82,10 +82,11 @@ Change status to **Ready** when:
 - **Non-scope:** API server
 - **Files:** `init.ts`
 - **Dependencies:** (none)
-- **Validation:** Fresh machine → `npx @kindling/cli init` → working setup
+- **Validation:** Fresh machine → `npx @eddacraft/kindling-cli init` → working setup
 - **Confidence:** high
 
 **Deliverables:**
+
 - Create ~/.kindling/ directory if needed
 - Create kindling.db with schema
 - Detect Claude Code installation
@@ -104,6 +105,7 @@ Change status to **Ready** when:
 - **Confidence:** high
 
 **Deliverables:**
+
 - Start Fastify server on configurable port (default 8765)
 - Endpoints: POST /observations, GET /search, GET /status
 - Graceful shutdown
@@ -127,8 +129,8 @@ Change status to **Ready** when:
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| User doesn't have Claude Code | Detect and skip hook setup |
-| Permission issues with .claude/ | Clear error messages |
-| Port conflicts | Allow --port flag |
+| Risk                            | Mitigation                 |
+| ------------------------------- | -------------------------- |
+| User doesn't have Claude Code   | Detect and skip hook setup |
+| Permission issues with .claude/ | Clear error messages       |
+| Port conflicts                  | Allow --port flag          |

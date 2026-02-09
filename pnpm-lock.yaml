@@ -39,9 +39,37 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.31)(yaml@2.8.2)
 
+  packages/kindling:
+    dependencies:
+      '@eddacraft/kindling-core':
+        specifier: workspace:*
+        version: link:../kindling-core
+      '@eddacraft/kindling-provider-local':
+        specifier: workspace:*
+        version: link:../kindling-provider-local
+      '@eddacraft/kindling-server':
+        specifier: workspace:*
+        version: link:../kindling-api-server
+      '@eddacraft/kindling-store-sqlite':
+        specifier: workspace:*
+        version: link:../kindling-store-sqlite
+      '@fastify/cors':
+        specifier: ^11.0.0
+        version: 11.2.0
+      fastify:
+        specifier: ^5.0.0
+        version: 5.7.4
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.31
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/kindling-adapter-claude-code:
     dependencies:
-      '@kindling/core':
+      '@eddacraft/kindling-core':
         specifier: workspace:*
         version: link:../kindling-core
     devDependencies:
@@ -57,7 +85,7 @@ importers:
 
   packages/kindling-adapter-opencode:
     dependencies:
-      '@kindling/core':
+      '@eddacraft/kindling-core':
         specifier: workspace:*
         version: link:../kindling-core
     devDependencies:
@@ -73,7 +101,7 @@ importers:
 
   packages/kindling-adapter-pocketflow:
     dependencies:
-      '@kindling/core':
+      '@eddacraft/kindling-core':
         specifier: workspace:*
         version: link:../kindling-core
     devDependencies:
@@ -89,18 +117,18 @@ importers:
 
   packages/kindling-api-server:
     dependencies:
+      '@eddacraft/kindling-core':
+        specifier: workspace:*
+        version: link:../kindling-core
+      '@eddacraft/kindling-provider-local':
+        specifier: workspace:*
+        version: link:../kindling-provider-local
+      '@eddacraft/kindling-store-sqlite':
+        specifier: workspace:*
+        version: link:../kindling-store-sqlite
       '@fastify/cors':
         specifier: ^11.2.0
         version: 11.2.0
-      '@kindling/core':
-        specifier: workspace:*
-        version: link:../kindling-core
-      '@kindling/provider-local':
-        specifier: workspace:*
-        version: link:../kindling-provider-local
-      '@kindling/store-sqlite':
-        specifier: workspace:*
-        version: link:../kindling-store-sqlite
       fastify:
         specifier: ^5.7.4
         version: 5.7.4
@@ -117,16 +145,16 @@ importers:
 
   packages/kindling-cli:
     dependencies:
-      '@kindling/api-server':
-        specifier: workspace:*
-        version: link:../kindling-api-server
-      '@kindling/core':
+      '@eddacraft/kindling-core':
         specifier: workspace:*
         version: link:../kindling-core
-      '@kindling/provider-local':
+      '@eddacraft/kindling-provider-local':
         specifier: workspace:*
         version: link:../kindling-provider-local
-      '@kindling/store-sqlite':
+      '@eddacraft/kindling-server':
+        specifier: workspace:*
+        version: link:../kindling-api-server
+      '@eddacraft/kindling-store-sqlite':
         specifier: workspace:*
         version: link:../kindling-store-sqlite
       better-sqlite3:
@@ -163,10 +191,10 @@ importers:
 
   packages/kindling-provider-local:
     dependencies:
-      '@kindling/core':
+      '@eddacraft/kindling-core':
         specifier: workspace:*
         version: link:../kindling-core
-      '@kindling/store-sqlite':
+      '@eddacraft/kindling-store-sqlite':
         specifier: workspace:*
         version: link:../kindling-store-sqlite
     devDependencies:
@@ -185,7 +213,7 @@ importers:
 
   packages/kindling-store-sqlite:
     dependencies:
-      '@kindling/core':
+      '@eddacraft/kindling-core':
         specifier: workspace:*
         version: link:../kindling-core
       better-sqlite3:
@@ -207,7 +235,7 @@ importers:
 
   packages/kindling-store-sqljs:
     dependencies:
-      '@kindling/core':
+      '@eddacraft/kindling-core':
         specifier: workspace:*
         version: link:../kindling-core
       sql.js:

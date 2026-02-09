@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
-import { KindlingService } from '@kindling/core';
+import { KindlingService } from '@eddacraft/kindling-core';
 import { SqliteKindlingStore } from '../../kindling-store-sqlite/src/store/sqlite.js';
 import { LocalFtsProvider } from '../../kindling-provider-local/src/provider/local-fts.js';
 import { openDatabase } from '../../kindling-store-sqlite/src/db/open.js';

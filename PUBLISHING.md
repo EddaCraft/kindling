@@ -4,7 +4,7 @@ This guide covers how to publish Kindling packages to npm.
 
 ## Prerequisites
 
-1. **npm Account**: You need an npm account with publish access to the `@kindling` scope
+1. **npm Account**: You need an npm account with publish access to the `@eddacraft` scope
 2. **npm Login**: Run `npm login` to authenticate
 3. **Build**: Ensure all packages are built with `pnpm run build`
 
@@ -13,33 +13,43 @@ This guide covers how to publish Kindling packages to npm.
 Due to dependencies between packages, publish in this order:
 
 ### 1. Core Foundation (No internal dependencies)
+
 ```bash
 cd packages/kindling-core
 npm publish --access public
 ```
 
-### 2. Storage Layer (Depends on core)
+### 2. Main Package (Bundles core + SQLite store + provider + server)
+
+This is the primary entry point for most users (`@eddacraft/kindling`):
+
 ```bash
-cd packages/kindling-store-sqlite
+cd packages/kindling
 npm publish --access public
 ```
 
-### 3. Retrieval Layer (Depends on core + store)
+### 3. Browser Store (Depends on core)
+
 ```bash
-cd packages/kindling-provider-local
+cd packages/kindling-store-sqljs
 npm publish --access public
 ```
 
 ### 4. Adapters (Depend on core)
+
 ```bash
 cd packages/kindling-adapter-opencode
 npm publish --access public
 
 cd packages/kindling-adapter-pocketflow
 npm publish --access public
+
+cd packages/kindling-adapter-claude-code
+npm publish --access public
 ```
 
-### 5. CLI (Depends on core + store)
+### 5. CLI (Depends on main package)
+
 ```bash
 cd packages/kindling-cli
 npm publish --access public
@@ -125,10 +135,11 @@ ls package/
 
 The packages have a clear dependency hierarchy:
 
-- `@kindling/core` has no internal dependencies (defines interfaces)
-- `@kindling/store-sqlite` and `@kindling/provider-local` depend on core
+- `@eddacraft/kindling-core` has no internal dependencies (defines types and interfaces)
+- `@eddacraft/kindling` (main package) depends on core and bundles SQLite store, provider, and server
+- `@eddacraft/kindling-store-sqljs` depends on core
 - Adapters depend on core
-- CLI depends on core and store
+- CLI depends on the main package
 
 ### Workspace Protocol Not Converted
 
@@ -143,7 +154,7 @@ If published packages still have `workspace:*` dependencies:
 If you get a 403 error:
 
 1. Verify you're logged in: `npm whoami`
-2. Verify you have access to `@kindling` scope: `npm access ls-packages @kindling`
+2. Verify you have access to `@eddacraft` scope: `npm access ls-packages @eddacraft`
 3. Contact the org owner to add you as a maintainer
 
 ### Build Not Found
@@ -164,6 +175,7 @@ pnpm run build
 After publishing:
 
 1. **Tag the release** on GitHub:
+
    ```bash
    git tag v0.1.0
    git push origin v0.1.0
@@ -175,8 +187,8 @@ After publishing:
    - Include changelog and notable changes
 
 3. **Verify on npm**:
-   - Check packages are listed: https://www.npmjs.com/org/kindling
-   - Test installation: `npm install @kindling/core`
+   - Check packages are listed: https://www.npmjs.com/org/eddacraft
+   - Test installation: `npm install @eddacraft/kindling`
 
 4. **Update documentation**:
    - Ensure main README.md has correct installation instructions
@@ -188,10 +200,10 @@ If you need to rollback a published version:
 
 ```bash
 # Deprecate a version (shows warning to users)
-npm deprecate @kindling/core@0.1.0 "This version has a critical bug, please upgrade to 0.1.1"
+npm deprecate @eddacraft/kindling@0.1.0 "This version has a critical bug, please upgrade to 0.1.1"
 
 # Unpublish (only within 72 hours, use sparingly)
-npm unpublish @kindling/core@0.1.0
+npm unpublish @eddacraft/kindling@0.1.0
 ```
 
 **Note**: Unpublishing is discouraged. Use deprecate instead.

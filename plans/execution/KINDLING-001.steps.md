@@ -1,11 +1,11 @@
 # Steps: KINDLING-001
 
-| Field | Value |
-|-------|-------|
-| Source | [../modules/kindling-core.aps.md](../modules/kindling-core.aps.md) |
-| Task(s) | KINDLING-001 — Define domain types and validation |
-| Created by | @aneki / AI |
-| Status | Draft |
+| Field      | Value                                                              |
+| ---------- | ------------------------------------------------------------------ |
+| Source     | [../modules/kindling-core.aps.md](../modules/kindling-core.aps.md) |
+| Task(s)    | KINDLING-001 — Define domain types and validation                  |
+| Created by | @aneki / AI                                                        |
+| Status     | Draft                                                              |
 
 ## Prerequisites
 
@@ -94,11 +94,11 @@
 ### 9. Export from package root
 
 - **Checkpoint:** `src/index.ts` exports types and validators
-- **Validate:** Types importable from `@kindling/core`
+- **Validate:** Types importable from `@eddacraft/kindling-core`
 
 ## Completion
 
 - [ ] All checkpoints validated
 - [ ] Task(s) marked complete in source module
 
-**Completed by:** ___
+**Completed by:** \_\_\_

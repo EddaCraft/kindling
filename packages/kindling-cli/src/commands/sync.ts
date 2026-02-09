@@ -4,10 +4,10 @@
  * Enables Claude Code Web integration using git submodules.
  */
 
-import { openDatabase } from '@kindling/store-sqlite';
-import { SqliteKindlingStore } from '@kindling/store-sqlite';
-import { LocalFtsProvider } from '@kindling/provider-local';
-import { KindlingService } from '@kindling/core';
+import { openDatabase } from '@eddacraft/kindling-store-sqlite';
+import { SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
+import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
+import { KindlingService } from '@eddacraft/kindling-core';
 import { getDefaultDbPath } from '../utils.js';
 import { execSync } from 'child_process';
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
@@ -94,8 +94,9 @@ export async function syncInitCommand(options: SyncOptions): Promise<void> {
   mkdirSync(join(syncDir, '.kindling', 'observations'), { recursive: true });
 
   // Create README
-  writeFileSync(join(syncDir, 'README.md'),
-`# Kindling Memory Sync
+  writeFileSync(
+    join(syncDir, 'README.md'),
+    `# Kindling Memory Sync
 
 This repository contains synced Kindling memory for integration with Claude Code Web.
 
@@ -148,11 +149,13 @@ console.log(\`Found \${pins.length} pinned items\`);
 - Redacted observations are NEVER synced
 - Only last 30 days by default (configurable)
 - Private repo recommended
-`);
+`,
+  );
 
   // Create .gitignore
-  writeFileSync(join(syncDir, '.gitignore'),
-`# Ignore large files
+  writeFileSync(
+    join(syncDir, '.gitignore'),
+    `# Ignore large files
 *.db
 *.db-shm
 *.db-wal
@@ -160,14 +163,15 @@ console.log(\`Found \${pins.length} pinned items\`);
 # Ignore OS files
 .DS_Store
 Thumbs.db
-`);
+`,
+  );
 
   // Initial commit
   try {
     execSync('git add .', { cwd: syncDir, stdio: 'pipe' });
     execSync('git commit -m "Initial Kindling memory sync setup"', {
       cwd: syncDir,
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
   } catch {
     // No changes or already committed
@@ -224,10 +228,9 @@ export async function syncAddSubmoduleCommand(_options: SyncOptions): Promise<vo
 
   try {
     // Add submodule
-    execSync(
-      `git submodule add https://github.com/${config.repo}.git .kindling`,
-      { stdio: 'inherit' }
-    );
+    execSync(`git submodule add https://github.com/${config.repo}.git .kindling`, {
+      stdio: 'inherit',
+    });
 
     // Initialize and update submodule
     execSync('git submodule update --init', { stdio: 'pipe' });
@@ -296,14 +299,16 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
       summaries: bundle.dataset.summaries.length,
       pins: bundle.dataset.pins.length,
     },
-    pins: bundle.dataset.pins.map((pin: unknown) => pin as Record<string, unknown>).map((pin: Record<string, unknown>) => ({
-      id: pin.id,
-      targetType: pin.targetType,
-      targetId: pin.targetId,
-      reason: pin.reason,
-      scopeIds: pin.scopeIds,
-      createdAt: pin.createdAt,
-    })),
+    pins: bundle.dataset.pins
+      .map((pin: unknown) => pin as Record<string, unknown>)
+      .map((pin: Record<string, unknown>) => ({
+        id: pin.id,
+        targetType: pin.targetType,
+        targetId: pin.targetId,
+        reason: pin.reason,
+        scopeIds: pin.scopeIds,
+        createdAt: pin.createdAt,
+      })),
     recentCapsules: bundle.dataset.capsules
       .map((c: unknown) => c as Record<string, unknown>)
       .sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
@@ -322,26 +327,25 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
         scopeIds: c.scopeIds,
         summaryId: c.summaryId,
       })),
-    summaries: bundle.dataset.summaries.map((s: unknown) => s as Record<string, unknown>).map((s: Record<string, unknown>) => ({
-      id: s.id,
-      capsuleId: s.capsuleId,
-      content: s.content,
-      confidence: s.confidence,
-      createdAt: s.createdAt,
-    })),
+    summaries: bundle.dataset.summaries
+      .map((s: unknown) => s as Record<string, unknown>)
+      .map((s: Record<string, unknown>) => ({
+        id: s.id,
+        capsuleId: s.capsuleId,
+        content: s.content,
+        confidence: s.confidence,
+        createdAt: s.createdAt,
+      })),
   };
 
   // Write index
-  writeFileSync(
-    join(syncDir, '.kindling', 'index.json'),
-    JSON.stringify(index, null, 2)
-  );
+  writeFileSync(join(syncDir, '.kindling', 'index.json'), JSON.stringify(index, null, 2));
 
   // Write individual capsule files (for easy browsing)
   for (const capsule of bundle.dataset.capsules.slice(-50)) {
     writeFileSync(
       join(syncDir, '.kindling', 'capsules', `${capsule.id}.json`),
-      JSON.stringify(capsule, null, 2)
+      JSON.stringify(capsule, null, 2),
     );
   }
 
@@ -349,7 +353,7 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
   for (const pin of bundle.dataset.pins) {
     writeFileSync(
       join(syncDir, '.kindling', 'pins', `${pin.id}.json`),
-      JSON.stringify(pin, null, 2)
+      JSON.stringify(pin, null, 2),
     );
   }
 
@@ -368,7 +372,7 @@ export async function syncPushCommand(options: SyncOptions): Promise<void> {
     });
     execSync(`git push origin ${options.branch || 'main'}`, {
       cwd: syncDir,
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
     console.log('✅ Pushed to GitHub\n');
   } catch (error: unknown) {

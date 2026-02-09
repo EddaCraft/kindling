@@ -3,21 +3,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  memoryStatus,
-  formatStatus,
-  type StatusStore,
-} from '../src/opencode/commands/status.js';
+import { memoryStatus, formatStatus, type StatusStore } from '../src/opencode/commands/status.js';
 import {
   memorySearch,
   formatSearchResults,
   type RetrievalService,
 } from '../src/opencode/commands/search.js';
-import {
-  memoryPin,
-  formatPinResult,
-  type PinStore,
-} from '../src/opencode/commands/pin.js';
+import { memoryPin, formatPinResult, type PinStore } from '../src/opencode/commands/pin.js';
 import {
   memoryForget,
   formatForgetResult,
@@ -28,7 +20,7 @@ import {
   formatExportResult,
   type ExportService,
 } from '../src/opencode/commands/export.js';
-import type { RetrieveResult, ExportBundle } from '@kindling/core';
+import type { RetrieveResult, ExportBundle } from '@eddacraft/kindling-core';
 
 describe('Memory Commands', () => {
   describe('/memory status', () => {
