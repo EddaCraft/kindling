@@ -1,5 +1,5 @@
 {
-  "name": "@kindling/store-sqlite",
+  "name": "@eddacraft/kindling-store-sqlite",
   "version": "0.1.0",
   "description": "SQLite persistence layer for Kindling with FTS5 full-text search and WAL mode",
   "type": "module",
@@ -46,7 +46,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@kindling/core": "workspace:*",
+    "@eddacraft/kindling-core": "workspace:*",
     "better-sqlite3": "^12.5.0"
   },
   "devDependencies": {

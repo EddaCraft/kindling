@@ -17,7 +17,7 @@ PocketFlow is a **100-line minimalist LLM framework** for building Agents, Task 
 A **Node** handles a single task in the workflow:
 
 ```typescript
-import { Node } from '@kindling/adapter-pocketflow';
+import { Node } from '@eddacraft/kindling-adapter-pocketflow';
 
 class SummarizeNode extends Node<SharedStore> {
   async prep(shared: SharedStore): Promise<string> {
@@ -42,7 +42,7 @@ Lifecycle: `prep()` → `run()` → `post()`
 A **Flow** connects nodes through action-based transitions:
 
 ```typescript
-import { Flow } from '@kindling/adapter-pocketflow';
+import { Flow } from '@eddacraft/kindling-adapter-pocketflow';
 
 const inputNode = new InputNode();
 const processNode = new ProcessNode();
@@ -106,6 +106,7 @@ agentNode.on('complete', finishNode);
 ```
 
 **Use cases**:
+
 - Coding assistants that decide what tool to use
 - Research agents that explore topics autonomously
 - Task automation that adapts to context
@@ -125,6 +126,7 @@ const etlFlow = new Flow(extract);
 ```
 
 **Use cases**:
+
 - Data processing pipelines
 - CI/CD automation
 - Document processing (parse → analyze → generate)
@@ -153,7 +155,7 @@ class EmbedNode extends BatchNode<RagStore> {
 class RetrieveNode extends Node<RagStore> {
   async run(query: string): Promise<string[]> {
     const queryVec = await getEmbedding(query);
-    return shared.index.search(queryVec, k=5);
+    return shared.index.search(queryVec, (k = 5));
   }
 }
 
@@ -165,6 +167,7 @@ class GenerateNode extends Node<RagStore> {
 ```
 
 **Use cases**:
+
 - Documentation Q&A
 - Code search and explanation
 - Knowledge base assistants
@@ -174,7 +177,7 @@ class GenerateNode extends Node<RagStore> {
 Processing large data by splitting, processing, and combining:
 
 ```typescript
-import { BatchNode } from '@kindling/adapter-pocketflow';
+import { BatchNode } from '@eddacraft/kindling-adapter-pocketflow';
 
 // Map: Process each chunk
 class MapNode extends BatchNode<MapReduceStore> {
@@ -196,6 +199,7 @@ class ReduceNode extends Node<MapReduceStore> {
 ```
 
 **Use cases**:
+
 - Summarizing large documents
 - Processing many files in parallel
 - Aggregating results from multiple sources
@@ -223,6 +227,7 @@ coordinator.on('reviewer', reviewerAgent);
 ```
 
 **Use cases**:
+
 - Complex coding tasks (one agent writes, another reviews)
 - Research teams (one searches, another synthesizes)
 - Game playing (multiple players with different strategies)
@@ -249,16 +254,22 @@ class StructuredNode extends Node<StructuredStore> {
 ```
 
 **Use cases**:
+
 - Form filling from unstructured text
 - Data extraction from documents
 - API response formatting
 
 ## Kindling + PocketFlow Integration
 
-The `@kindling/adapter-pocketflow` package provides `KindlingNode` and `KindlingFlow` that automatically capture observations:
+The `@eddacraft/kindling-adapter-pocketflow` package provides `KindlingNode` and `KindlingFlow` that automatically capture observations:
 
 ```typescript
-import { KindlingNode, KindlingFlow, inferIntent, ConfidenceTracker } from '@kindling/adapter-pocketflow';
+import {
+  KindlingNode,
+  KindlingFlow,
+  inferIntent,
+  ConfidenceTracker,
+} from '@eddacraft/kindling-adapter-pocketflow';
 
 // Create a node with automatic capsule management
 class MyNode extends KindlingNode<MyContext> {
@@ -279,6 +290,7 @@ const confidence = tracker.getConfidence('analyze-code'); // 0.6
 ### What Gets Captured
 
 For each node invocation:
+
 - `node_start`: When the node begins (with intent and parameters)
 - `node_output`: The truncated output of the node
 - `node_error`: If the node fails (with error details and retry count)
@@ -290,15 +302,15 @@ All observations are attached to a capsule scoped to that node invocation.
 
 Node names are automatically parsed to infer intent:
 
-| Node Name | Inferred Intent |
-|-----------|-----------------|
-| `run-tests` | `test` |
-| `buildApp` | `build` |
-| `deploy_production` | `deploy` |
-| `fixAuthBug` | `debug` |
-| `implementFeature` | `feature` |
-| `analyzeMetrics` | `analyze` |
-| `generateReport` | `generate` |
+| Node Name           | Inferred Intent |
+| ------------------- | --------------- |
+| `run-tests`         | `test`          |
+| `buildApp`          | `build`         |
+| `deploy_production` | `deploy`        |
+| `fixAuthBug`        | `debug`         |
+| `implementFeature`  | `feature`       |
+| `analyzeMetrics`    | `analyze`       |
+| `generateReport`    | `generate`      |
 
 ### Confidence Tracking
 
@@ -306,10 +318,10 @@ Track reliability over time:
 
 ```typescript
 const tracker = new ConfidenceTracker({
-  historySize: 10,       // Keep last 10 invocations
-  baseConfidence: 0.5,   // Starting confidence
+  historySize: 10, // Keep last 10 invocations
+  baseConfidence: 0.5, // Starting confidence
   successIncrement: 0.1, // Boost per success
-  failureDecrement: 0.15 // Penalty per failure
+  failureDecrement: 0.15, // Penalty per failure
 });
 
 // After successful invocation
@@ -327,16 +339,17 @@ const metadata = tracker.getProvenanceMetadata('my-node');
 
 PocketFlow enables building sophisticated AI systems with minimal code:
 
-| Pattern | Lines of Code | Use Case |
-|---------|---------------|----------|
-| Simple Node | ~20 | Single LLM call |
-| Linear Flow | ~30 | Sequential pipeline |
-| Agent | ~50 | Autonomous decision-making |
-| RAG | ~80 | Knowledge-augmented generation |
-| MapReduce | ~60 | Large data processing |
-| Multi-Agent | ~100 | Coordinated specialists |
+| Pattern     | Lines of Code | Use Case                       |
+| ----------- | ------------- | ------------------------------ |
+| Simple Node | ~20           | Single LLM call                |
+| Linear Flow | ~30           | Sequential pipeline            |
+| Agent       | ~50           | Autonomous decision-making     |
+| RAG         | ~80           | Knowledge-augmented generation |
+| MapReduce   | ~60           | Large data processing          |
+| Multi-Agent | ~100          | Coordinated specialists        |
 
 Combined with Kindling, you get:
+
 - **Observability**: Every node invocation is captured
 - **Context**: Past invocations inform future decisions
 - **Reliability**: Confidence tracking identifies flaky nodes

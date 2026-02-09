@@ -4,7 +4,7 @@
  * Maps OpenCode events to Kindling observations with provenance.
  */
 
-import type { ObservationKind, ObservationInput } from '@kindling/core';
+import type { ObservationKind, ObservationInput } from '@eddacraft/kindling-core';
 import type { OpenCodeEvent } from './events.js';
 import {
   extractToolCallProvenance,
@@ -120,9 +120,8 @@ function formatToolCallContent(event: OpenCodeEvent & { type: 'tool_call' }): st
   const parts = [`Tool: ${event.toolName}`];
 
   if (event.result) {
-    const resultStr = typeof event.result === 'string'
-      ? event.result
-      : JSON.stringify(event.result, null, 2);
+    const resultStr =
+      typeof event.result === 'string' ? event.result : JSON.stringify(event.result, null, 2);
     parts.push(resultStr);
   }
 
@@ -156,7 +155,7 @@ function formatCommandContent(event: OpenCodeEvent & { type: 'command' }): strin
  * Format file change as human-readable content
  */
 function formatFileChangeContent(event: OpenCodeEvent & { type: 'file_change' }): string {
-  const parts = [`Modified files:\n${event.paths.map(p => `  ${p}`).join('\n')}`];
+  const parts = [`Modified files:\n${event.paths.map((p) => `  ${p}`).join('\n')}`];
 
   if (event.additions !== undefined || event.deletions !== undefined) {
     parts.push(`+${event.additions || 0} -${event.deletions || 0}`);

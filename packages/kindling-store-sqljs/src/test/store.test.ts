@@ -8,7 +8,7 @@ import { join, dirname } from 'path';
 import { createRequire } from 'module';
 import { openDatabase, closeDatabase, resetSqlCache } from '../db/open.js';
 import { SqljsKindlingStore } from '../store/sqljs.js';
-import type { Observation, Capsule, Summary, Pin } from '@kindling/core';
+import type { Observation, Capsule, Summary, Pin } from '@eddacraft/kindling-core';
 
 // Create require for resolving sql.js path
 const require = createRequire(import.meta.url);

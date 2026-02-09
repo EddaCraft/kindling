@@ -6,13 +6,13 @@
  */
 
 // Store
-export { openDatabase, closeDatabase, SqliteKindlingStore, runMigrations } from '@kindling/store-sqlite';
+export { openDatabase, closeDatabase, SqliteKindlingStore, runMigrations } from '@eddacraft/kindling-store-sqlite';
 
 // Provider
-export { LocalFtsProvider } from '@kindling/provider-local';
+export { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
 
 // Core
-export { KindlingService, validateObservation, validateCapsule, validateSummary } from '@kindling/core';
+export { KindlingService, validateObservation, validateCapsule, validateSummary } from '@eddacraft/kindling-core';
 
 // Adapter
 export {
@@ -23,4 +23,4 @@ export {
   maskSecrets,
   truncateContent,
   extractProvenance,
-} from '@kindling/adapter-claude-code';
+} from '@eddacraft/kindling-adapter-claude-code';

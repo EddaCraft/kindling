@@ -1,10 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type {
-  Observation,
-  ObservationKind,
-  Capsule,
-  ScopeIds,
-} from '@kindling/core';
+import type { Observation, ObservationKind, Capsule, ScopeIds } from '@eddacraft/kindling-core';
 
 export interface PocketFlowStore {
   insertObservation(observation: Observation): void;
@@ -117,7 +112,9 @@ export class BaseNode<S = unknown, P extends NonIterableObject = NonIterableObje
     const nextAction = action || 'default';
     const next = this._successors.get(nextAction);
     if (!next && this._successors.size > 0) {
-      console.warn(`Flow ends: '${nextAction}' not found in [${Array.from(this._successors.keys())}]`);
+      console.warn(
+        `Flow ends: '${nextAction}' not found in [${Array.from(this._successors.keys())}]`,
+      );
     }
     return next;
   }
@@ -131,7 +128,10 @@ export class BaseNode<S = unknown, P extends NonIterableObject = NonIterableObje
   }
 }
 
-export class Node<S = unknown, P extends NonIterableObject = NonIterableObject> extends BaseNode<S, P> {
+export class Node<S = unknown, P extends NonIterableObject = NonIterableObject> extends BaseNode<
+  S,
+  P
+> {
   maxRetries: number;
   wait: number;
   currentRetry: number = 0;
@@ -155,7 +155,7 @@ export class Node<S = unknown, P extends NonIterableObject = NonIterableObject> 
           return await this.execFallback(prepRes, e as Error);
         }
         if (this.wait > 0) {
-          await new Promise(resolve => setTimeout(resolve, this.wait * 1000));
+          await new Promise((resolve) => setTimeout(resolve, this.wait * 1000));
         }
       }
     }
@@ -163,7 +163,10 @@ export class Node<S = unknown, P extends NonIterableObject = NonIterableObject> 
   }
 }
 
-export class Flow<S = unknown, P extends NonIterableObject = NonIterableObject> extends BaseNode<S, P> {
+export class Flow<S = unknown, P extends NonIterableObject = NonIterableObject> extends BaseNode<
+  S,
+  P
+> {
   start: BaseNode;
 
   constructor(start: BaseNode) {
@@ -195,7 +198,7 @@ export class Flow<S = unknown, P extends NonIterableObject = NonIterableObject> 
 
 export class KindlingNode<
   S extends KindlingNodeContext = KindlingNodeContext,
-  P extends NonIterableObject = NonIterableObject
+  P extends NonIterableObject = NonIterableObject,
 > extends Node<S, P> {
   protected metadata: NodeMetadata;
   private nodeStartTime?: number;
@@ -327,7 +330,7 @@ export class KindlingNode<
 
 export class KindlingFlow<
   S extends KindlingNodeContext = KindlingNodeContext,
-  P extends NonIterableObject = NonIterableObject
+  P extends NonIterableObject = NonIterableObject,
 > extends Flow<S, P> {
   protected flowMetadata: NodeMetadata;
   private flowCapsuleId?: string;
@@ -374,7 +377,11 @@ export class KindlingFlow<
     return undefined;
   }
 
-  override async post(shared: S, _prepRes: unknown, _execRes: unknown): Promise<string | undefined> {
+  override async post(
+    shared: S,
+    _prepRes: unknown,
+    _execRes: unknown,
+  ): Promise<string | undefined> {
     const duration = this.flowStartTime ? Date.now() - this.flowStartTime : 0;
 
     if (this.flowCapsuleId) {

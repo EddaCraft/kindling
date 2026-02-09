@@ -183,7 +183,7 @@ Context is immutable once execution begins, except for status transitions.
 
 PocketFlow is vendored within the system. Other implementations of the PocketFlow spec may connect, provided they satisfy the interface contracts and determinism requirements.
 
-The existing `@kindling/adapter-pocketflow` package is a separate concern: an adapter for users who use the PocketFlow library in their own workflows and want Kindling capture. It is not the orchestration layer described here.
+The existing `@eddacraft/kindling-adapter-pocketflow` package is a separate concern: an adapter for users who use the PocketFlow library in their own workflows and want Kindling capture. It is not the orchestration layer described here.
 
 ---
 

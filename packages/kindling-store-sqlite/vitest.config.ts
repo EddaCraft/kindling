@@ -7,7 +7,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@kindling/core': resolve(__dirname, '../kindling-core/src/index.ts'),
+      '@eddacraft/kindling-core': resolve(__dirname, '../kindling-core/src/index.ts'),
     },
   },
 });

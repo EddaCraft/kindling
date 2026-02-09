@@ -2,7 +2,7 @@
 /**
  * Build the Kindling plugin bundle using esbuild.
  *
- * Bundles all @kindling/* packages into a single CJS file,
+ * Bundles all @eddacraft/kindling-* packages into a single CJS file,
  * with better-sqlite3 marked as external (native module).
  *
  * Includes a plugin to inline SQL migration files that would
@@ -45,10 +45,10 @@ for (const pkg of requiredPackages) {
   }
 }
 
-// Resolve @kindling/* packages to monorepo dist directories
+// Resolve @eddacraft/kindling-* packages to monorepo dist directories
 const alias = {};
 for (const pkg of requiredPackages) {
-  const scopedName = `@kindling/${pkg.replace('kindling-', '')}`;
+  const scopedName = `@eddacraft/${pkg}`;
   alias[scopedName] = path.join(packagesDir, pkg, 'dist', 'index.js');
 }
 

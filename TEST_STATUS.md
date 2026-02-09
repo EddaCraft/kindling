@@ -1,10 +1,12 @@
 # Kindling Test Status Report
+
 **Date**: 2026-01-10
 **Session**: M4 Completion + Full Testing
 
 ## ✅ Completed
 
 ### 1. M4 Implementation (100% Feature Complete)
+
 - ✅ KindlingService orchestration layer (368 lines)
 - ✅ Full CLI implementation (6 commands, 520+ lines)
 - ✅ Export/import functionality (integrated)
@@ -12,10 +14,12 @@
 - ✅ Documentation updates (README with working examples)
 
 ### 2. Dependencies
+
 - ✅ pnpm install successful (all 118 packages)
 - ✅ better-sqlite3 compiled and installed
 
 ### 3. Core Packages Building
+
 - ✅ kindling-core: Type errors FIXED and building
 - ✅ kindling-store-sqlite: Building successfully
 - ✅ kindling-provider-local: Building successfully
@@ -27,6 +31,7 @@
 ### Remaining Type Errors in kindling-cli
 
 **Error 1: Pin property names**
+
 ```typescript
 // Current (incorrect):
 if (pin.note) console.log(`Note: ${pin.note}`);
@@ -34,19 +39,22 @@ if (pin.note) console.log(`Note: ${pin.note}`);
 // Should be:
 if (pin.reason) console.log(`Note: ${pin.reason}`);
 ```
+
 **Files**: `src/commands/pin.ts`, `src/commands/search.ts`
 
 **Error 2: Missing dependencies in package.json**
+
 ```json
 {
   "dependencies": {
-    "@kindling/provider-local": "workspace:*",  // MISSING
-    "better-sqlite3": "^12.0.0"                  // MISSING
+    "@eddacraft/kindling-provider-local": "workspace:*", // MISSING
+    "better-sqlite3": "^12.0.0" // MISSING
   }
 }
 ```
 
 **Error 3: openDatabase API**
+
 ```typescript
 // Current (incorrect):
 const db = openDatabase({ dbPath: path });
@@ -54,6 +62,7 @@ const db = openDatabase({ dbPath: path });
 // Should be:
 const db = openDatabase({ path });
 ```
+
 **File**: `src/utils.ts`
 
 **Error 4: SqliteKindlingStore missing methods**
@@ -61,6 +70,7 @@ The store needs to expose all methods required by KindlingStore interface.
 **File**: `packages/kindling-store-sqlite/src/store/sqlite.ts`
 
 Missing methods:
+
 - `createSummary()` (currently named differently)
 - `createPin()`
 - `removePin()`
@@ -69,6 +79,7 @@ Missing methods:
 ## 📋 Testing Checklist
 
 ### Build & Type Check
+
 - [x] pnpm install
 - [x] Core packages building
 - [x] Provider packages building
@@ -78,17 +89,20 @@ Missing methods:
 - [ ] Type check passing
 
 ### Test Suite
+
 - [ ] Run all unit tests
 - [ ] Run integration tests
 - [ ] Check test coverage
 - [ ] Verify no failing tests
 
 ### Linting
+
 - [ ] ESLint (if configured)
 - [ ] Markdownlint (if configured)
 - [ ] Format check
 
 ### Documentation Review
+
 - [x] README.md updated with correct examples
 - [ ] CONTRIBUTING.md review
 - [ ] SECURITY.md review
@@ -96,6 +110,7 @@ Missing methods:
 - [ ] API documentation complete
 
 ### User Journey Testing
+
 - [ ] Fresh clone and setup
 - [ ] Run basic usage example
 - [ ] Test all CLI commands:
@@ -155,6 +170,7 @@ Missing methods:
 ## 💡 Recommendations
 
 After fixing the CLI build errors, the project should be ready for:
+
 - Full test suite execution
 - User acceptance testing
 - OSS v0.1 release preparation

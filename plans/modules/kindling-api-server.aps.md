@@ -37,8 +37,8 @@ This is essential for:
 
 **Depends on:**
 
-- `@kindling/core` - KindlingService, types
-- `@kindling/store-sqlite` - Database connection (passed to service)
+- `@eddacraft/kindling-core` - KindlingService, types
+- `@eddacraft/kindling-store-sqlite` - Database connection (passed to service)
 
 **Exposes:**
 
@@ -49,7 +49,7 @@ This is essential for:
 ## Boundary Rules
 
 - API scope owns HTTP transport layer only
-- Business logic stays in `@kindling/core`
+- Business logic stays in `@eddacraft/kindling-core`
 - Database management delegated to store packages
 - Security is caller's responsibility (localhost binding, SSH tunneling)
 

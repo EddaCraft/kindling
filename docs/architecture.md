@@ -22,157 +22,177 @@ The architecture is deliberately layered to separate concerns:
 ## System Diagram
 
 ```
-                      Adapters
-   ┌──────────────┐        ┌──────────────────────┐
-   │  OpenCode    │        │  PocketFlow Nodes    │
-   │  Adapter     │        │  Adapter             │
-   └──────┬───────┘        └──────────┬───────────┘
-          │                           │
-          └─────────┬─────────────────┘
+                         Adapters
+   ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐
+   │  OpenCode    │  │  Claude Code │  │  PocketFlow Nodes    │
+   │  Adapter     │  │  Adapter     │  │  Adapter             │
+   └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘
+          │                 │                     │
+          └─────────────────┴─────────────────────┘
                     ▼
-         ┌──────────────────────┐
-         │   Kindling Core      │
-         │                      │
-         │  - Observation       │
-         │    ingestion         │
-         │  - Capsule lifecycle │
-         │  - Retrieval         │
-         │    orchestration     │
-         │  - Export/import     │
-         └──────────┬───────────┘
+     ┌──────────────────────────────────────────┐
+     │  @eddacraft/kindling (Main Package)      │
+     │                                          │
+     │  ┌────────────────────────────────────┐  │
+     │  │  Kindling Core                     │  │
+     │  │  - Observation ingestion           │  │
+     │  │  - Capsule lifecycle               │  │
+     │  │  - Retrieval orchestration         │  │
+     │  │  - Export/import                   │  │
+     │  └──────────┬─────────────────────────┘  │
+     │             │                            │
+     │  ┌──────────┴──────────────┐             │
+     │  ▼                         ▼             │
+     │  Storage (SQLite)   Provider (Local)     │
+     │  - Observations     - FTS ranking        │
+     │  - Capsules         - Recency scoring    │
+     │  - Summaries        - Candidate          │
+     │  - Pins               generation         │
+     │  - FTS indexes                           │
+     │  └──────────┬──────────┘                 │
+     │             ▼                            │
+     │  API Server (Fastify)                    │
+     └──────────────────────────────────────────┘
                     │
-       ┌────────────┴──────────────┐
-       ▼                           ▼
-┌──────────────┐          ┌─────────────────────┐
-│   Storage    │          │     Provider        │
-│  (SQLite)    │          │     (Local)         │
-│              │          │                     │
-│ - Observations│         │ - FTS ranking       │
-│ - Capsules   │          │ - Recency scoring   │
-│ - Summaries  │          │ - Candidate         │
-│ - Pins       │          │   generation        │
-│ - FTS indexes│          │                     │
-└──────┬───────┘          └─────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────────────┐
-│                    CLI                          │
-│  Inspection - Debugging - Export/Import         │
-└─────────────────────────────────────────────────┘
+                    ▼
+     ┌──────────────────────────────────────────┐
+     │                    CLI                   │
+     │  Inspection - Debugging - Export/Import  │
+     └──────────────────────────────────────────┘
 ```
 
 ## Packages
 
-### `@kindling/core`
+### `@eddacraft/kindling` (Main Package)
 
-**Purpose:** Domain model and orchestration
+**Purpose:** All-in-one package for Node.js users
+
+**Bundles:**
+
+- `@eddacraft/kindling-core` (types, KindlingService)
+- SQLite persistence (better-sqlite3, FTS5, WAL mode)
+- Local FTS provider (retrieval with ranking)
+- API server (Fastify)
+
+**This is what most users install.** It re-exports core types and provides the complete stack.
+
+**Key Exports:**
+
+- `KindlingService` - orchestration (from core)
+- `openDatabase`, `SqliteKindlingStore` - persistence
+- `LocalFtsProvider` - retrieval
+- API server entrypoint
+
+**Configuration:**
+
+- Default DB location: `~/.kindling/kindling.db`
+- Overridable via environment or explicit path
+
+### `@eddacraft/kindling-core`
+
+**Purpose:** Lightweight domain model and orchestration
 
 **Responsibilities:**
+
 - Define core types (Observation, Capsule, Summary, Pin)
 - Manage capsule lifecycle (open/close)
 - Orchestrate retrieval (combine pins, summaries, provider results)
 - Coordinate export/import at the service level
 
-**Dependencies:**
-- `@kindling/store-sqlite` (persistence)
-- `@kindling/provider-local` (retrieval candidates)
+**Dependencies:** None (defines interfaces only)
+
+**Use when:** Building adapters, or targeting browser environments where you pair this with `@eddacraft/kindling-store-sqljs`.
 
 **Key Interfaces:**
+
 - `appendObservation(obs)` - record an observation
 - `openCapsule(type, intent, scopeIds)` - start a new capsule
 - `closeCapsule(id, summary?)` - finalize a capsule
 - `retrieve(query, scopeIds, opts)` - orchestrated retrieval
 
-### `@kindling/store-sqlite`
+### `@eddacraft/kindling-store-sqljs`
 
-**Purpose:** Embedded system of record
-
-**Responsibilities:**
-- SQLite schema and migrations
-- Write path (observations, capsules, summaries, pins)
-- Read helpers (by scope, by time, by FTS)
-- Redaction/tombstone support
-- Export/import primitives
-
-**Dependencies:** None (bottom of the stack)
-
-**Key Interfaces:**
-- `insertObservation(obs)` - persist an observation
-- `createCapsule(capsule)` / `closeCapsule(id)` - capsule CRUD
-- `attachObservationToCapsule(capsuleId, obsId)` - link observation
-- `listPins(scopeIds, now)` - get active pins (TTL-aware)
-- `exportObservations(opts)` / `importObservation(obs)` - portability
-
-**Configuration:**
-- Default DB location: `~/.kindling/kindling.db`
-- Overridable via environment or explicit path
-
-### `@kindling/provider-local`
-
-**Purpose:** FTS + recency-based retrieval
+**Purpose:** Browser/WASM-compatible store
 
 **Responsibilities:**
-- Generate retrieval candidates using FTS
-- Rank by relevance and recency
-- Return scored results (no truncation - that's orchestration's job)
+
+- sql.js-backed persistence for browser environments
+- Same store interface as the SQLite store bundled in the main package
 
 **Dependencies:**
-- `@kindling/store-sqlite` (queries FTS tables)
 
-**Key Interfaces:**
-- `search(query, scopeIds, opts)` - FTS-based candidate generation
-- `rank(candidates, opts)` - scoring logic
+- `@eddacraft/kindling-core`
 
-**Note:** The provider is an accelerator, not a source of truth. It queries the store and applies heuristics.
-
-### `@kindling/adapter-opencode`
+### `@eddacraft/kindling-adapter-opencode`
 
 **Purpose:** OpenCode session integration
 
 **Responsibilities:**
+
 - Map OpenCode tool calls, diffs, messages to Observations
 - Manage session-level capsules (open on session start, close on end)
 - Provide `/memory` command surface for OpenCode
 
 **Dependencies:**
-- `@kindling/core`
+
+- `@eddacraft/kindling-core`
 
 **Key Interfaces:**
+
 - `onSessionStart(sessionId, repoId)` - open capsule
 - `onToolCall(tool, args, result)` - append observation
 - `onSessionEnd(sessionId)` - close capsule
 
-### `@kindling/adapter-pocketflow`
+### `@eddacraft/kindling-adapter-pocketflow`
 
 **Purpose:** PocketFlow workflow integration
 
 **Responsibilities:**
+
 - Map workflow nodes to Observations
 - Manage node-level capsules (open on node start, close on node end)
 - Capture structured evidence (inputs, outputs, errors)
 
 **Dependencies:**
-- `@kindling/core`
+
+- `@eddacraft/kindling-core`
 
 **Key Interfaces:**
+
 - `onNodeStart(nodeId, intent)` - open capsule
 - `onNodeOutput(nodeId, output)` - append observation
 - `onNodeEnd(nodeId)` - close capsule
 
-### `@kindling/cli`
+### `@eddacraft/kindling-adapter-claude-code`
+
+**Purpose:** Claude Code hooks integration
+
+**Responsibilities:**
+
+- Capture Claude Code tool calls and session activity
+- Manage session-level capsules via Claude Code hooks
+
+**Dependencies:**
+
+- `@eddacraft/kindling-core`
+
+### `@eddacraft/kindling-cli`
 
 **Purpose:** Inspection, debugging, and standalone use
 
 **Responsibilities:**
+
 - List capsules, observations, pins
 - Query FTS directly
 - Export/import for backup and portability
 - Redact sensitive content
 
 **Dependencies:**
-- `@kindling/core`
+
+- `@eddacraft/kindling` (main package)
 
 **Key Commands:**
+
 - `kindling list capsules [--scope sessionId] [--after ts]`
 - `kindling search <query> [--scope repoId]`
 - `kindling export [--scope] [--after] [--before] > backup.json`
@@ -229,6 +249,7 @@ Kindling supports scoped queries via `ScopeIds`:
 - `userId` - isolate by user (future)
 
 All queries accept optional scope filters. Default behavior:
+
 - Retrieval: scoped to current session + repo
 - Export: can export by scope or global
 
@@ -241,12 +262,14 @@ store.redactObservation(id);
 ```
 
 Redaction:
+
 - Clears content to `[redacted]`
 - Sets `redacted=true` flag
 - Removes from FTS index
 - Preserves provenance (observation ID, capsule relationship)
 
 Tombstones (optional):
+
 - Mark observation as deleted
 - Exclude from all queries except audit
 - Preserve referential integrity
@@ -268,6 +291,7 @@ Export produces JSON bundles with deterministic ordering:
 ```
 
 Import supports conflict strategies:
+
 - `skip` - preserve existing
 - `overwrite` - replace existing
 - `error` - fail on conflict
@@ -287,6 +311,7 @@ migrations/
 ```
 
 **Migration rules:**
+
 - Additive only (never destructive)
 - Applied on DB open
 - Idempotent (safe to re-run)

@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SessionManager } from '../claude-code/session.js';
 import type { ClaudeCodeEvent } from '../claude-code/events.js';
-import type { Capsule } from '@kindling/core';
+import type { Capsule } from '@eddacraft/kindling-core';
 
 // Mock store implementation
 function createMockStore() {
@@ -98,7 +98,7 @@ describe('SessionManager', () => {
       });
 
       expect(store.createCapsule).toHaveBeenCalledWith(
-        expect.objectContaining({ intent: 'Debug authentication' })
+        expect.objectContaining({ intent: 'Debug authentication' }),
       );
     });
 
@@ -244,7 +244,7 @@ describe('SessionManager', () => {
         expect.objectContaining({
           content: 'Fixed authentication bug',
           confidence: 0.9,
-        })
+        }),
       );
     });
 

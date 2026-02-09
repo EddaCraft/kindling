@@ -1,5 +1,5 @@
 {
-  "name": "@kindling/api-server",
+  "name": "@eddacraft/kindling-server",
   "version": "0.1.0",
   "description": "HTTP API server for Kindling - enables multi-agent concurrency",
   "type": "module",
@@ -51,9 +51,9 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
-    "@kindling/core": "workspace:*",
-    "@kindling/provider-local": "workspace:*",
-    "@kindling/store-sqlite": "workspace:*",
+    "@eddacraft/kindling-core": "workspace:*",
+    "@eddacraft/kindling-provider-local": "workspace:*",
+    "@eddacraft/kindling-store-sqlite": "workspace:*",
     "fastify": "^5.7.4"
   },
   "devDependencies": {

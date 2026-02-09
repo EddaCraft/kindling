@@ -8,18 +8,8 @@ import {
   type SessionStartOptions,
   type SessionEndSignals,
 } from '../src/opencode/session.js';
-import type {
-  Capsule,
-  Observation,
-  Summary,
-  ID,
-  CapsuleStore,
-} from '@kindling/core';
-import type {
-  ToolCallEvent,
-  SessionStartEvent,
-  MessageEvent,
-} from '../src/opencode/events.js';
+import type { Capsule, Observation, Summary, ID, CapsuleStore } from '@eddacraft/kindling-core';
+import type { ToolCallEvent, SessionStartEvent, MessageEvent } from '../src/opencode/events.js';
 
 /**
  * Mock store for testing
@@ -52,7 +42,7 @@ class MockStore implements CapsuleStore {
 
   getOpenCapsuleForSession(sessionId: string): Capsule | undefined {
     return Array.from(this.capsules.values()).find(
-      c => c.status === 'open' && c.scopeIds.sessionId === sessionId
+      (c) => c.status === 'open' && c.scopeIds.sessionId === sessionId,
     );
   }
 
@@ -277,7 +267,7 @@ describe('SessionManager', () => {
         },
       ];
 
-      events.forEach(event => {
+      events.forEach((event) => {
         const result = manager.onEvent(event);
         expect(result.observation).toBeDefined();
       });

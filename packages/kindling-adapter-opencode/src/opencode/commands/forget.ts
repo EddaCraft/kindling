@@ -4,7 +4,7 @@
  * Redacts observations to protect privacy
  */
 
-import type { ID } from '@kindling/core';
+import type { ID } from '@eddacraft/kindling-core';
 
 /**
  * Store interface for forget command
@@ -41,10 +41,7 @@ export interface ForgetResult {
  * @param options - Forget options
  * @returns Forget result
  */
-export function memoryForget(
-  store: ForgetStore,
-  options: ForgetOptions
-): ForgetResult {
+export function memoryForget(store: ForgetStore, options: ForgetOptions): ForgetResult {
   const { observationId } = options;
 
   // Verify observation exists

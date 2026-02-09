@@ -8,7 +8,7 @@
 
 Provides a WASM-based SQLite persistence layer using [sql.js](https://sql.js.org/), enabling Kindling to run in browser environments and platforms without native compilation support.
 
-This is a drop-in replacement for `@kindling/store-sqlite` with identical API, but trades performance for portability:
+This is a drop-in replacement for `@eddacraft/kindling-store-sqlite` with identical API, but trades performance for portability:
 
 - Runs in browsers (with IndexedDB persistence)
 - Works in serverless platforms without native modules
@@ -49,7 +49,7 @@ This is a drop-in replacement for `@kindling/store-sqlite` with identical API, b
 ## Boundary Rules
 
 - STORAGE scope must not depend on KINDLING, RETRIEVAL, or ADAPTER scopes
-- API must match `@kindling/store-sqlite` exactly (drop-in replacement)
+- API must match `@eddacraft/kindling-store-sqlite` exactly (drop-in replacement)
 - FTS5 support is optional and auto-detected
 - Persistence is manual (caller must export/save)
 
@@ -95,6 +95,6 @@ All work for this module is complete. The package includes:
 
 ## Notes
 
-This package is primarily for browser-based use cases and platforms where native compilation isn't available. For Node.js environments, `@kindling/store-sqlite` is strongly recommended for better performance.
+This package is primarily for browser-based use cases and platforms where native compilation isn't available. For Node.js environments, `@eddacraft/kindling-store-sqlite` is strongly recommended for better performance.
 
 The FTS5 limitation means that standard sql.js builds won't support full-text search. Retrieval will work but won't use FTS indexes. Users needing FTS5 in browsers must compile sql.js with FTS5 enabled themselves.

@@ -1,18 +1,18 @@
-# @kindling/cli
+# @eddacraft/kindling-cli
 
 Command-line interface for Kindling - inspect, search, and manage your local AI memory.
 
-[![npm version](https://img.shields.io/npm/v/@kindling/cli.svg)](https://www.npmjs.com/package/@kindling/cli)
+[![npm version](https://img.shields.io/npm/v/@eddacraft/kindling-cli.svg)](https://www.npmjs.com/package/@eddacraft/kindling-cli)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
 ```bash
 # Install globally
-npm install -g @kindling/cli
+npm install -g @eddacraft/kindling-cli
 
 # Or run via npx
-npx @kindling/cli status
+npx @eddacraft/kindling-cli status
 ```
 
 ## Commands
@@ -27,6 +27,7 @@ kindling status --db ./custom-path.db
 ```
 
 Output:
+
 ```
 Database: /home/user/.kindling/memory.db
 Size: 2.4 MB
@@ -136,10 +137,10 @@ kindling import ./backup.json
 
 The CLI uses these default paths:
 
-| Item | Default Path |
-|------|--------------|
-| Database | `~/.kindling/memory.db` |
-| Config | `~/.kindling/config.json` |
+| Item     | Default Path              |
+| -------- | ------------------------- |
+| Database | `~/.kindling/memory.db`   |
+| Config   | `~/.kindling/config.json` |
 
 Override with environment variables:
 
@@ -169,8 +170,8 @@ kindling list capsules --quiet
 
 ## Related Packages
 
-- [`@kindling/core`](../kindling-core) - Domain types
-- [`@kindling/store-sqlite`](../kindling-store-sqlite) - SQLite persistence
+- [`@eddacraft/kindling-core`](../kindling-core) - Domain types
+- [`@eddacraft/kindling-store-sqlite`](../kindling-store-sqlite) - SQLite persistence
 
 ## License
 

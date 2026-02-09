@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../kindling-core" },
+    { "path": "../kindling-store-sqlite" },
+    { "path": "../kindling-provider-local" },
+    { "path": "../kindling-api-server" }
+  ]
+}

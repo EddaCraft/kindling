@@ -4,14 +4,14 @@
  * Exports memory to a portable bundle
  */
 
-import type { ScopeIds, ExportBundle } from '@kindling/core';
+import type { ScopeIds, ExportBundle } from '@eddacraft/kindling-core';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 
 /**
  * Export service interface
  */
-  export interface ExportService {
+export interface ExportService {
   createExportBundle(options?: {
     scope?: Partial<ScopeIds>;
     includeRedacted?: boolean;
@@ -64,10 +64,7 @@ export interface ExportResult {
  * @param options - Export options
  * @returns Export result
  */
-export function memoryExport(
-  service: ExportService,
-  options: ExportOptions = {}
-): ExportResult {
+export function memoryExport(service: ExportService, options: ExportOptions = {}): ExportResult {
   const { scope, includeRedacted = false, outputPath, description } = options;
 
   try {
@@ -80,10 +77,7 @@ export function memoryExport(
 
     // Generate file path if not provided
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const defaultPath = join(
-      process.cwd(),
-      `kindling-export-${timestamp}.json`
-    );
+    const defaultPath = join(process.cwd(), `kindling-export-${timestamp}.json`);
     const filePath = outputPath || defaultPath;
 
     // Serialize and write bundle

@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { openDatabase, closeDatabase, SqliteKindlingStore } from '../src/index.js';
-import { validateObservation, validateCapsule } from '@kindling/core';
+import { validateObservation, validateCapsule } from '@eddacraft/kindling-core';
 import type Database from 'better-sqlite3';
 import { unlinkSync } from 'fs';
 
@@ -18,7 +18,9 @@ describe('SqliteKindlingStore - Redaction', () => {
       unlinkSync(testDbPath);
       unlinkSync(`${testDbPath}-shm`);
       unlinkSync(`${testDbPath}-wal`);
-    } catch {}
+    } catch {
+      /* cleanup */
+    }
 
     db = openDatabase({ path: testDbPath });
     store = new SqliteKindlingStore(db);
@@ -30,7 +32,9 @@ describe('SqliteKindlingStore - Redaction', () => {
       unlinkSync(testDbPath);
       unlinkSync(`${testDbPath}-shm`);
       unlinkSync(`${testDbPath}-wal`);
-    } catch {}
+    } catch {
+      /* cleanup */
+    }
   });
 
   describe('redactObservation', () => {
@@ -47,7 +51,9 @@ describe('SqliteKindlingStore - Redaction', () => {
       store.insertObservation(obsResult.value);
       store.redactObservation(obsResult.value.id);
 
-      const row = db.prepare('SELECT * FROM observations WHERE id = ?').get(obsResult.value.id) as any;
+      const row = db
+        .prepare('SELECT * FROM observations WHERE id = ?')
+        .get(obsResult.value.id) as any;
       expect(row.content).toBe('[redacted]');
       expect(row.redacted).toBe(1);
     });
@@ -65,18 +71,26 @@ describe('SqliteKindlingStore - Redaction', () => {
       store.insertObservation(obsResult.value);
 
       // Verify FTS contains the content
-      let ftsResult = db.prepare(`
+      let ftsResult = db
+        .prepare(
+          `
         SELECT COUNT(*) as count FROM observations_fts WHERE content MATCH 'secret'
-      `).get() as { count: number };
+      `,
+        )
+        .get() as { count: number };
       expect(ftsResult.count).toBe(1);
 
       // Redact
       store.redactObservation(obsResult.value.id);
 
       // Verify removed from FTS
-      ftsResult = db.prepare(`
+      ftsResult = db
+        .prepare(
+          `
         SELECT COUNT(*) as count FROM observations_fts WHERE content MATCH 'secret'
-      `).get() as { count: number };
+      `,
+        )
+        .get() as { count: number };
       expect(ftsResult.count).toBe(0);
     });
 
@@ -117,7 +131,10 @@ describe('SqliteKindlingStore - Redaction', () => {
       store.redactObservation(obsResult.value.id);
 
       const retrieved = store.getObservationById(obsResult.value.id);
-      expect(retrieved?.provenance).toEqual({ toolName: 'grep', command: 'grep password file.txt' });
+      expect(retrieved?.provenance).toEqual({
+        toolName: 'grep',
+        command: 'grep password file.txt',
+      });
     });
 
     it('should preserve capsule-observation relationship after redaction', () => {
@@ -144,10 +161,14 @@ describe('SqliteKindlingStore - Redaction', () => {
       store.redactObservation(obsResult.value.id);
 
       // Verify relationship preserved
-      const link = db.prepare(`
+      const link = db
+        .prepare(
+          `
         SELECT * FROM capsule_observations
         WHERE capsule_id = ? AND observation_id = ?
-      `).get(capsuleResult.value.id, obsResult.value.id);
+      `,
+        )
+        .get(capsuleResult.value.id, obsResult.value.id);
 
       expect(link).toBeDefined();
     });
@@ -254,8 +275,12 @@ describe('SqliteKindlingStore - Redaction', () => {
       const snippets = store.getEvidenceSnippets([obs1Result.value.id, obs2Result.value.id]);
 
       expect(snippets).toHaveLength(2);
-      expect(snippets.find(s => s.observationId === obs1Result.value.id)?.snippet).toBe('public information');
-      expect(snippets.find(s => s.observationId === obs2Result.value.id)?.snippet).toBe('[redacted]');
+      expect(snippets.find((s) => s.observationId === obs1Result.value.id)?.snippet).toBe(
+        'public information',
+      );
+      expect(snippets.find((s) => s.observationId === obs2Result.value.id)?.snippet).toBe(
+        '[redacted]',
+      );
     });
   });
 

@@ -5,7 +5,7 @@
  * These handlers can be registered with Claude Code's hook system.
  */
 
-import type { CapsuleStore, Observation, ID } from '@kindling/core';
+import type { CapsuleStore, Observation, ID } from '@eddacraft/kindling-core';
 import { SessionManager } from './session.js';
 import {
   createPostToolUseEvent,

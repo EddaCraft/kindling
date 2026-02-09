@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync } from 'fs';
 import { homedir } from 'os';
 import { join, dirname } from 'path';
-import { openDatabase } from '@kindling/store-sqlite';
+import { openDatabase } from '@eddacraft/kindling-store-sqlite';
 import { handleError, formatJson, getDefaultDbPath } from '../utils.js';
 
 interface InitOptions {
@@ -111,7 +111,7 @@ async function configureClaudeCode(): Promise<{
     // Installed globally or locally
     join(dirname(new URL(import.meta.url).pathname), '../../../kindling-plugin-claude-code'),
     // In node_modules
-    join(process.cwd(), 'node_modules/@kindling/plugin-claude-code'),
+    join(process.cwd(), 'node_modules/@eddacraft/kindling-plugin-claude-code'),
   ];
 
   let pluginSource: string | null = null;
@@ -181,7 +181,7 @@ function printHumanReadable(
     database: { created: boolean; path: string; existed: boolean } | null;
     claudeCode: { configured: boolean; pluginPath: string; message: string } | null;
   },
-  claudeCodeRequested: boolean
+  claudeCodeRequested: boolean,
 ): void {
   console.log('\nKindling Setup');
   console.log('==============\n');

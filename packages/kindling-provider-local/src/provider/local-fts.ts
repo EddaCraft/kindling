@@ -19,7 +19,7 @@ import type {
   Observation,
   Summary,
   ScopeIds,
-} from '@kindling/core';
+} from '@eddacraft/kindling-core';
 
 interface FtsMatch {
   rowid: number;

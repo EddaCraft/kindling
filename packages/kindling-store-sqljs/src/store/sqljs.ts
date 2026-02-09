@@ -6,7 +6,7 @@
  */
 
 import type { Database, QueryExecResult } from 'sql.js';
-import type { Observation, Capsule, Summary, Pin, ScopeIds } from '@kindling/core';
+import type { Observation, Capsule, Summary, Pin, ScopeIds } from '@eddacraft/kindling-core';
 import {
   exportDatabase as exportDB,
   importDatabase as importDB,
@@ -51,7 +51,7 @@ function getAll<T>(result: QueryExecResult[]): T[] {
   }
 
   const columns = result[0].columns;
-  return result[0].values.map(values => {
+  return result[0].values.map((values) => {
     const row: Record<string, unknown> = {};
     for (let i = 0; i < columns.length; i++) {
       row[columns[i]] = values[i];
@@ -87,7 +87,7 @@ export class SqljsKindlingStore {
         observation.ts,
         JSON.stringify(observation.scopeIds),
         observation.redacted ? 1 : 0,
-      ]
+      ],
     );
   }
 
@@ -107,7 +107,7 @@ export class SqljsKindlingStore {
         capsule.openedAt,
         capsule.closedAt ?? null,
         JSON.stringify(capsule.scopeIds),
-      ]
+      ],
     );
   }
 
@@ -119,7 +119,7 @@ export class SqljsKindlingStore {
       `UPDATE capsules
        SET status = 'closed', closed_at = ?
        WHERE id = ? AND status = 'open'`,
-      [closedAt ?? Date.now(), capsuleId]
+      [closedAt ?? Date.now(), capsuleId],
     );
 
     const changes = this.db.getRowsModified();
@@ -128,10 +128,10 @@ export class SqljsKindlingStore {
     }
 
     if (summaryId) {
-      const result = this.db.exec(
-        `SELECT id FROM summaries WHERE id = ? AND capsule_id = ?`,
-        [summaryId, capsuleId]
-      );
+      const result = this.db.exec(`SELECT id FROM summaries WHERE id = ? AND capsule_id = ?`, [
+        summaryId,
+        capsuleId,
+      ]);
       if (result.length === 0 || result[0].values.length === 0) {
         throw new Error(`Summary ${summaryId} not found for capsule ${capsuleId}`);
       }
@@ -146,7 +146,7 @@ export class SqljsKindlingStore {
       `SELECT COALESCE(MAX(seq), -1) + 1 as next_seq
        FROM capsule_observations
        WHERE capsule_id = ?`,
-      [capsuleId]
+      [capsuleId],
     );
 
     const nextSeq = getFirst<{ next_seq: number }>(result)?.next_seq ?? 0;
@@ -154,7 +154,7 @@ export class SqljsKindlingStore {
     this.db.run(
       `INSERT INTO capsule_observations (capsule_id, observation_id, seq)
        VALUES (?, ?, ?)`,
-      [capsuleId, observationId, nextSeq]
+      [capsuleId, observationId, nextSeq],
     );
   }
 
@@ -173,7 +173,7 @@ export class SqljsKindlingStore {
         summary.confidence,
         summary.createdAt,
         JSON.stringify(summary.evidenceRefs),
-      ]
+      ],
     );
   }
 
@@ -193,7 +193,7 @@ export class SqljsKindlingStore {
         pin.createdAt,
         pin.expiresAt ?? null,
         JSON.stringify(pin.scopeIds),
-      ]
+      ],
     );
   }
 
@@ -252,7 +252,7 @@ export class SqljsKindlingStore {
       scope_ids: string;
     }>(result);
 
-    return rows.map(row => ({
+    return rows.map((row) => ({
       id: row.id,
       targetType: row.target_type as 'observation' | 'summary',
       targetId: row.target_id,
@@ -289,7 +289,7 @@ export class SqljsKindlingStore {
       `UPDATE observations
        SET content = '[redacted]', redacted = 1
        WHERE id = ?`,
-      [observationId]
+      [observationId],
     );
 
     if (this.db.getRowsModified() === 0) {
@@ -310,7 +310,7 @@ export class SqljsKindlingStore {
          AND json_extract(scope_ids, '$.sessionId') = ?
        ORDER BY opened_at DESC
        LIMIT 1`,
-      [sessionId]
+      [sessionId],
     );
 
     const row = getFirst<{
@@ -332,7 +332,7 @@ export class SqljsKindlingStore {
        FROM capsule_observations
        WHERE capsule_id = ?
        ORDER BY seq`,
-      [row.id]
+      [row.id],
     );
 
     const obsRows = getAll<{ observation_id: string }>(obsResult);
@@ -345,7 +345,7 @@ export class SqljsKindlingStore {
       openedAt: row.opened_at,
       closedAt: row.closed_at ?? undefined,
       scopeIds: JSON.parse(row.scope_ids),
-      observationIds: obsRows.map(r => r.observation_id),
+      observationIds: obsRows.map((r) => r.observation_id),
       summaryId: undefined,
     };
   }
@@ -360,7 +360,7 @@ export class SqljsKindlingStore {
        WHERE capsule_id = ?
        ORDER BY created_at DESC
        LIMIT 1`,
-      [capsuleId]
+      [capsuleId],
     );
 
     const row = getFirst<{
@@ -399,21 +399,20 @@ export class SqljsKindlingStore {
       `SELECT id, kind, content
        FROM observations
        WHERE id IN (${placeholders})`,
-      observationIds
+      observationIds,
     );
 
     const rows = getAll<{ id: string; kind: string; content: string }>(result);
-    const rowMap = new Map(rows.map(row => [row.id, row]));
+    const rowMap = new Map(rows.map((row) => [row.id, row]));
 
     return observationIds
-      .map(id => rowMap.get(id))
+      .map((id) => rowMap.get(id))
       .filter((row): row is NonNullable<typeof row> => row !== undefined)
-      .map(row => ({
+      .map((row) => ({
         observationId: row.id,
         kind: row.kind,
-        snippet: row.content.length > maxChars
-          ? row.content.substring(0, maxChars) + '...'
-          : row.content,
+        snippet:
+          row.content.length > maxChars ? row.content.substring(0, maxChars) + '...' : row.content,
       }));
   }
 
@@ -425,7 +424,7 @@ export class SqljsKindlingStore {
       `SELECT id, kind, content, provenance, ts, scope_ids, redacted
        FROM observations
        WHERE id = ?`,
-      [observationId]
+      [observationId],
     );
 
     const row = getFirst<{
@@ -461,7 +460,7 @@ export class SqljsKindlingStore {
       `SELECT id, capsule_id, content, confidence, created_at, evidence_refs
        FROM summaries
        WHERE id = ?`,
-      [summaryId]
+      [summaryId],
     );
 
     const row = getFirst<{
@@ -494,7 +493,7 @@ export class SqljsKindlingStore {
     scopeIds?: Partial<ScopeIds>,
     fromTs?: number,
     toTs?: number,
-    limit: number = 100
+    limit: number = 100,
   ): Observation[] {
     let query = `
       SELECT id, kind, content, provenance, ts, scope_ids, redacted
@@ -543,7 +542,7 @@ export class SqljsKindlingStore {
       redacted: number;
     }>(result);
 
-    return rows.map(row => ({
+    return rows.map((row) => ({
       id: row.id,
       kind: row.kind as Observation['kind'],
       content: row.content,
@@ -562,7 +561,7 @@ export class SqljsKindlingStore {
       `SELECT id, type, intent, status, opened_at, closed_at, scope_ids
        FROM capsules
        WHERE id = ?`,
-      [capsuleId]
+      [capsuleId],
     );
 
     const row = getFirst<{
@@ -584,7 +583,7 @@ export class SqljsKindlingStore {
        FROM capsule_observations
        WHERE capsule_id = ?
        ORDER BY seq ASC`,
-      [capsuleId]
+      [capsuleId],
     );
 
     const obsIds = getAll<{ observation_id: string }>(obsResult);
@@ -597,7 +596,7 @@ export class SqljsKindlingStore {
       openedAt: row.opened_at,
       closedAt: row.closed_at ?? undefined,
       scopeIds: JSON.parse(row.scope_ids),
-      observationIds: obsIds.map(o => o.observation_id),
+      observationIds: obsIds.map((o) => o.observation_id),
     };
   }
 

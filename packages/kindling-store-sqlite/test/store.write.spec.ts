@@ -4,7 +4,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { openDatabase, closeDatabase, SqliteKindlingStore } from '../src/index.js';
-import { validateObservation, validateCapsule, validateSummary, validatePin } from '@kindling/core';
+import {
+  validateObservation,
+  validateCapsule,
+  validateSummary,
+  validatePin,
+} from '@eddacraft/kindling-core';
 import type Database from 'better-sqlite3';
 import { unlinkSync } from 'fs';
 
@@ -54,7 +59,9 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.insertObservation(obsResult.value);
 
       // Verify insertion
-      const row = db.prepare('SELECT * FROM observations WHERE id = ?').get(obsResult.value.id) as any;
+      const row = db
+        .prepare('SELECT * FROM observations WHERE id = ?')
+        .get(obsResult.value.id) as any;
       expect(row).toBeDefined();
       expect(row.kind).toBe('tool_call');
       expect(row.content).toBe('grep pattern file.txt');
@@ -75,9 +82,13 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.insertObservation(obsResult.value);
 
       // Check FTS table
-      const ftsResult = db.prepare(`
+      const ftsResult = db
+        .prepare(
+          `
         SELECT COUNT(*) as count FROM observations_fts WHERE content MATCH 'authentication'
-      `).get() as { count: number };
+      `,
+        )
+        .get() as { count: number };
 
       expect(ftsResult.count).toBe(1);
     });
@@ -96,9 +107,13 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.insertObservation(obsResult.value);
 
       // Check FTS table (should not contain redacted observation)
-      const ftsResult = db.prepare(`
+      const ftsResult = db
+        .prepare(
+          `
         SELECT COUNT(*) as count FROM observations_fts WHERE content MATCH 'secret'
-      `).get() as { count: number };
+      `,
+        )
+        .get() as { count: number };
 
       expect(ftsResult.count).toBe(0);
     });
@@ -118,7 +133,9 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.createCapsule(capsuleResult.value);
 
       // Verify insertion
-      const row = db.prepare('SELECT * FROM capsules WHERE id = ?').get(capsuleResult.value.id) as any;
+      const row = db
+        .prepare('SELECT * FROM capsules WHERE id = ?')
+        .get(capsuleResult.value.id) as any;
       expect(row).toBeDefined();
       expect(row.type).toBe('session');
       expect(row.intent).toBe('Fix authentication bug');
@@ -144,7 +161,9 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.closeCapsule(capsuleResult.value.id, closedAt);
 
       // Verify closure
-      const row = db.prepare('SELECT * FROM capsules WHERE id = ?').get(capsuleResult.value.id) as any;
+      const row = db
+        .prepare('SELECT * FROM capsules WHERE id = ?')
+        .get(capsuleResult.value.id) as any;
       expect(row.status).toBe('closed');
       expect(row.closed_at).toBe(closedAt);
     });
@@ -206,11 +225,15 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.attachObservationToCapsule(capsuleResult.value.id, obs2Result.value.id);
 
       // Verify ordering
-      const rows = db.prepare(`
+      const rows = db
+        .prepare(
+          `
         SELECT observation_id, seq FROM capsule_observations
         WHERE capsule_id = ?
         ORDER BY seq
-      `).all(capsuleResult.value.id) as Array<{ observation_id: string; seq: number }>;
+      `,
+        )
+        .all(capsuleResult.value.id) as Array<{ observation_id: string; seq: number }>;
 
       expect(rows).toHaveLength(2);
       expect(rows[0].observation_id).toBe(obs1Result.value.id);
@@ -242,7 +265,9 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.insertSummary(summaryResult.value);
 
       // Verify insertion
-      const row = db.prepare('SELECT * FROM summaries WHERE id = ?').get(summaryResult.value.id) as any;
+      const row = db
+        .prepare('SELECT * FROM summaries WHERE id = ?')
+        .get(summaryResult.value.id) as any;
       expect(row).toBeDefined();
       expect(row.capsule_id).toBe(capsuleResult.value.id);
       expect(row.content).toBe('Fixed authentication bug by updating auth check');
@@ -271,9 +296,13 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.insertSummary(summaryResult.value);
 
       // Check FTS table
-      const ftsResult = db.prepare(`
+      const ftsResult = db
+        .prepare(
+          `
         SELECT COUNT(*) as count FROM summaries_fts WHERE content MATCH 'authentication'
-      `).get() as { count: number };
+      `,
+        )
+        .get() as { count: number };
 
       expect(ftsResult.count).toBe(1);
     });
@@ -359,7 +388,7 @@ describe('SqliteKindlingStore - Write Path', () => {
       const activePins = store.listActivePins({ sessionId: 's1' }, now);
 
       expect(activePins).toHaveLength(2);
-      expect(activePins.map(p => p.targetId).sort()).toEqual(['obs1', 'obs3']);
+      expect(activePins.map((p) => p.targetId).sort()).toEqual(['obs1', 'obs3']);
     });
 
     it('should filter pins by scope', () => {
@@ -416,8 +445,12 @@ describe('SqliteKindlingStore - Write Path', () => {
 
       // Verify all operations succeeded
       const capsule = db.prepare('SELECT * FROM capsules WHERE id = ?').get(capsuleResult.value.id);
-      const observation = db.prepare('SELECT * FROM observations WHERE id = ?').get(obsResult.value.id);
-      const link = db.prepare('SELECT * FROM capsule_observations WHERE capsule_id = ?').get(capsuleResult.value.id);
+      const observation = db
+        .prepare('SELECT * FROM observations WHERE id = ?')
+        .get(obsResult.value.id);
+      const link = db
+        .prepare('SELECT * FROM capsule_observations WHERE capsule_id = ?')
+        .get(capsuleResult.value.id);
 
       expect(capsule).toBeDefined();
       expect(observation).toBeDefined();
@@ -464,23 +497,33 @@ describe('SqliteKindlingStore - Write Path', () => {
       store.insertObservation(obsResult.value);
 
       // Verify FTS contains the observation
-      let ftsResult = db.prepare(`
+      let ftsResult = db
+        .prepare(
+          `
         SELECT COUNT(*) as count FROM observations_fts WHERE content MATCH 'sensitive'
-      `).get() as { count: number };
+      `,
+        )
+        .get() as { count: number };
       expect(ftsResult.count).toBe(1);
 
       // Redact
       store.redactObservation(obsResult.value.id);
 
       // Verify content is redacted
-      const row = db.prepare('SELECT * FROM observations WHERE id = ?').get(obsResult.value.id) as any;
+      const row = db
+        .prepare('SELECT * FROM observations WHERE id = ?')
+        .get(obsResult.value.id) as any;
       expect(row.content).toBe('[redacted]');
       expect(row.redacted).toBe(1);
 
       // Verify removed from FTS
-      ftsResult = db.prepare(`
+      ftsResult = db
+        .prepare(
+          `
         SELECT COUNT(*) as count FROM observations_fts WHERE content MATCH 'sensitive'
-      `).get() as { count: number };
+      `,
+        )
+        .get() as { count: number };
       expect(ftsResult.count).toBe(0);
     });
   });

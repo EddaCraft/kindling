@@ -4,7 +4,7 @@
  * Pins observations or summaries for persistent retrieval
  */
 
-import type { Pin, ScopeIds, ID } from '@kindling/core';
+import type { Pin, ScopeIds, ID } from '@eddacraft/kindling-core';
 
 /**
  * Store interface for pin command
@@ -54,10 +54,7 @@ export interface PinResult {
  * @param options - Pin options
  * @returns Pin result
  */
-export function memoryPin(
-  store: PinStore,
-  options: PinOptions
-): PinResult {
+export function memoryPin(store: PinStore, options: PinOptions): PinResult {
   const { targetType, targetId, reason, scopeIds, expiresAt } = options;
 
   // Verify target exists

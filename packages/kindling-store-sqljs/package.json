@@ -1,5 +1,5 @@
 {
-  "name": "@kindling/store-sqljs",
+  "name": "@eddacraft/kindling-store-sqljs",
   "version": "0.1.0",
   "description": "sql.js (WASM) persistence layer for Kindling - browser and cross-platform compatible",
   "type": "module",
@@ -48,7 +48,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@kindling/core": "workspace:*",
+    "@eddacraft/kindling-core": "workspace:*",
     "sql.js": "^1.11.0"
   },
   "devDependencies": {

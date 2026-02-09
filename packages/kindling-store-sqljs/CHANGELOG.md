@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to @kindling/store-sqljs will be documented in this file.
+All notable changes to @eddacraft/kindling-store-sqljs will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 - sql.js WASM-based SQLite store for browser compatibility
-- Drop-in replacement for @kindling/store-sqlite
+- Drop-in replacement for @eddacraft/kindling-store-sqlite
 - FTS5 full-text search support (via sql.js)
 - Memory persistence adapter for ephemeral storage
 - IndexedDB persistence adapter for browser storage

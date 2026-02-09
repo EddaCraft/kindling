@@ -28,7 +28,7 @@ This module replaces the v1 plan with a focused rework that fixes the plugin for
 ## In Scope
 
 - Fix plugin directory structure to match official Claude Code plugin format
-- Wire hooks and commands to `@kindling/store-sqlite` and `@kindling/provider-local`
+- Wire hooks and commands to `@eddacraft/kindling-store-sqlite` and `@eddacraft/kindling-provider-local`
 - Automatic context injection on SessionStart
 - Fix ESM/CJS issues in slash command scripts
 - Per-project database isolation (scope by cwd/repoId)
@@ -47,9 +47,9 @@ This module replaces the v1 plan with a focused rework that fixes the plugin for
 
 **Depends on:**
 
-- `@kindling/core` -- KindlingService API for capsule lifecycle and retrieval
-- `@kindling/store-sqlite` -- SQLite persistence with FTS5
-- `@kindling/provider-local` -- FTS-based retrieval with ranking
+- `@eddacraft/kindling-core` -- KindlingService API for capsule lifecycle and retrieval
+- `@eddacraft/kindling-store-sqlite` -- SQLite persistence with FTS5
+- `@eddacraft/kindling-provider-local` -- FTS-based retrieval with ranking
 - Claude Code plugin system -- `.claude-plugin/` format, hooks, slash commands
 
 **Exposes:**
@@ -61,7 +61,7 @@ This module replaces the v1 plan with a focused rework that fixes the plugin for
 
 ## Boundary Rules
 
-- Plugin hooks must use `@kindling/core` API; no direct SQLite access from hook scripts
+- Plugin hooks must use `@eddacraft/kindling-core` API; no direct SQLite access from hook scripts
 - Plugin must remain installable without running `pnpm install` in the monorepo root (bundled or pre-compiled JS)
 - All observations must include provenance pointing to concrete evidence
 - Per-project isolation is mandatory; no cross-project data leakage by default
@@ -80,7 +80,7 @@ plugins/kindling-claude-code/
 │   ├── user-prompt-submit.js    # Captures user messages
 │   ├── stop.js                  # Closes capsule with summary
 │   └── lib/
-│       ├── store.js             # Store initialization (wraps @kindling/store-sqlite)
+│       ├── store.js             # Store initialization (wraps @eddacraft/kindling-store-sqlite)
 │       ├── service.js           # KindlingService initialization
 │       ├── filter.js            # Secret filtering
 │       └── mapping.js           # Event mapping
@@ -134,7 +134,7 @@ Change status to **Ready** when:
 ### PLUGIN-CC-V2-002: Wire plugin to monorepo SQLite engine
 
 - **Status:** Complete
-- **Intent:** Replace flat JSON file storage with the actual `@kindling/store-sqlite` and `@kindling/provider-local` packages so the plugin benefits from FTS5 search, WAL mode, and proper data management
+- **Intent:** Replace flat JSON file storage with the actual `@eddacraft/kindling-store-sqlite` and `@eddacraft/kindling-provider-local` packages so the plugin benefits from FTS5 search, WAL mode, and proper data management
 - **Expected Outcome:** All observations stored in SQLite via the KindlingService API; FTS5 search returns ranked results; no more JSON file contention
 - **Scope:** `plugins/kindling-claude-code/hooks/lib/`, `plugins/kindling-claude-code/dist/`
 - **Non-scope:** Changing the hook handler interfaces (those are fixed by PLUGIN-CC-V2-001)

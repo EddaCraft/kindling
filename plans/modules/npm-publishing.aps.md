@@ -35,7 +35,7 @@ Prepare all Kindling packages for public npm publishing with proper metadata, do
 **Exposes:**
 
 - Published packages on npmjs.com under `@kindling/*` scope
-- `kindling` CLI binary via `@kindling/cli`
+- `kindling` CLI binary via `@eddacraft/kindling-cli`
 
 ## Boundary Rules
 

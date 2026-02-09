@@ -5,8 +5,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { unlinkSync } from 'fs';
-import type { Observation, Capsule, Summary, Pin } from '@kindling/core';
-import { openDatabase, closeDatabase } from '../src/db/open.js';
+import type { Observation, Capsule, Summary, Pin } from '@eddacraft/kindling-core';
+import { openDatabase } from '../src/db/open.js';
 import { SqliteKindlingStore } from '../src/store/sqlite.js';
 import { exportDatabase, importDatabase, type ExportDataset } from '../src/store/export.js';
 
@@ -25,8 +25,8 @@ describe('Export/Import', () => {
     db.close();
     try {
       unlinkSync(dbPath);
-    } catch (err) {
-      // Ignore cleanup errors
+    } catch {
+      /* cleanup */
     }
   });
 
@@ -436,12 +436,16 @@ describe('Export/Import', () => {
       expect(result.errors).toHaveLength(0);
 
       // Verify capsule observations are linked
-      const obsRows = db.prepare(`
+      const obsRows = db
+        .prepare(
+          `
         SELECT observation_id, seq
         FROM capsule_observations
         WHERE capsule_id = ?
         ORDER BY seq
-      `).all('cap-1') as Array<{ observation_id: string; seq: number }>;
+      `,
+        )
+        .all('cap-1') as Array<{ observation_id: string; seq: number }>;
 
       expect(obsRows).toHaveLength(2);
       expect(obsRows[0].observation_id).toBe('obs-1');
@@ -518,7 +522,7 @@ describe('Export/Import', () => {
       // Create new database
       const db2Path = `/tmp/kindling-test-import-${Date.now()}.db`;
       const db2 = openDatabase({ path: db2Path });
-      const store2 = new SqliteKindlingStore(db2);
+      new SqliteKindlingStore(db2);
 
       try {
         // Import
@@ -542,8 +546,8 @@ describe('Export/Import', () => {
         db2.close();
         try {
           unlinkSync(db2Path);
-        } catch (err) {
-          // Ignore cleanup errors
+        } catch {
+          /* cleanup */
         }
       }
     });

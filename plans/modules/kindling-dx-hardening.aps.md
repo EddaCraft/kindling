@@ -40,7 +40,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - Parameterized SQL in provider scope filtering
 - Graceful FTS error handling (empty results on malformed queries)
 - Deprecated tokenBudget parameter with @deprecated JSDoc annotation
-- BaseAdapter interface/abstract class in @kindling/core
+- BaseAdapter interface/abstract class in @eddacraft/kindling-core
 - Consistent method naming across public API
 
 ## Boundary Rules
@@ -57,7 +57,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - [ ] LocalFtsProvider uses parameterized queries for scope filtering
 - [ ] Malformed FTS queries return empty results instead of throwing
 - [ ] tokenBudget parameter is marked @deprecated with guidance to use maxCandidates
-- [ ] BaseAdapter interface exists in @kindling/core with documented contract
+- [ ] BaseAdapter interface exists in @eddacraft/kindling-core with documented contract
 - [ ] No duplicate method name aliases in public API (deprecated aliases still exist but marked)
 
 ## Risks & Mitigations
@@ -118,7 +118,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - **Non-scope:** Other SQL queries outside scope filtering
 - **Files:** `packages/kindling-provider-local/src/local-fts-provider.ts`
 - **Dependencies:** (none)
-- **Validation:** `pnpm run test --filter @kindling/provider-local` passes; manual review confirms no string interpolation in SQL
+- **Validation:** `pnpm run test --filter @eddacraft/kindling-provider-local` passes; manual review confirms no string interpolation in SQL
 - **Confidence:** high
 - **Risks:** Parameterized queries may behave differently with FTS5 MATCH syntax
 
@@ -136,7 +136,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - **Non-scope:** Query syntax validation, query rewriting
 - **Files:** `packages/kindling-provider-local/src/local-fts-provider.ts`
 - **Dependencies:** (none)
-- **Validation:** `pnpm run test --filter @kindling/provider-local` passes; test with malformed queries (`"AND OR"`, `"*"`, `""`, `"foo(bar"`) returns empty results
+- **Validation:** `pnpm run test --filter @eddacraft/kindling-provider-local` passes; test with malformed queries (`"AND OR"`, `"*"`, `""`, `"foo(bar"`) returns empty results
 - **Confidence:** high
 - **Risks:** Swallowing errors may hide legitimate issues; mitigate by logging at debug level
 
@@ -155,7 +155,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - **Non-scope:** Token-budgeted context assembly (downstream system responsibility), token counting
 - **Files:** `packages/kindling-core/src/service.ts`
 - **Dependencies:** (none)
-- **Validation:** `pnpm run test --filter @kindling/core` passes; test that retrieve({ limit: 10 }) returns at most 10 results
+- **Validation:** `pnpm run test --filter @eddacraft/kindling-core` passes; test that retrieve({ limit: 10 }) returns at most 10 results
 - **Confidence:** high
 - **Risks:** Existing callers may pass tokenBudget; deprecate gracefully
 
@@ -171,7 +171,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 ### DX-006: Define adapter contract
 
 - **Intent:** Establish a standard interface for building new platform adapters to reduce per-adapter boilerplate
-- **Expected Outcome:** BaseAdapter interface or abstract class exists in @kindling/core with a standard event model and required methods
+- **Expected Outcome:** BaseAdapter interface or abstract class exists in @eddacraft/kindling-core with a standard event model and required methods
 - **Scope:** `packages/kindling-core/src/`
 - **Non-scope:** Refactoring existing adapters to use the contract (separate work), adapter development guide (docs module), intent inference (downstream system responsibility)
 - **Files:** `packages/kindling-core/src/types/adapter.ts`, `packages/kindling-core/src/base-adapter.ts`
@@ -185,7 +185,7 @@ Fixes developer integration issues discovered during a walkthrough that rated th
 - AdapterEvent type definition (platform-agnostic event model)
 - BaseAdapter interface with onStart, onEvent, onStop methods
 - Platform-specific override points: formatContent, mapEventToKind
-- Export from @kindling/core public API
+- Export from @eddacraft/kindling-core public API
 - Unit test demonstrating a minimal adapter implementation
 
 > **Boundary note:** Adapters capture raw observations with provenance. Intent inference belongs to downstream systems and is not part of the adapter contract.

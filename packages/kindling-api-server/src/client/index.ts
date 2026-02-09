@@ -14,7 +14,7 @@ import type {
   CloseCapsuleSignals,
   ExportBundle,
   ImportResult,
-} from '@kindling/core';
+} from '@eddacraft/kindling-core';
 
 export interface KindlingApiClientConfig {
   baseUrl: string;
@@ -35,11 +35,7 @@ export class KindlingApiClient {
     }
   }
 
-  private async request<T>(
-    method: string,
-    path: string,
-    body?: unknown
-  ): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -63,7 +59,7 @@ export class KindlingApiClient {
         return undefined as T extends void ? T : never;
       }
 
-      return await response.json() as T;
+      return (await response.json()) as T;
     } finally {
       clearTimeout(timeoutId);
     }
@@ -81,16 +77,13 @@ export class KindlingApiClient {
     return this.request('POST', '/api/capsules', options);
   }
 
-  async closeCapsule(
-    capsuleId: string,
-    signals?: CloseCapsuleSignals
-  ): Promise<Capsule> {
+  async closeCapsule(capsuleId: string, signals?: CloseCapsuleSignals): Promise<Capsule> {
     return this.request('POST', `/api/capsules/${capsuleId}/close`, signals);
   }
 
   async appendObservation(
     observation: Observation,
-    options?: { capsuleId?: string }
+    options?: { capsuleId?: string },
   ): Promise<void> {
     await this.request('POST', '/api/observations', {
       observation,
@@ -125,7 +118,7 @@ export class KindlingApiClient {
 
   async import(
     bundle: ExportBundle,
-    options?: { mode?: 'merge' | 'replace' }
+    options?: { mode?: 'merge' | 'replace' },
   ): Promise<ImportResult> {
     return this.request('POST', '/api/import', {
       bundle,

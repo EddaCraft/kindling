@@ -1,14 +1,14 @@
-# @kindling/adapter-opencode
+# @eddacraft/kindling-adapter-opencode
 
 OpenCode session adapter for Kindling - capture tool calls, commands, and file changes from AI coding sessions.
 
-[![npm version](https://img.shields.io/npm/v/@kindling/adapter-opencode.svg)](https://www.npmjs.com/package/@kindling/adapter-opencode)
+[![npm version](https://img.shields.io/npm/v/@eddacraft/kindling-adapter-opencode.svg)](https://www.npmjs.com/package/@eddacraft/kindling-adapter-opencode)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 ## Installation
 
 ```bash
-npm install @kindling/adapter-opencode
+npm install @eddacraft/kindling-adapter-opencode
 ```
 
 ## Overview
@@ -20,28 +20,33 @@ Captures observations from OpenCode development sessions for local memory and co
 The OpenCode adapter automatically captures the following types of events from your development sessions:
 
 ### Tool Calls
+
 - **Tool name** and **arguments**
 - **Results** or **errors**
 - **Duration** (execution time)
 - **Timestamp**
 
 ### Command Execution
+
 - **Command text** (e.g., `git status`, `npm test`)
 - **Exit code**
 - **stdout** and **stderr** output
 - **Working directory**
 
 ### File Changes
+
 - **File paths** modified
 - **Diff** content (additions/deletions)
 - **Change summary** (lines added/deleted)
 
 ### Errors
+
 - **Error message**
 - **Stack trace** preview
 - **Error source** (runtime, validation, etc.)
 
 ### Messages
+
 - **User messages** (prompts, questions)
 - **Assistant messages** (responses, explanations)
 - **Message length** and **model** used
@@ -80,8 +85,8 @@ Large outputs are automatically truncated to **50,000 characters** to prevent ex
 ### Starting a Session
 
 ```typescript
-import { SessionManager } from '@kindling/adapter-opencode';
-import { SqliteKindlingStore, initializeDatabase } from '@kindling/store-sqlite';
+import { SessionManager } from '@eddacraft/kindling-adapter-opencode';
+import { SqliteKindlingStore, initializeDatabase } from '@eddacraft/kindling-store-sqlite';
 
 // Initialize store
 const db = initializeDatabase(':memory:');
@@ -136,7 +141,7 @@ manager.onSessionEnd('session-123', {
 ### Content Filtering
 
 ```typescript
-import { filterContent, truncateContent, maskSecrets } from '@kindling/adapter-opencode';
+import { filterContent, truncateContent, maskSecrets } from '@eddacraft/kindling-adapter-opencode';
 
 // Apply all safety filters
 const filtered = filterContent(content, {
@@ -158,9 +163,10 @@ Currently, safety filters are applied by default and cannot be disabled. Future 
 
 ## Data Storage
 
-All captured observations are stored locally in SQLite via `@kindling/store-sqlite`. No data is sent to external services.
+All captured observations are stored locally in SQLite via `@eddacraft/kindling-store-sqlite`. No data is sent to external services.
 
 Observations are:
+
 - **Deterministically ordered** by timestamp and sequence number
 - **Scoped** to session, repository, agent, and user
 - **Queryable** via full-text search and filters
