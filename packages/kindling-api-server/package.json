@@ -50,16 +50,16 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "@kindling/core": "workspace:*",
-    "@kindling/store-sqlite": "workspace:*",
     "@kindling/provider-local": "workspace:*",
-    "fastify": "^4.25.0",
-    "@fastify/cors": "^8.5.0"
+    "@kindling/store-sqlite": "workspace:*",
+    "fastify": "^5.7.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "typescript": "^5.3.0",
-    "vitest": "^1.2.0"
+    "vitest": "^3.2.4"
   },
   "publishConfig": {
     "access": "public"
