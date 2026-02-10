@@ -66,6 +66,9 @@ importers:
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@20.19.31)(yaml@2.8.2)
 
   packages/kindling-adapter-claude-code:
     dependencies:
@@ -127,10 +130,10 @@ importers:
         specifier: workspace:*
         version: link:../kindling-store-sqlite
       '@fastify/cors':
-        specifier: ^11.2.0
+        specifier: ^11.0.0
         version: 11.2.0
       fastify:
-        specifier: ^5.7.4
+        specifier: ^5.0.0
         version: 5.7.4
     devDependencies:
       '@types/node':

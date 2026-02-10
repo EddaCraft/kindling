@@ -28,10 +28,10 @@ npm install @eddacraft/kindling-store-sqlite
 import { openDatabase, closeDatabase } from '@eddacraft/kindling-store-sqlite';
 
 // Open with file path
-const db = openDatabase({ dbPath: './kindling.db' });
+const db = openDatabase({ path: './kindling.db' });
 
 // Or use in-memory for testing
-const testDb = openDatabase({ dbPath: ':memory:' });
+const testDb = openDatabase({ path: ':memory:' });
 
 // Close when done
 closeDatabase(db);
@@ -42,7 +42,7 @@ closeDatabase(db);
 ```typescript
 import { openDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 
-const db = openDatabase({ dbPath: './kindling.db' });
+const db = openDatabase({ path: './kindling.db' });
 const store = new SqliteKindlingStore(db);
 
 // Insert an observation
@@ -102,7 +102,7 @@ console.log('Pending migrations:', status.pending);
 ### Export/Import
 
 ```typescript
-import { exportDatabase, importBundle } from '@eddacraft/kindling-store-sqlite';
+import { exportDatabase, importDatabase } from '@eddacraft/kindling-store-sqlite';
 
 // Export all data
 const bundle = exportDatabase(db, {
@@ -110,7 +110,7 @@ const bundle = exportDatabase(db, {
 });
 
 // Import into another database
-importBundle(targetDb, bundle);
+importDatabase(targetDb, bundle);
 ```
 
 ## Database Schema
@@ -132,9 +132,8 @@ The store manages these tables:
 
 ```typescript
 interface DatabaseOptions {
-  dbPath: string; // File path or ':memory:'
-  walMode?: boolean; // Enable WAL mode (default: true)
-  busyTimeout?: number; // Busy timeout in ms (default: 5000)
+  path?: string; // File path (defaults to ~/.kindling/kindling.db)
+  verbose?: boolean; // Enable verbose logging (default: false)
 }
 ```
 
