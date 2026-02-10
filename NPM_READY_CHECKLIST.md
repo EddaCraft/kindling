@@ -8,7 +8,7 @@ This document summarizes the npm publishing preparation for Kindling packages.
 
 All packages now include:
 
-- ✅ `name` - Scoped package names (@kindling/\*)
+- ✅ `name` - Scoped package names (@eddacraft/\*)
 - ✅ `version` - 0.1.0
 - ✅ `description` - Clear package descriptions
 - ✅ `keywords` - Searchable keywords for npm
@@ -144,7 +144,7 @@ Before publishing, verify:
 - [ ] No uncommitted changes: `git status`
 - [ ] Version numbers are correct
 - [ ] Logged into npm: `npm whoami`
-- [ ] Have access to @kindling scope
+- [ ] Have access to @eddacraft scope
 - [ ] README files are accurate
 - [ ] CHANGELOG updated (if applicable)
 

@@ -32,7 +32,10 @@ This policy applies to all packages in the Kindling repository:
 | `@eddacraft/kindling`                     | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling.svg)](https://www.npmjs.com/package/@eddacraft/kindling)                                         |
 | `@eddacraft/kindling-core`                | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-core.svg)](https://www.npmjs.com/package/@eddacraft/kindling-core)                               |
 | `@eddacraft/kindling-cli`                 | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-cli.svg)](https://www.npmjs.com/package/@eddacraft/kindling-cli)                                 |
+| `@eddacraft/kindling-store-sqlite`        | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-store-sqlite.svg)](https://www.npmjs.com/package/@eddacraft/kindling-store-sqlite)               |
 | `@eddacraft/kindling-store-sqljs`         | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-store-sqljs.svg)](https://www.npmjs.com/package/@eddacraft/kindling-store-sqljs)                 |
+| `@eddacraft/kindling-provider-local`      | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-provider-local.svg)](https://www.npmjs.com/package/@eddacraft/kindling-provider-local)           |
+| `@eddacraft/kindling-server`              | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-server.svg)](https://www.npmjs.com/package/@eddacraft/kindling-server)                           |
 | `@eddacraft/kindling-adapter-opencode`    | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-adapter-opencode.svg)](https://www.npmjs.com/package/@eddacraft/kindling-adapter-opencode)       |
 | `@eddacraft/kindling-adapter-pocketflow`  | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-adapter-pocketflow.svg)](https://www.npmjs.com/package/@eddacraft/kindling-adapter-pocketflow)   |
 | `@eddacraft/kindling-adapter-claude-code` | [![npm](https://img.shields.io/npm/v/@eddacraft/kindling-adapter-claude-code.svg)](https://www.npmjs.com/package/@eddacraft/kindling-adapter-claude-code) |

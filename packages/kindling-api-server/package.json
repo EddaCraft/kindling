@@ -50,11 +50,13 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@fastify/cors": "^11.2.0",
     "@eddacraft/kindling-core": "workspace:*",
     "@eddacraft/kindling-provider-local": "workspace:*",
-    "@eddacraft/kindling-store-sqlite": "workspace:*",
-    "fastify": "^5.7.4"
+    "@eddacraft/kindling-store-sqlite": "workspace:*"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0",
+    "@fastify/cors": "^11.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

@@ -19,23 +19,41 @@ cd packages/kindling-core
 npm publish --access public
 ```
 
-### 2. Main Package (Bundles core + SQLite store + provider + server)
+### 2. Storage & Retrieval (Depend on core)
 
-This is the primary entry point for most users (`@eddacraft/kindling`):
+```bash
+cd packages/kindling-store-sqlite
+npm publish --access public
+
+cd packages/kindling-provider-local
+npm publish --access public
+```
+
+### 3. API Server (Depends on core + store + provider)
+
+```bash
+cd packages/kindling-api-server
+npm publish --access public
+```
+
+### 4. Main Package (Bundles core + store + provider + server)
+
+This is the primary entry point for most users (`@eddacraft/kindling`).
+Must be published after its dependencies (steps 1-3):
 
 ```bash
 cd packages/kindling
 npm publish --access public
 ```
 
-### 3. Browser Store (Depends on core)
+### 5. Browser Store (Depends on core)
 
 ```bash
 cd packages/kindling-store-sqljs
 npm publish --access public
 ```
 
-### 4. Adapters (Depend on core)
+### 6. Adapters (Depend on core)
 
 ```bash
 cd packages/kindling-adapter-opencode
@@ -48,7 +66,7 @@ cd packages/kindling-adapter-claude-code
 npm publish --access public
 ```
 
-### 5. CLI (Depends on main package)
+### 7. CLI (Depends on main package)
 
 ```bash
 cd packages/kindling-cli

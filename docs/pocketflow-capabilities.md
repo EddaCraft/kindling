@@ -155,7 +155,7 @@ class EmbedNode extends BatchNode<RagStore> {
 class RetrieveNode extends Node<RagStore> {
   async run(query: string): Promise<string[]> {
     const queryVec = await getEmbedding(query);
-    return shared.index.search(queryVec, (k = 5));
+    return shared.index.search(queryVec, 5);
   }
 }
 
