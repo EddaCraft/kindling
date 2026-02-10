@@ -340,8 +340,13 @@ pnpm run type-check
 
 ## Documentation
 
+- [Architecture](./docs/architecture.md) - Package structure and dependency flow
 - [Data Model](./docs/data-model.md) - Core entities and relationships
 - [Retrieval Contract](./docs/retrieval-contract.md) - How retrieval works
+- [System Spec](./docs/system-spec.md) - Full system specification
+- [Use Cases](./docs/use-cases.md) - Integration patterns and examples
+- [PocketFlow Capabilities](./docs/pocketflow-capabilities.md) - Workflow patterns (Agent, RAG, MapReduce)
+- [Publishing Guide](./PUBLISHING.md) - npm publishing instructions
 - [Contributing](./CONTRIBUTING.md) - Development guidelines
 - [Security](./SECURITY.md) - Security policy
 
