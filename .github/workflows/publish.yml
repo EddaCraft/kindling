@@ -3,6 +3,13 @@ name: Publish to npm
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Dry run (pack only, do not publish)'
+        required: true
+        default: true
+        type: boolean
 
 # Only one publish at a time
 concurrency:
@@ -44,6 +51,7 @@ jobs:
         run: pnpm run build
 
       - name: Validate release tag matches package version
+        if: ${{ github.event_name == 'release' }}
         env:
           REF: ${{ github.ref }}
         run: |
@@ -55,7 +63,12 @@ jobs:
             exit 1
           fi
 
+      - name: Dry run — pack all packages
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
+        run: pnpm -r exec npm pack --dry-run 2>&1
+
       - name: Publish to npm
+        if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && !inputs.dry-run) }}
         run: pnpm publish -r --access public --no-git-checks --report-summary
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
