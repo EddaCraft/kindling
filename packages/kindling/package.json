@@ -62,18 +62,6 @@
     "@eddacraft/kindling-provider-local": "workspace:*",
     "@eddacraft/kindling-server": "workspace:*"
   },
-  "peerDependencies": {
-    "fastify": "^5.0.0",
-    "@fastify/cors": "^11.0.0"
-  },
-  "peerDependenciesMeta": {
-    "fastify": {
-      "optional": true
-    },
-    "@fastify/cors": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "typescript": "^5.3.0",

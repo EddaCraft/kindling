@@ -53,12 +53,6 @@ importers:
       '@eddacraft/kindling-store-sqlite':
         specifier: workspace:*
         version: link:../kindling-store-sqlite
-      '@fastify/cors':
-        specifier: ^11.0.0
-        version: 11.2.0
-      fastify:
-        specifier: ^5.0.0
-        version: 5.7.4
     devDependencies:
       '@types/node':
         specifier: ^20.11.0
