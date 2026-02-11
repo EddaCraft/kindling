@@ -155,3 +155,6 @@ settings.local.json
 .claude/memory.json
 
 .serena
+
+# Admin-only files (publishing, plans, internal checklists)
+admin/
