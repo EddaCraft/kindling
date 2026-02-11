@@ -1,0 +1,27 @@
+{
+  "$schema": "https://code.claude.com/settings.schema.json",
+  "_comment": "Copy this file to settings.local.json and customize for your environment",
+  "env": {
+    "GITHUB_TOKEN": "your-github-token",
+    "BRAVE_API_KEY": "your-brave-api-key",
+    "OPENAI_API_KEY": "your-openai-api-key"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/hooks/tdd-guard.sh\" \"$TOOL_INPUT\""
+          }
+        ]
+      }
+    ]
+  },
+  "preferences": {
+    "notifications": true,
+    "tddStrict": false,
+    "autoFormat": true
+  }
+}

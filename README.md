@@ -33,17 +33,43 @@ Kindling provides **continuity without judgement**. It captures what happened, p
 
 ## Installation
 
-### Node.js (recommended)
+**Node.js >= 20** is required. Kindling uses [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) for embedded storage, which ships prebuilt native binaries for most platforms.
 
-The main package bundles core, SQLite store, local provider, and API server:
+### Linux
 
 ```bash
+# Prebuilt binaries work on most glibc-based distros (Ubuntu, Fedora, Debian, etc.)
 npm install @eddacraft/kindling
+
+# If prebuilt binaries aren't available, install build tools first:
+# Debian/Ubuntu:  sudo apt-get install build-essential python3
+# Fedora/RHEL:    sudo dnf groupinstall "Development Tools"
+# Alpine (musl):  apk add build-base python3
+```
+
+### macOS
+
+```bash
+# Prebuilt binaries work on both Intel and Apple Silicon
+npm install @eddacraft/kindling
+
+# If compilation is needed:
+xcode-select --install
+```
+
+### Windows
+
+```bash
+# Prebuilt binaries work on x64
+npm install @eddacraft/kindling
+
+# If compilation is needed (run as Administrator):
+npm install -g windows-build-tools
 ```
 
 ### Browser (WASM)
 
-For browser environments, use the lightweight core with the sql.js store:
+For browser environments that can't use native SQLite, use the lightweight core with the sql.js WASM store:
 
 ```bash
 npm install @eddacraft/kindling-core @eddacraft/kindling-store-sqljs

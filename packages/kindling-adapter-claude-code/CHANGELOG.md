@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version bump for monorepo release consistency
 
-## [0.1.0] - 2025-01-27
+## [0.1.0] - 2025-02-09
+## [0.1.0] - 2025-02-09
 
 ### Added
 

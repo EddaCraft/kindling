@@ -23,4 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial release
-- Re-exports core domain types, SQLite store, local FTS provider, and API server
+- Bundles core domain model, SQLite store, local FTS provider, and API server
+- Re-exports all types and services from `@eddacraft/kindling-core`
+- SQLite persistence with FTS5 full-text search and WAL mode via `@eddacraft/kindling-store-sqlite`
+- Local retrieval provider with deterministic ranking via `@eddacraft/kindling-provider-local`
+- Optional Fastify-based API server for multi-agent concurrency via `@eddacraft/kindling-server`
+- HTTP client for remote API access
+- Cross-platform support: Linux, macOS, and Windows via better-sqlite3 prebuilt binaries

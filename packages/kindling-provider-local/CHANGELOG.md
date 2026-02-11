@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BM25 normalization done cross-table in JS for accurate observation vs summary ranking
 - Singleton results receive 0.5 relevance instead of inflated 1.0
 
-## [0.1.0] - 2024-01-27
+## [0.1.0] - 2025-02-09
+## [0.1.0] - 2025-02-09
 
 ### Added
 
