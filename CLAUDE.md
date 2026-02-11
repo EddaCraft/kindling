@@ -62,7 +62,7 @@ The main `@eddacraft/kindling` package is what most users install. It re-exports
                               ↑
                      @eddacraft/kindling (main package)
                        ↙       |        ↘
-            store-sqlite   provider-local  api-server
+            store-sqlite   provider-local  server
                        ↘       |        ↙
                          SQLite DB
 ```

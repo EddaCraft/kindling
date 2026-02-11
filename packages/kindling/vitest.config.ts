@@ -9,11 +9,11 @@ export default defineConfig({
     alias: [
       {
         find: '@eddacraft/kindling-server/client',
-        replacement: resolve(__dirname, '../kindling-api-server/src/client/index.ts'),
+        replacement: resolve(__dirname, '../kindling-server/src/client/index.ts'),
       },
       {
         find: '@eddacraft/kindling-server',
-        replacement: resolve(__dirname, '../kindling-api-server/src/index.ts'),
+        replacement: resolve(__dirname, '../kindling-server/src/index.ts'),
       },
       {
         find: '@eddacraft/kindling-core',

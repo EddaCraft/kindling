@@ -30,11 +30,11 @@
     "concurrency"
   ],
   "author": "EddaCraft <hello@eddacraft.ai>",
-  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-api-server#readme",
+  "homepage": "https://github.com/EddaCraft/kindling/tree/main/packages/kindling-server#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/EddaCraft/kindling.git",
-    "directory": "packages/kindling-api-server"
+    "directory": "packages/kindling-server"
   },
   "bugs": {
     "url": "https://github.com/EddaCraft/kindling/issues"

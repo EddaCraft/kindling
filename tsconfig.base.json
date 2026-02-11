@@ -24,8 +24,8 @@
     "rootDir": "./src",
     "paths": {
       "@eddacraft/kindling-*": ["./packages/kindling-*/src"],
-      "@eddacraft/kindling-server": ["./packages/kindling-api-server/src"],
-      "@eddacraft/kindling-server/*": ["./packages/kindling-api-server/src/*"]
+      "@eddacraft/kindling-server": ["./packages/kindling-server/src"],
+      "@eddacraft/kindling-server/*": ["./packages/kindling-server/src/*"]
     }
   },
   "exclude": ["node_modules", "dist", "test"]
