@@ -9,6 +9,12 @@ Kindling captures observations (tool calls, diffs, commands, errors) from AI-ass
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org/)
 
+## Kindling + Anvil
+
+**Kindling** captures what happened. **Anvil** enforces what should happen.
+
+Request access to the Anvil closed beta → [eddacraft.ai](https://eddacraft.ai)
+
 ## Why Kindling?
 
 AI-assisted development produces large volumes of transient activity (tool calls, diffs, agent runs) but loses context between sessions. Developers and local agents repeatedly re-discover the same information, leading to wasted time, architectural drift, and brittle workflows.
@@ -319,6 +325,8 @@ Kindling explicitly does **not**:
 - pnpm >= 8.0.0 (for development)
 
 ## Development
+
+This project uses [Anvil Plan Spec (APS)](https://github.com/EddaCraft/anvil-plan-spec) for planning and task management.
 
 ```bash
 # Clone the repository
