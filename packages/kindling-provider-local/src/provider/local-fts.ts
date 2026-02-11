@@ -93,8 +93,8 @@ export class LocalFtsProvider implements RetrievalProvider {
           rank: m.rank,
         })),
       );
-    } catch {
-      // FTS5 syntax error — return empty matches for this table
+    } catch (err: unknown) {
+      if (!this.isFtsSyntaxError(err)) throw err;
     }
 
     // Query summaries FTS
@@ -114,8 +114,8 @@ export class LocalFtsProvider implements RetrievalProvider {
           rank: m.rank,
         })),
       );
-    } catch {
-      // FTS5 syntax error — return empty matches for this table
+    } catch (err: unknown) {
+      if (!this.isFtsSyntaxError(err)) throw err;
     }
 
     return matches;
@@ -330,6 +330,24 @@ export class LocalFtsProvider implements RetrievalProvider {
     } else {
       return entity.createdAt;
     }
+  }
+
+  /**
+   * Check if an error is an FTS5 query syntax error (safe to swallow).
+   * Covers all known SQLite/FTS5 error messages for malformed MATCH input.
+   * All other database errors are propagated.
+   */
+  private isFtsSyntaxError(err: unknown): boolean {
+    if (err instanceof Error) {
+      const msg = err.message.toLowerCase();
+      return (
+        msg.includes('fts5') ||
+        msg.includes('fts syntax') ||
+        msg.includes('unterminated string') ||
+        msg.includes('unknown special query')
+      );
+    }
+    return false;
   }
 
   /**
