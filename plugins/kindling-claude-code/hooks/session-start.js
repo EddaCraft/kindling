@@ -55,9 +55,16 @@ async function main() {
         }
 
         if (items.length > 0) {
-          // Output context via stdout (Claude Code reads hook stdout)
+          // Use structured JSON output so Claude Code injects context properly
           const header = `# Prior Context (from Kindling)\n\nThe following is prior session context for this project:\n`;
-          console.log(header + items.join('\n'));
+          const output = JSON.stringify({
+            continue: true,
+            hookSpecificOutput: {
+              hookEventName: 'SessionStart',
+              additionalContext: header + items.join('\n'),
+            },
+          });
+          process.stdout.write(output);
         }
       } catch (err) {
         // Context injection is best-effort; don't fail the session
