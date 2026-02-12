@@ -7,7 +7,8 @@ Local memory and continuity engine for AI-assisted development.
 
 **Kindling** captures observations (tool calls, diffs, commands, errors) from AI workflows, organizes them into capsules, and makes context retrievable with deterministic, explainable results. All data is stored locally using embedded SQLite with FTS5.
 
-**Kindling** captures what happened. **Anvil** enforces what should happen.
+**Kindling** captures what happened.
+**Anvil** enforces what should happen.
 Request access to the Anvil closed beta → [eddacraft.ai](https://eddacraft.ai)
 
 ## Installation
@@ -17,6 +18,10 @@ npm install @eddacraft/kindling
 ```
 
 This is the main package — it bundles core types, SQLite storage (better-sqlite3, WAL mode, FTS5), local FTS retrieval, and an optional API server.
+
+### Installation Documentation
+
+For other installation options and detailed setup instructions, visit [kindling installation quickstart](https://docs.eddacraft.ai/kindling/quickstart/install).
 
 ## Quick Start
 
