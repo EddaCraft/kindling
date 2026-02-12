@@ -1,6 +1,7 @@
 {
   "name": "@eddacraft/kindling-plugin-claude-code",
   "version": "0.1.0",
+  "private": true,
   "description": "Memory continuity for Claude Code — remember what you worked on across sessions",
   "author": "EddaCraft",
   "license": "Apache-2.0",
@@ -14,9 +15,13 @@
     "postinstall": "node scripts/build-bundle.js"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^12.5.0"
   },
   "devDependencies": {
+    "@eddacraft/kindling-core": "workspace:*",
+    "@eddacraft/kindling-store-sqlite": "workspace:*",
+    "@eddacraft/kindling-provider-local": "workspace:*",
+    "@eddacraft/kindling-adapter-claude-code": "workspace:*",
     "esbuild": "^0.24.0"
   }
 }

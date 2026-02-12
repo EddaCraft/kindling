@@ -18,6 +18,9 @@ async function main() {
   const { db, handlers } = init(cwd);
 
   try {
+    // Re-hydrate session from DB (each hook invocation is a separate process)
+    handlers.onSessionStart({ sessionId, cwd });
+
     handlers.onPostToolUse({
       sessionId,
       cwd,
