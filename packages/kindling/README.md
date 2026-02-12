@@ -101,7 +101,7 @@ import {
 import { createServer } from '@eddacraft/kindling/server';
 
 // HTTP client
-import { KindlingClient } from '@eddacraft/kindling/client';
+import { KindlingApiClient } from '@eddacraft/kindling/client';
 ```
 
 ## Lightweight Alternatives
