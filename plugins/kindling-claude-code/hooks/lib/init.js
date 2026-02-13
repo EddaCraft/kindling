@@ -29,10 +29,13 @@ function ensureDependencies() {
 
     console.error('[kindling] Installing better-sqlite3 (first run)...');
     try {
+      // --ignore-scripts=false is required for better-sqlite3's native addon build.
+      // This executes install scripts from the package, which is a supply chain
+      // tradeoff — we pin the version range to mitigate risk.
       execSync('npm install --production --no-package-lock --ignore-scripts=false', {
         cwd: pluginRoot,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 60000,
+        stdio: ['pipe', 'inherit', 'inherit'],
+        timeout: 120000,
       });
       console.error('[kindling] better-sqlite3 installed successfully.');
     } catch (installErr) {

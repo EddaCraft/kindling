@@ -28,7 +28,10 @@ async function main() {
       output: context.output,
     });
 
-    console.error(`[kindling] Captured subagent: ${context.agent_type || 'unknown'}`);
+    const agentTypeForLog =
+      context.agent_type ||
+      `unknown (available: ${Object.keys(context || {}).join(', ')})`;
+    console.error(`[kindling] Captured subagent: ${agentTypeForLog}`);
   } finally {
     cleanup(db);
   }

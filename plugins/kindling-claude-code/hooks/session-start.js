@@ -55,7 +55,9 @@ async function main() {
         }
 
         if (items.length > 0) {
-          // Use structured JSON output so Claude Code injects context properly
+          // Claude Code hook protocol: stdout JSON with hookSpecificOutput causes
+          // the additionalContext string to be injected into the system prompt.
+          // See: https://docs.anthropic.com/en/docs/claude-code/hooks
           const header = `# Prior Context (from Kindling)\n\nThe following is prior session context for this project:\n`;
           const output = JSON.stringify({
             continue: true,

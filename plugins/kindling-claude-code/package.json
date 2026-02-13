@@ -17,10 +17,6 @@
     "better-sqlite3": "^12.5.0"
   },
   "devDependencies": {
-    "@eddacraft/kindling-core": "workspace:*",
-    "@eddacraft/kindling-store-sqlite": "workspace:*",
-    "@eddacraft/kindling-provider-local": "workspace:*",
-    "@eddacraft/kindling-adapter-claude-code": "workspace:*",
     "esbuild": "^0.24.0"
   }
 }
