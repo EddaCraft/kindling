@@ -17,6 +17,6 @@
     "better-sqlite3": "^12.5.0"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.25.0"
   }
 }
