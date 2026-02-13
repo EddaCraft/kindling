@@ -255,18 +255,6 @@ importers:
         specifier: ^12.5.0
         version: 12.6.2
     devDependencies:
-      '@eddacraft/kindling-adapter-claude-code':
-        specifier: workspace:*
-        version: link:../../packages/kindling-adapter-claude-code
-      '@eddacraft/kindling-core':
-        specifier: workspace:*
-        version: link:../../packages/kindling-core
-      '@eddacraft/kindling-provider-local':
-        specifier: workspace:*
-        version: link:../../packages/kindling-provider-local
-      '@eddacraft/kindling-store-sqlite':
-        specifier: workspace:*
-        version: link:../../packages/kindling-store-sqlite
       esbuild:
         specifier: ^0.24.0
         version: 0.24.2

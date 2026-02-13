@@ -52,7 +52,8 @@ async function main() {
         },
       });
       process.stdout.write(output);
-      console.error(`[kindling] Injected ${items.length} context items before compaction`);
+      const injectedCount = (pins ? pins.length : 0) + (latestSummary ? 1 : 0);
+      console.error(`[kindling] Injected ${injectedCount} context items before compaction`);
     }
   } catch (err) {
     // Best-effort; don't block compaction
