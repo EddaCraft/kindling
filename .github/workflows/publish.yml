@@ -19,6 +19,8 @@ concurrency:
 jobs:
   # Gate: CI must pass before publishing
   ci:
+    permissions:
+      contents: read
     uses: ./.github/workflows/ci.yml
 
   publish:
