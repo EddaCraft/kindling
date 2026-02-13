@@ -9,5 +9,6 @@
   "homepage": "https://github.com/EddaCraft/kindling",
   "repository": "https://github.com/EddaCraft/kindling",
   "license": "Apache-2.0",
-  "keywords": ["memory", "continuity", "context", "sessions"]
+  "keywords": ["memory", "continuity", "context", "sessions"],
+  "hooks": "./hooks/hooks.json"
 }

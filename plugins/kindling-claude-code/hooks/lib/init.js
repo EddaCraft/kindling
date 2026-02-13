@@ -3,6 +3,9 @@
  *
  * Opens the project-scoped SQLite database, creates the store and hook handlers.
  * Each hook invocation is a separate process, so we open/close the DB each time.
+ *
+ * When installed as a Claude Code plugin, better-sqlite3 (native addon) may not
+ * be available. This module auto-installs it on first run.
  */
 
 const { createHash } = require('crypto');
@@ -11,7 +14,42 @@ const { existsSync, mkdirSync } = require('fs');
 const { homedir } = require('os');
 const { join, resolve } = require('path');
 
-const kindling = require(join(__dirname, '..', '..', 'dist', 'kindling-bundle.cjs'));
+const pluginRoot = resolve(__dirname, '..', '..');
+
+/**
+ * Ensure better-sqlite3 is available. When installed as a Claude Code plugin,
+ * node_modules may not exist yet. Install it on-demand.
+ */
+function ensureDependencies() {
+  try {
+    require.resolve('better-sqlite3');
+  } catch {
+    const pkgJsonPath = join(pluginRoot, 'package.json');
+    if (!existsSync(pkgJsonPath)) return;
+
+    console.error('[kindling] Installing better-sqlite3 (first run)...');
+    try {
+      // --ignore-scripts=false is required for better-sqlite3's native addon build.
+      // This executes install scripts from the package, which is a supply chain
+      // tradeoff — we pin the version range to mitigate risk.
+      execSync('npm install --production --no-package-lock --ignore-scripts=false', {
+        cwd: pluginRoot,
+        stdio: ['pipe', 'inherit', 'inherit'],
+        timeout: 120000,
+      });
+      console.error('[kindling] better-sqlite3 installed successfully.');
+    } catch (installErr) {
+      throw new Error(
+        `Failed to install better-sqlite3: ${installErr.message}\n` +
+        `Try running manually: cd ${pluginRoot} && npm install`
+      );
+    }
+  }
+}
+
+ensureDependencies();
+
+const kindling = require(join(pluginRoot, 'dist', 'kindling-bundle.cjs'));
 
 /**
  * Resolve the project root directory.

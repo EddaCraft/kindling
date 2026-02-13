@@ -883,7 +883,9 @@ var LocalFtsProvider = class {
         table_name: "observations",
         rank: m.rank
       })));
-    } catch {
+    } catch (err2) {
+      if (!this.isFtsSyntaxError(err2))
+        throw err2;
     }
     try {
       const sumStmt = this.db.prepare(`
@@ -898,7 +900,9 @@ var LocalFtsProvider = class {
         table_name: "summaries",
         rank: m.rank
       })));
-    } catch {
+    } catch (err2) {
+      if (!this.isFtsSyntaxError(err2))
+        throw err2;
     }
     return matches;
   }
@@ -1037,6 +1041,18 @@ var LocalFtsProvider = class {
     } else {
       return entity.createdAt;
     }
+  }
+  /**
+   * Check if an error is an FTS5 query syntax error (safe to swallow).
+   * Covers all known SQLite/FTS5 error messages for malformed MATCH input.
+   * All other database errors are propagated.
+   */
+  isFtsSyntaxError(err2) {
+    if (err2 instanceof Error) {
+      const msg = err2.message.toLowerCase();
+      return msg.includes("fts5") || msg.includes("fts syntax") || msg.includes("unterminated string") || msg.includes("unknown special query");
+    }
+    return false;
   }
   /**
    * Extract snippet showing match context

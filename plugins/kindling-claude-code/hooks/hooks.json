@@ -14,11 +14,34 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Read|Write|Edit|Bash|Glob|Grep|Task|WebFetch",
+        "matcher": "Read|Write|Edit|Bash|Glob|Grep|Task|WebFetch|WebSearch|NotebookEdit|TodoWrite|AskUserQuestion|Skill",
         "hooks": [
           {
             "type": "command",
             "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use-failure.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/subagent-stop.js",
             "timeout": 5
           }
         ]
@@ -31,6 +54,17 @@
             "type": "command",
             "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.js",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.js",
+            "timeout": 10
           }
         ]
       }

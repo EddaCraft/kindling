@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * PostToolUse hook handler
+ * PostToolUseFailure hook handler
  *
- * Captures tool calls as observations in the SQLite store.
- * Exit 0 = success (never blocks tool use).
+ * Captures failed tool calls as observations. Errors are particularly
+ * valuable for cross-session memory (what broke, what was tried).
+ * Exit 0 = success (never blocks tool failure handling).
  */
 
 const { init, cleanup, readStdin } = require('./lib/init.js');
@@ -26,18 +27,17 @@ async function main() {
       cwd,
       toolName,
       toolInput: context.tool_input || {},
-      toolResult: context.tool_result,
-      toolError: context.tool_error,
+      toolError: context.tool_error || context.error || 'Unknown error',
     });
 
-    console.error(`[kindling] Captured ${toolName}`);
+    console.error(`[kindling] Captured ${toolName} failure`);
   } finally {
     cleanup(db);
   }
 }
 
 main().catch((err) => {
-  console.error(`[kindling] PostToolUse error: ${err.message}`);
+  console.error(`[kindling] PostToolUseFailure error: ${err.message}`);
 }).finally(() => {
   process.exit(0);
 });
