@@ -1,6 +1,6 @@
 {
   "name": "@eddacraft/kindling-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "HTTP API server for Kindling - enables multi-agent concurrency",
   "type": "module",
   "main": "./dist/index.js",
