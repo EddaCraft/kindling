@@ -4,22 +4,25 @@
 
 Kindling automatically captures your Claude Code sessions and injects prior context when you start a new one. All data is stored locally in SQLite with full-text search.
 
-## Quick Start
+## Install
+
+**Add the marketplace, then install the plugin:**
+
+```
+/plugin marketplace add EddaCraft/kindling
+/plugin install kindling@kindling-plugins
+```
+
+**Or load directly for development/testing:**
 
 ```bash
-# Install the plugin
-claude plugin install github:EddaCraft/kindling
-
-# Or for development, load directly:
 claude --plugin-dir ./plugins/kindling-claude-code
 ```
 
-If installing from source (within the monorepo):
+If loading from source, build the monorepo first:
 
 ```bash
-cd plugins/kindling-claude-code
-npm install        # Installs better-sqlite3
-npm run build      # Builds the bundle (requires monorepo packages to be built)
+pnpm install && pnpm run build
 ```
 
 ## What It Does
