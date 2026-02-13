@@ -238,6 +238,40 @@ describe('Export/Import', () => {
       expect(dataset.observations[4].id).toBe('obs-4');
     });
 
+    it('should ignore non-integer limit values', () => {
+      for (let i = 0; i < 3; i++) {
+        store.insertObservation({
+          id: `obs-${i}`,
+          kind: 'message',
+          content: `Message ${i}`,
+          provenance: {},
+          ts: 1000 + i,
+          scopeIds: { sessionId: 's1' },
+          redacted: false,
+        });
+      }
+
+      // Float — not an integer, should be ignored (return all)
+      expect(exportDatabase(db, { limit: 2.5 }).observations).toHaveLength(3);
+
+      // NaN — not finite, should be ignored
+      expect(exportDatabase(db, { limit: NaN }).observations).toHaveLength(3);
+
+      // Infinity — not finite, should be ignored
+      expect(exportDatabase(db, { limit: Infinity }).observations).toHaveLength(3);
+
+      // Negative — not > 0, should be ignored
+      expect(exportDatabase(db, { limit: -1 }).observations).toHaveLength(3);
+
+      // Zero — not > 0, should be ignored
+      expect(exportDatabase(db, { limit: 0 }).observations).toHaveLength(3);
+
+      // String via type coercion — not a number, should be ignored
+      expect(
+        exportDatabase(db, { limit: '5; DROP TABLE observations' as any }).observations,
+      ).toHaveLength(3);
+    });
+
     it('should export summaries and pins', () => {
       const capsule: Capsule = {
         id: 'cap-1',
