@@ -1,6 +1,6 @@
 {
   "name": "@eddacraft/kindling-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Command-line interface for Kindling - inspect, search, and manage your local AI memory",
   "type": "module",
   "bin": {

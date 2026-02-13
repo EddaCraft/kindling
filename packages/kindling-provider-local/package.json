@@ -1,6 +1,6 @@
 {
   "name": "@eddacraft/kindling-provider-local",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local FTS-based retrieval provider for Kindling with deterministic, explainable ranking",
   "type": "module",
   "main": "./dist/index.js",

@@ -7,7 +7,7 @@
   },
   "metadata": {
     "description": "Memory continuity plugins for Claude Code by EddaCraft",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "pluginRoot": "./plugins"
   },
   "plugins": [
@@ -15,7 +15,7 @@
       "name": "kindling",
       "source": "./kindling-claude-code",
       "description": "Memory continuity for Claude Code — remember what you worked on across sessions",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "EddaCraft"
       },

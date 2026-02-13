@@ -1,6 +1,6 @@
 {
   "name": "@eddacraft/kindling-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Core domain model and orchestration for Kindling - local memory engine for AI-assisted development",
   "type": "module",
   "main": "./dist/index.js",
