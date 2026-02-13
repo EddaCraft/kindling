@@ -67,6 +67,12 @@ export interface ImportResult {
 export function exportDatabase(db: Database.Database, options: ExportOptions = {}): ExportDataset {
   const { scope, includeRedacted = false, limit } = options;
 
+  // Normalize and validate limit to prevent SQL injection and invalid values
+  let safeLimit: number | undefined;
+  if (typeof limit === 'number' && Number.isFinite(limit) && Number.isInteger(limit) && limit > 0) {
+    safeLimit = limit;
+  }
+
   // Build scope filter SQL
   const buildScopeFilter = (tableName: string): { where: string; params: string[] } => {
     if (!scope) {
@@ -102,7 +108,7 @@ export function exportDatabase(db: Database.Database, options: ExportOptions = {
   // Export observations
   const obsFilter = buildScopeFilter('observations');
   const obsRedactedFilter = includeRedacted ? '' : 'AND redacted = 0';
-  const obsLimitClause = limit ? `LIMIT ${limit}` : '';
+  const obsLimitClause = safeLimit !== undefined ? `LIMIT ${safeLimit}` : '';
 
   const observationsQuery = `
     SELECT id, kind, content, provenance, ts, scope_ids, redacted
