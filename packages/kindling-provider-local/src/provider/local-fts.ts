@@ -2,15 +2,16 @@
  * Local FTS-based retrieval provider
  *
  * Uses SQLite FTS5 + recency scoring for ranking results.
- * Scoring is computed entirely in SQL using window functions
- * for BM25 normalization and inline recency calculation.
+ * FTS matching, scope filtering, and recency are computed in SQL.
+ * BM25 normalization is done in JS across both entity types so
+ * scores are comparable between observations and summaries.
  *
  * Scoring formula:
  *   score = (fts_relevance * 0.7) + (recency_score * 0.3)
  *
  * where:
- *   fts_relevance = BM25 score from FTS5 (normalized to 0.0-1.0 via window functions)
- *   recency_score = MAX(0, 1.0 - age_days / max_age_days)
+ *   fts_relevance = BM25 rank normalized to [0,1] across all results
+ *   recency_score = MAX(0, 1.0 - age_ms / max_age_ms)
  */
 
 import type Database from 'better-sqlite3';
@@ -23,8 +24,8 @@ import type {
   ScopeIds,
 } from '@eddacraft/kindling-core';
 
-/** Row shape returned by the scored observations query */
-interface ScoredObsRow {
+/** Row shape returned by the raw observations query (pre-normalization) */
+interface RawObsRow {
   id: string;
   kind: string;
   content: string;
@@ -32,18 +33,20 @@ interface ScoredObsRow {
   ts: number;
   scope_ids: string;
   redacted: number;
-  score: number;
+  fts_rank: number;
+  recency: number;
 }
 
-/** Row shape returned by the scored summaries query */
-interface ScoredSumRow {
+/** Row shape returned by the raw summaries query (pre-normalization) */
+interface RawSumRow {
   id: string;
   capsule_id: string;
   content: string;
   confidence: number;
   evidence_refs: string;
   created_at: number;
-  score: number;
+  fts_rank: number;
+  recency: number;
 }
 
 // Max age in ms for recency scoring (30 days)
@@ -61,10 +64,9 @@ export class LocalFtsProvider implements RetrievalProvider {
     const { query, scopeIds, maxResults = 50, excludeIds = [], includeRedacted = false } = options;
 
     const now = Date.now();
-    const results: ProviderSearchResult[] = [];
 
-    // Search observations — single SQL query does FTS + join + scope filter + scoring
-    const obsResults = this.searchObservations(
+    // Fetch raw rows with fts_rank + recency from both entity types
+    const obsRaw = this.searchObservationsRaw(
       query,
       scopeIds,
       excludeIds,
@@ -72,11 +74,63 @@ export class LocalFtsProvider implements RetrievalProvider {
       now,
       maxResults,
     );
-    results.push(...obsResults);
+    const sumRaw = this.searchSummariesRaw(query, scopeIds, excludeIds, now, maxResults);
 
-    // Search summaries — single SQL query does FTS + join + scope filter + scoring
-    const sumResults = this.searchSummaries(query, scopeIds, excludeIds, now, maxResults);
-    results.push(...sumResults);
+    // Normalize BM25 ranks across BOTH result sets so scores are comparable
+    const allRanks = [...obsRaw.map((r) => r.fts_rank), ...sumRaw.map((r) => r.fts_rank)];
+    const minRank = allRanks.length > 0 ? Math.min(...allRanks) : 0;
+    const maxRank = allRanks.length > 0 ? Math.max(...allRanks) : 0;
+    const rankRange = maxRank - minRank;
+
+    const normalizeFts = (rank: number): number => {
+      if (rankRange === 0) return 0.5; // Unknown relative relevance
+      // FTS5 rank is negative; more negative = more relevant.
+      // min_rank is most relevant, max_rank is least relevant.
+      return (maxRank - rank) / rankRange;
+    };
+
+    const results: ProviderSearchResult[] = [];
+
+    for (const row of obsRaw) {
+      const score = Math.min(
+        1.0,
+        Math.max(0.0, normalizeFts(row.fts_rank) * 0.7 + row.recency * 0.3),
+      );
+      results.push({
+        entity: {
+          id: row.id,
+          kind: row.kind as Observation['kind'],
+          content: row.content,
+          provenance: JSON.parse(row.provenance),
+          ts: row.ts,
+          scopeIds: JSON.parse(row.scope_ids),
+          redacted: row.redacted === 1,
+        } satisfies Observation,
+        score: Math.round(score * 1e10) / 1e10,
+        matchContext:
+          row.content.length <= 100 ? row.content : row.content.substring(0, 100) + '...',
+      });
+    }
+
+    for (const row of sumRaw) {
+      const score = Math.min(
+        1.0,
+        Math.max(0.0, normalizeFts(row.fts_rank) * 0.7 + row.recency * 0.3),
+      );
+      results.push({
+        entity: {
+          id: row.id,
+          capsuleId: row.capsule_id,
+          content: row.content,
+          confidence: row.confidence,
+          evidenceRefs: JSON.parse(row.evidence_refs),
+          createdAt: row.created_at,
+        } satisfies Summary,
+        score: Math.round(score * 1e10) / 1e10,
+        matchContext:
+          row.content.length <= 100 ? row.content : row.content.substring(0, 100) + '...',
+      });
+    }
 
     // Final sort across both result sets and limit
     results.sort((a, b) => b.score - a.score);
@@ -84,23 +138,18 @@ export class LocalFtsProvider implements RetrievalProvider {
   }
 
   /**
-   * Search observations with scoring computed in SQL.
-   *
-   * Uses a CTE + window functions to:
-   * 1. FTS MATCH for candidate rowids
-   * 2. JOIN with observations for entity data + scope filtering
-   * 3. Normalize BM25 ranks to [0,1] using MIN/MAX window functions
-   * 4. Compute recency score inline
-   * 5. Combine into final score, ORDER BY, LIMIT
+   * Search observations — returns raw rows with fts_rank and recency.
+   * BM25 normalization is done in the caller across all entity types
+   * so scores are comparable between observations and summaries.
    */
-  private searchObservations(
+  private searchObservationsRaw(
     query: string,
     scopeIds: ScopeIds,
     excludeIds: string[],
     includeRedacted: boolean,
     now: number,
     limit: number,
-  ): ProviderSearchResult[] {
+  ): RawObsRow[] {
     const scopeFilter = this.buildScopeFilters(scopeIds, 'o');
     const excludeFilter =
       excludeIds.length > 0 ? `AND o.id NOT IN (${excludeIds.map(() => '?').join(',')})` : '';
@@ -109,69 +158,42 @@ export class LocalFtsProvider implements RetrievalProvider {
     const sql = `
       WITH fts_hits AS (
         SELECT rowid, rank FROM observations_fts WHERE content MATCH ?
-      ),
-      matched AS (
-        SELECT
-          o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted,
-          f.rank AS fts_rank,
-          MIN(f.rank) OVER() AS min_rank,
-          MAX(f.rank) OVER() AS max_rank
-        FROM fts_hits f
-        JOIN observations o ON f.rowid = o.rowid
-        WHERE 1=1
-          ${redactedFilter}
-          ${scopeFilter.clauses.length > 0 ? 'AND ' + scopeFilter.clauses.join(' AND ') : ''}
-          ${excludeFilter}
       )
       SELECT
-        id, kind, content, provenance, ts, scope_ids, redacted,
-        ROUND(MIN(1.0, MAX(0.0,
-          CASE WHEN max_rank = min_rank THEN 1.0
-               ELSE (max_rank - fts_rank) / (max_rank - min_rank)
-          END * 0.7
-          + MAX(0.0, 1.0 - CAST(? - ts AS REAL) / ?) * 0.3
-        )), 10) AS score
-      FROM matched
-      ORDER BY score DESC
+        o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted,
+        f.rank AS fts_rank,
+        MAX(0.0, 1.0 - CAST(? - o.ts AS REAL) / ?) AS recency
+      FROM fts_hits f
+      JOIN observations o ON f.rowid = o.rowid
+      WHERE 1=1
+        ${redactedFilter}
+        ${scopeFilter.clauses.length > 0 ? 'AND ' + scopeFilter.clauses.join(' AND ') : ''}
+        ${excludeFilter}
+      ORDER BY f.rank ASC
       LIMIT ?
     `;
 
-    const params: unknown[] = [query, ...scopeFilter.params, ...excludeIds, now, MAX_AGE_MS, limit];
+    const params: unknown[] = [query, now, MAX_AGE_MS, ...scopeFilter.params, ...excludeIds, limit];
 
-    let rows: ScoredObsRow[];
     try {
-      rows = this.db.prepare(sql).all(...params) as ScoredObsRow[];
+      return this.db.prepare(sql).all(...params) as RawObsRow[];
     } catch (err: unknown) {
       if (this.isFtsSyntaxError(err)) return [];
       throw err;
     }
-
-    return rows.map((row) => ({
-      entity: {
-        id: row.id,
-        kind: row.kind as Observation['kind'],
-        content: row.content,
-        provenance: JSON.parse(row.provenance),
-        ts: row.ts,
-        scopeIds: JSON.parse(row.scope_ids),
-        redacted: row.redacted === 1,
-      } satisfies Observation,
-      score: row.score,
-      matchContext: row.content.length <= 100 ? row.content : row.content.substring(0, 100) + '...',
-    }));
   }
 
   /**
-   * Search summaries with scoring computed in SQL.
-   * Joins through capsules for scope filtering.
+   * Search summaries — returns raw rows with fts_rank and recency.
+   * BM25 normalization is done in the caller across all entity types.
    */
-  private searchSummaries(
+  private searchSummariesRaw(
     query: string,
     scopeIds: ScopeIds,
     excludeIds: string[],
     now: number,
     limit: number,
-  ): ProviderSearchResult[] {
+  ): RawSumRow[] {
     const scopeFilter = this.buildScopeFilters(scopeIds, 'c');
     const excludeFilter =
       excludeIds.length > 0 ? `AND s.id NOT IN (${excludeIds.map(() => '?').join(',')})` : '';
@@ -179,55 +201,29 @@ export class LocalFtsProvider implements RetrievalProvider {
     const sql = `
       WITH fts_hits AS (
         SELECT rowid, rank FROM summaries_fts WHERE content MATCH ?
-      ),
-      matched AS (
-        SELECT
-          s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at,
-          f.rank AS fts_rank,
-          MIN(f.rank) OVER() AS min_rank,
-          MAX(f.rank) OVER() AS max_rank
-        FROM fts_hits f
-        JOIN summaries s ON f.rowid = s.rowid
-        JOIN capsules c ON s.capsule_id = c.id
-        WHERE 1=1
-          ${scopeFilter.clauses.length > 0 ? 'AND ' + scopeFilter.clauses.join(' AND ') : ''}
-          ${excludeFilter}
       )
       SELECT
-        id, capsule_id, content, confidence, evidence_refs, created_at,
-        ROUND(MIN(1.0, MAX(0.0,
-          CASE WHEN max_rank = min_rank THEN 1.0
-               ELSE (max_rank - fts_rank) / (max_rank - min_rank)
-          END * 0.7
-          + MAX(0.0, 1.0 - CAST(? - created_at AS REAL) / ?) * 0.3
-        )), 10) AS score
-      FROM matched
-      ORDER BY score DESC
+        s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at,
+        f.rank AS fts_rank,
+        MAX(0.0, 1.0 - CAST(? - s.created_at AS REAL) / ?) AS recency
+      FROM fts_hits f
+      JOIN summaries s ON f.rowid = s.rowid
+      JOIN capsules c ON s.capsule_id = c.id
+      WHERE 1=1
+        ${scopeFilter.clauses.length > 0 ? 'AND ' + scopeFilter.clauses.join(' AND ') : ''}
+        ${excludeFilter}
+      ORDER BY f.rank ASC
       LIMIT ?
     `;
 
-    const params: unknown[] = [query, ...scopeFilter.params, ...excludeIds, now, MAX_AGE_MS, limit];
+    const params: unknown[] = [query, now, MAX_AGE_MS, ...scopeFilter.params, ...excludeIds, limit];
 
-    let rows: ScoredSumRow[];
     try {
-      rows = this.db.prepare(sql).all(...params) as ScoredSumRow[];
+      return this.db.prepare(sql).all(...params) as RawSumRow[];
     } catch (err: unknown) {
       if (this.isFtsSyntaxError(err)) return [];
       throw err;
     }
-
-    return rows.map((row) => ({
-      entity: {
-        id: row.id,
-        capsuleId: row.capsule_id,
-        content: row.content,
-        confidence: row.confidence,
-        evidenceRefs: JSON.parse(row.evidence_refs),
-        createdAt: row.created_at,
-      } satisfies Summary,
-      score: row.score,
-      matchContext: row.content.length <= 100 ? row.content : row.content.substring(0, 100) + '...',
-    }));
   }
 
   /**

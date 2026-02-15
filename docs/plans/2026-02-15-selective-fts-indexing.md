@@ -21,10 +21,15 @@
 **Step 1: Write the migration SQL**
 
 ```sql
--- Drop existing FTS insert trigger
+-- Drop existing FTS insert triggers
 DROP TRIGGER IF EXISTS observations_fts_insert;
+DROP TRIGGER IF EXISTS summaries_fts_insert;
 
--- Recreate with SUBSTR to cap indexed content at 2000 chars
+-- Drop existing FTS update triggers (these also insert into FTS)
+DROP TRIGGER IF EXISTS observations_fts_update;
+DROP TRIGGER IF EXISTS summaries_fts_update;
+
+-- Recreate INSERT triggers with SUBSTR to cap indexed content at 2000 chars
 CREATE TRIGGER observations_fts_insert AFTER INSERT ON observations
 WHEN NEW.redacted = 0
 BEGIN
@@ -32,11 +37,25 @@ BEGIN
   VALUES (NEW.rowid, SUBSTR(NEW.content, 1, 2000));
 END;
 
--- Same for summaries
-DROP TRIGGER IF EXISTS summaries_fts_insert;
-
 CREATE TRIGGER summaries_fts_insert AFTER INSERT ON summaries
 BEGIN
+  INSERT INTO summaries_fts(rowid, content)
+  VALUES (NEW.rowid, SUBSTR(NEW.content, 1, 2000));
+END;
+
+-- Recreate UPDATE triggers with SUBSTR for the re-insert step
+CREATE TRIGGER observations_fts_update AFTER UPDATE ON observations
+BEGIN
+  INSERT INTO observations_fts(observations_fts, rowid, content)
+  VALUES('delete', OLD.rowid, SUBSTR(OLD.content, 1, 2000));
+  INSERT INTO observations_fts(rowid, content)
+  SELECT NEW.rowid, SUBSTR(NEW.content, 1, 2000) WHERE NEW.redacted = 0;
+END;
+
+CREATE TRIGGER summaries_fts_update AFTER UPDATE ON summaries
+BEGIN
+  INSERT INTO summaries_fts(summaries_fts, rowid, content)
+  VALUES('delete', OLD.rowid, SUBSTR(OLD.content, 1, 2000));
   INSERT INTO summaries_fts(rowid, content)
   VALUES (NEW.rowid, SUBSTR(NEW.content, 1, 2000));
 END;

@@ -58,8 +58,10 @@ const kindling = require(join(pluginRoot, 'dist', 'kindling-bundle.cjs'));
  * which subdirectory Claude Code was launched from), then resolved cwd.
  */
 function getProjectRoot(cwd) {
-  if (process.env.KINDLING_REPO_ROOT) {
-    return process.env.KINDLING_REPO_ROOT;
+  const cached = process.env.KINDLING_REPO_ROOT;
+  // Use cache only if cwd is under the cached root (prevents cross-project contamination)
+  if (cached && resolve(cwd).startsWith(cached)) {
+    return cached;
   }
   try {
     const root = execSync('git rev-parse --show-toplevel', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
