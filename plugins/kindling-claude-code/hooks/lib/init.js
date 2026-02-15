@@ -53,12 +53,19 @@ const kindling = require(join(pluginRoot, 'dist', 'kindling-bundle.cjs'));
 
 /**
  * Resolve the project root directory.
- * Uses git toplevel when available for stability (same hash regardless of
- * which subdirectory Claude Code was launched from), falls back to resolved cwd.
+ * Checks KINDLING_REPO_ROOT env var first (avoids ~10-50ms git call),
+ * then falls back to git toplevel for stability (same hash regardless of
+ * which subdirectory Claude Code was launched from), then resolved cwd.
  */
 function getProjectRoot(cwd) {
+  if (process.env.KINDLING_REPO_ROOT) {
+    return process.env.KINDLING_REPO_ROOT;
+  }
   try {
-    return execSync('git rev-parse --show-toplevel', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    const root = execSync('git rev-parse --show-toplevel', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    // Cache for subsequent calls within this process
+    process.env.KINDLING_REPO_ROOT = root;
+    return root;
   } catch {
     return resolve(cwd);
   }
