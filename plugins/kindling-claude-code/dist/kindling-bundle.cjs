@@ -27,7 +27,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// scripts/bundle-entry.js
+// plugins/kindling-claude-code/scripts/bundle-entry.js
 var bundle_entry_exports = {};
 __export(bundle_entry_exports, {
   KindlingService: () => KindlingService,
@@ -49,7 +49,7 @@ __export(bundle_entry_exports, {
 });
 module.exports = __toCommonJS(bundle_entry_exports);
 
-// ../../packages/kindling-store-sqlite/dist/db/open.js
+// packages/kindling-store-sqlite/dist/db/open.js
 var import_better_sqlite3 = __toESM(require("better-sqlite3"), 1);
 
 // inline:inline-migrate
@@ -57,7 +57,8 @@ function getMigrations() {
   return [
     { version: 1, name: "001_init", sql: "-- Initial schema migration\n-- Creates core tables for observations, capsules, summaries, and pins\n\n-- Schema migrations tracking table\nCREATE TABLE IF NOT EXISTS schema_migrations (\n  version INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  applied_at INTEGER NOT NULL\n);\n\n-- Observations table\nCREATE TABLE IF NOT EXISTS observations (\n  id TEXT PRIMARY KEY,\n  kind TEXT NOT NULL CHECK(kind IN (\n    'tool_call',\n    'command',\n    'file_diff',\n    'error',\n    'message',\n    'node_start',\n    'node_end',\n    'node_output',\n    'node_error'\n  )),\n  content TEXT NOT NULL,\n  provenance TEXT NOT NULL DEFAULT '{}', -- JSON blob\n  ts INTEGER NOT NULL,\n  scope_ids TEXT NOT NULL DEFAULT '{}', -- JSON blob\n  redacted INTEGER NOT NULL DEFAULT 0 CHECK(redacted IN (0, 1))\n);\n\n-- Capsules table\nCREATE TABLE IF NOT EXISTS capsules (\n  id TEXT PRIMARY KEY,\n  type TEXT NOT NULL CHECK(type IN ('session', 'pocketflow_node')),\n  intent TEXT NOT NULL,\n  status TEXT NOT NULL CHECK(status IN ('open', 'closed')) DEFAULT 'open',\n  opened_at INTEGER NOT NULL,\n  closed_at INTEGER,\n  scope_ids TEXT NOT NULL DEFAULT '{}' -- JSON blob\n);\n\n-- Capsule-observation relationship table (many-to-many with ordering)\nCREATE TABLE IF NOT EXISTS capsule_observations (\n  capsule_id TEXT NOT NULL,\n  observation_id TEXT NOT NULL,\n  seq INTEGER NOT NULL, -- Ordering within capsule\n  PRIMARY KEY (capsule_id, observation_id),\n  FOREIGN KEY (capsule_id) REFERENCES capsules(id) ON DELETE CASCADE,\n  FOREIGN KEY (observation_id) REFERENCES observations(id) ON DELETE CASCADE\n);\n\n-- Summaries table\nCREATE TABLE IF NOT EXISTS summaries (\n  id TEXT PRIMARY KEY,\n  capsule_id TEXT NOT NULL UNIQUE,\n  content TEXT NOT NULL,\n  confidence REAL NOT NULL CHECK(confidence >= 0.0 AND confidence <= 1.0),\n  created_at INTEGER NOT NULL,\n  evidence_refs TEXT NOT NULL DEFAULT '[]', -- JSON array of observation IDs\n  FOREIGN KEY (capsule_id) REFERENCES capsules(id) ON DELETE CASCADE\n);\n\n-- Pins table\nCREATE TABLE IF NOT EXISTS pins (\n  id TEXT PRIMARY KEY,\n  target_type TEXT NOT NULL CHECK(target_type IN ('observation', 'summary')),\n  target_id TEXT NOT NULL,\n  reason TEXT,\n  created_at INTEGER NOT NULL,\n  expires_at INTEGER,\n  scope_ids TEXT NOT NULL DEFAULT '{}' -- JSON blob\n);\n\n-- Record this migration\nINSERT OR IGNORE INTO schema_migrations (version, name, applied_at)\nVALUES (1, '001_init', strftime('%s', 'now') * 1000);\n" },
     { version: 2, name: "002_fts", sql: "-- Full-text search indexes migration\n-- Creates FTS5 virtual tables for observations and summaries\n\n-- FTS table for observations content\nCREATE VIRTUAL TABLE IF NOT EXISTS observations_fts USING fts5(\n  content,\n  content='observations',\n  content_rowid='rowid',\n  tokenize='porter unicode61'\n);\n\n-- Populate FTS table with existing observations\nINSERT INTO observations_fts(rowid, content)\nSELECT rowid, content FROM observations WHERE redacted = 0;\n\n-- Trigger to keep FTS in sync on INSERT\nCREATE TRIGGER IF NOT EXISTS observations_fts_insert\nAFTER INSERT ON observations\nWHEN NEW.redacted = 0\nBEGIN\n  INSERT INTO observations_fts(rowid, content)\n  VALUES (NEW.rowid, NEW.content);\nEND;\n\n-- Trigger to keep FTS in sync on UPDATE\nCREATE TRIGGER IF NOT EXISTS observations_fts_update\nAFTER UPDATE ON observations\nBEGIN\n  -- Remove old entry (FTS5 external content tables require special delete syntax)\n  INSERT INTO observations_fts(observations_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);\n  -- Add new entry only if not redacted\n  INSERT INTO observations_fts(rowid, content)\n  SELECT NEW.rowid, NEW.content WHERE NEW.redacted = 0;\nEND;\n\n-- Trigger to keep FTS in sync on DELETE\nCREATE TRIGGER IF NOT EXISTS observations_fts_delete\nAFTER DELETE ON observations\nBEGIN\n  INSERT INTO observations_fts(observations_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);\nEND;\n\n-- FTS table for summaries content\nCREATE VIRTUAL TABLE IF NOT EXISTS summaries_fts USING fts5(\n  content,\n  content='summaries',\n  content_rowid='rowid',\n  tokenize='porter unicode61'\n);\n\n-- Populate FTS table with existing summaries\nINSERT INTO summaries_fts(rowid, content)\nSELECT rowid, content FROM summaries;\n\n-- Trigger to keep FTS in sync on INSERT\nCREATE TRIGGER IF NOT EXISTS summaries_fts_insert\nAFTER INSERT ON summaries\nBEGIN\n  INSERT INTO summaries_fts(rowid, content)\n  VALUES (NEW.rowid, NEW.content);\nEND;\n\n-- Trigger to keep FTS in sync on UPDATE\nCREATE TRIGGER IF NOT EXISTS summaries_fts_update\nAFTER UPDATE ON summaries\nBEGIN\n  INSERT INTO summaries_fts(summaries_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);\n  INSERT INTO summaries_fts(rowid, content)\n  VALUES (NEW.rowid, NEW.content);\nEND;\n\n-- Trigger to keep FTS in sync on DELETE\nCREATE TRIGGER IF NOT EXISTS summaries_fts_delete\nAFTER DELETE ON summaries\nBEGIN\n  INSERT INTO summaries_fts(summaries_fts, rowid, content) VALUES('delete', OLD.rowid, OLD.content);\nEND;\n\n-- Record this migration\nINSERT OR IGNORE INTO schema_migrations (version, name, applied_at)\nVALUES (2, '002_fts', strftime('%s', 'now') * 1000);\n" },
-    { version: 3, name: "003_indexes", sql: "-- Indexes migration\n-- Creates indexes for common query patterns\n\n-- Observations indexes\n\n-- Index for queries by timestamp (global time window)\nCREATE INDEX IF NOT EXISTS idx_observations_ts\nON observations(ts DESC);\n\n-- Index for queries by session + timestamp\nCREATE INDEX IF NOT EXISTS idx_observations_session_ts\nON observations(\n  json_extract(scope_ids, '$.sessionId'),\n  ts DESC\n) WHERE json_extract(scope_ids, '$.sessionId') IS NOT NULL;\n\n-- Index for queries by repo + timestamp\nCREATE INDEX IF NOT EXISTS idx_observations_repo_ts\nON observations(\n  json_extract(scope_ids, '$.repoId'),\n  ts DESC\n) WHERE json_extract(scope_ids, '$.repoId') IS NOT NULL;\n\n-- Index for queries by kind (for filtering)\nCREATE INDEX IF NOT EXISTS idx_observations_kind\nON observations(kind);\n\n-- Capsules indexes\n\n-- Index for queries by status + session (find open capsule for session)\nCREATE INDEX IF NOT EXISTS idx_capsules_status_session\nON capsules(\n  status,\n  json_extract(scope_ids, '$.sessionId')\n) WHERE json_extract(scope_ids, '$.sessionId') IS NOT NULL;\n\n-- Index for queries by opened_at (chronological listing)\nCREATE INDEX IF NOT EXISTS idx_capsules_opened_at\nON capsules(opened_at DESC);\n\n-- Index for queries by repo\nCREATE INDEX IF NOT EXISTS idx_capsules_repo\nON capsules(\n  json_extract(scope_ids, '$.repoId')\n) WHERE json_extract(scope_ids, '$.repoId') IS NOT NULL;\n\n-- Capsule-observations indexes\n\n-- Index for efficient lookups of observations by capsule\nCREATE INDEX IF NOT EXISTS idx_capsule_observations_capsule\nON capsule_observations(capsule_id, seq);\n\n-- Index for efficient lookups of capsules by observation\nCREATE INDEX IF NOT EXISTS idx_capsule_observations_observation\nON capsule_observations(observation_id);\n\n-- Summaries indexes\n\n-- Index for lookups by capsule_id (already unique, but helps with joins)\nCREATE INDEX IF NOT EXISTS idx_summaries_capsule\nON summaries(capsule_id);\n\n-- Index for queries by creation timestamp\nCREATE INDEX IF NOT EXISTS idx_summaries_created_at\nON summaries(created_at DESC);\n\n-- Pins indexes\n\n-- Index for TTL-aware queries (active pins)\nCREATE INDEX IF NOT EXISTS idx_pins_expires_at\nON pins(expires_at)\nWHERE expires_at IS NOT NULL;\n\n-- Index for queries by target\nCREATE INDEX IF NOT EXISTS idx_pins_target\nON pins(target_type, target_id);\n\n-- Index for queries by session\nCREATE INDEX IF NOT EXISTS idx_pins_session\nON pins(\n  json_extract(scope_ids, '$.sessionId')\n) WHERE json_extract(scope_ids, '$.sessionId') IS NOT NULL;\n\n-- Index for queries by repo\nCREATE INDEX IF NOT EXISTS idx_pins_repo\nON pins(\n  json_extract(scope_ids, '$.repoId')\n) WHERE json_extract(scope_ids, '$.repoId') IS NOT NULL;\n\n-- Record this migration\nINSERT OR IGNORE INTO schema_migrations (version, name, applied_at)\nVALUES (3, '003_indexes', strftime('%s', 'now') * 1000);\n" }
+    { version: 3, name: "003_indexes", sql: "-- Indexes migration\n-- Creates indexes for common query patterns\n\n-- Observations indexes\n\n-- Index for queries by timestamp (global time window)\nCREATE INDEX IF NOT EXISTS idx_observations_ts\nON observations(ts DESC);\n\n-- Index for queries by session + timestamp\nCREATE INDEX IF NOT EXISTS idx_observations_session_ts\nON observations(\n  json_extract(scope_ids, '$.sessionId'),\n  ts DESC\n) WHERE json_extract(scope_ids, '$.sessionId') IS NOT NULL;\n\n-- Index for queries by repo + timestamp\nCREATE INDEX IF NOT EXISTS idx_observations_repo_ts\nON observations(\n  json_extract(scope_ids, '$.repoId'),\n  ts DESC\n) WHERE json_extract(scope_ids, '$.repoId') IS NOT NULL;\n\n-- Index for queries by kind (for filtering)\nCREATE INDEX IF NOT EXISTS idx_observations_kind\nON observations(kind);\n\n-- Capsules indexes\n\n-- Index for queries by status + session (find open capsule for session)\nCREATE INDEX IF NOT EXISTS idx_capsules_status_session\nON capsules(\n  status,\n  json_extract(scope_ids, '$.sessionId')\n) WHERE json_extract(scope_ids, '$.sessionId') IS NOT NULL;\n\n-- Index for queries by opened_at (chronological listing)\nCREATE INDEX IF NOT EXISTS idx_capsules_opened_at\nON capsules(opened_at DESC);\n\n-- Index for queries by repo\nCREATE INDEX IF NOT EXISTS idx_capsules_repo\nON capsules(\n  json_extract(scope_ids, '$.repoId')\n) WHERE json_extract(scope_ids, '$.repoId') IS NOT NULL;\n\n-- Capsule-observations indexes\n\n-- Index for efficient lookups of observations by capsule\nCREATE INDEX IF NOT EXISTS idx_capsule_observations_capsule\nON capsule_observations(capsule_id, seq);\n\n-- Index for efficient lookups of capsules by observation\nCREATE INDEX IF NOT EXISTS idx_capsule_observations_observation\nON capsule_observations(observation_id);\n\n-- Summaries indexes\n\n-- Index for lookups by capsule_id (already unique, but helps with joins)\nCREATE INDEX IF NOT EXISTS idx_summaries_capsule\nON summaries(capsule_id);\n\n-- Index for queries by creation timestamp\nCREATE INDEX IF NOT EXISTS idx_summaries_created_at\nON summaries(created_at DESC);\n\n-- Pins indexes\n\n-- Index for TTL-aware queries (active pins)\nCREATE INDEX IF NOT EXISTS idx_pins_expires_at\nON pins(expires_at)\nWHERE expires_at IS NOT NULL;\n\n-- Index for queries by target\nCREATE INDEX IF NOT EXISTS idx_pins_target\nON pins(target_type, target_id);\n\n-- Index for queries by session\nCREATE INDEX IF NOT EXISTS idx_pins_session\nON pins(\n  json_extract(scope_ids, '$.sessionId')\n) WHERE json_extract(scope_ids, '$.sessionId') IS NOT NULL;\n\n-- Index for queries by repo\nCREATE INDEX IF NOT EXISTS idx_pins_repo\nON pins(\n  json_extract(scope_ids, '$.repoId')\n) WHERE json_extract(scope_ids, '$.repoId') IS NOT NULL;\n\n-- Record this migration\nINSERT OR IGNORE INTO schema_migrations (version, name, applied_at)\nVALUES (3, '003_indexes', strftime('%s', 'now') * 1000);\n" },
+    { version: 4, name: "004_denormalize_scopes", sql: "-- Denormalize scope IDs from JSON blobs to real columns\n-- Eliminates json_extract() in WHERE clauses for ~20-30% faster filtered queries\n\n-- === observations ===\nALTER TABLE observations ADD COLUMN session_id TEXT;\nALTER TABLE observations ADD COLUMN repo_id TEXT;\nALTER TABLE observations ADD COLUMN agent_id TEXT;\nALTER TABLE observations ADD COLUMN user_id TEXT;\n\nUPDATE observations SET\n  session_id = json_extract(scope_ids, '$.sessionId'),\n  repo_id    = json_extract(scope_ids, '$.repoId'),\n  agent_id   = json_extract(scope_ids, '$.agentId'),\n  user_id    = json_extract(scope_ids, '$.userId');\n\n-- === capsules ===\nALTER TABLE capsules ADD COLUMN session_id TEXT;\nALTER TABLE capsules ADD COLUMN repo_id TEXT;\nALTER TABLE capsules ADD COLUMN agent_id TEXT;\nALTER TABLE capsules ADD COLUMN user_id TEXT;\n\nUPDATE capsules SET\n  session_id = json_extract(scope_ids, '$.sessionId'),\n  repo_id    = json_extract(scope_ids, '$.repoId'),\n  agent_id   = json_extract(scope_ids, '$.agentId'),\n  user_id    = json_extract(scope_ids, '$.userId');\n\n-- === pins ===\nALTER TABLE pins ADD COLUMN session_id TEXT;\nALTER TABLE pins ADD COLUMN repo_id TEXT;\nALTER TABLE pins ADD COLUMN agent_id TEXT;\nALTER TABLE pins ADD COLUMN user_id TEXT;\n\nUPDATE pins SET\n  session_id = json_extract(scope_ids, '$.sessionId'),\n  repo_id    = json_extract(scope_ids, '$.repoId'),\n  agent_id   = json_extract(scope_ids, '$.agentId'),\n  user_id    = json_extract(scope_ids, '$.userId');\n\n-- === New indexes on real columns ===\n\n-- Observations: session + timestamp (replaces idx_observations_session_ts)\nCREATE INDEX IF NOT EXISTS idx_obs_session_ts\nON observations(session_id, ts DESC)\nWHERE session_id IS NOT NULL;\n\n-- Observations: repo + timestamp (replaces idx_observations_repo_ts)\nCREATE INDEX IF NOT EXISTS idx_obs_repo_ts\nON observations(repo_id, ts DESC)\nWHERE repo_id IS NOT NULL;\n\n-- Capsules: status + session (replaces idx_capsules_status_session)\nCREATE INDEX IF NOT EXISTS idx_caps_status_session\nON capsules(status, session_id)\nWHERE session_id IS NOT NULL;\n\n-- Capsules: repo (replaces idx_capsules_repo)\nCREATE INDEX IF NOT EXISTS idx_caps_repo\nON capsules(repo_id)\nWHERE repo_id IS NOT NULL;\n\n-- Pins: session (replaces idx_pins_session)\nCREATE INDEX IF NOT EXISTS idx_pins_session_id\nON pins(session_id)\nWHERE session_id IS NOT NULL;\n\n-- Pins: repo (replaces idx_pins_repo)\nCREATE INDEX IF NOT EXISTS idx_pins_repo_id\nON pins(repo_id)\nWHERE repo_id IS NOT NULL;\n\n-- Drop old json_extract indexes (they're now redundant and slow)\nDROP INDEX IF EXISTS idx_observations_session_ts;\nDROP INDEX IF EXISTS idx_observations_repo_ts;\nDROP INDEX IF EXISTS idx_capsules_status_session;\nDROP INDEX IF EXISTS idx_capsules_repo;\nDROP INDEX IF EXISTS idx_pins_session;\nDROP INDEX IF EXISTS idx_pins_repo;\n\n-- Record this migration\nINSERT OR IGNORE INTO schema_migrations (version, name, applied_at)\nVALUES (4, '004_denormalize_scopes', strftime('%s', 'now') * 1000);\n" }
   ];
 }
 function getCurrentVersion(db) {
@@ -84,7 +85,7 @@ function runMigrations(db) {
   return applied;
 }
 
-// ../../packages/kindling-store-sqlite/dist/db/open.js
+// packages/kindling-store-sqlite/dist/db/open.js
 var import_os = require("os");
 var import_path = require("path");
 var import_fs = require("fs");
@@ -120,7 +121,7 @@ function closeDatabase(db) {
   db.close();
 }
 
-// ../../packages/kindling-store-sqlite/dist/store/export.js
+// packages/kindling-store-sqlite/dist/store/export.js
 function exportDatabase(db, options = {}) {
   const { scope, includeRedacted = false, limit } = options;
   let safeLimit;
@@ -134,19 +135,19 @@ function exportDatabase(db, options = {}) {
     const conditions = [];
     const params = [];
     if (scope.sessionId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.sessionId') = ?`);
+      conditions.push(`${tableName}.session_id = ?`);
       params.push(scope.sessionId);
     }
     if (scope.repoId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.repoId') = ?`);
+      conditions.push(`${tableName}.repo_id = ?`);
       params.push(scope.repoId);
     }
     if (scope.agentId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.agentId') = ?`);
+      conditions.push(`${tableName}.agent_id = ?`);
       params.push(scope.agentId);
     }
     if (scope.userId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.userId') = ?`);
+      conditions.push(`${tableName}.user_id = ?`);
       params.push(scope.userId);
     }
     return {
@@ -262,12 +263,13 @@ function importDatabase(db, dataset) {
   }
   const importTxn = db.transaction(() => {
     const obsStmt = db.prepare(`
-      INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted,
+        session_id, repo_id, agent_id, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const obs of dataset.observations) {
       try {
-        const result = obsStmt.run(obs.id, obs.kind, obs.content, JSON.stringify(obs.provenance), obs.ts, JSON.stringify(obs.scopeIds), obs.redacted ? 1 : 0);
+        const result = obsStmt.run(obs.id, obs.kind, obs.content, JSON.stringify(obs.provenance), obs.ts, JSON.stringify(obs.scopeIds), obs.redacted ? 1 : 0, obs.scopeIds.sessionId ?? null, obs.scopeIds.repoId ?? null, obs.scopeIds.agentId ?? null, obs.scopeIds.userId ?? null);
         if (result.changes > 0)
           obsCount++;
       } catch (err2) {
@@ -275,8 +277,9 @@ function importDatabase(db, dataset) {
       }
     }
     const capsuleStmt = db.prepare(`
-      INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids,
+        session_id, repo_id, agent_id, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const capsuleObsStmt = db.prepare(`
       INSERT OR IGNORE INTO capsule_observations (capsule_id, observation_id, seq)
@@ -284,7 +287,7 @@ function importDatabase(db, dataset) {
     `);
     for (const capsule of dataset.capsules) {
       try {
-        const result = capsuleStmt.run(capsule.id, capsule.type, capsule.intent, capsule.status, capsule.openedAt, capsule.closedAt ?? null, JSON.stringify(capsule.scopeIds));
+        const result = capsuleStmt.run(capsule.id, capsule.type, capsule.intent, capsule.status, capsule.openedAt, capsule.closedAt ?? null, JSON.stringify(capsule.scopeIds), capsule.scopeIds.sessionId ?? null, capsule.scopeIds.repoId ?? null, capsule.scopeIds.agentId ?? null, capsule.scopeIds.userId ?? null);
         if (result.changes > 0) {
           capsuleCount++;
           capsule.observationIds.forEach((obsId, seq) => {
@@ -309,12 +312,13 @@ function importDatabase(db, dataset) {
       }
     }
     const pinStmt = db.prepare(`
-      INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids,
+        session_id, repo_id, agent_id, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const pin of dataset.pins) {
       try {
-        const result = pinStmt.run(pin.id, pin.targetType, pin.targetId, pin.reason ?? null, pin.createdAt, pin.expiresAt ?? null, JSON.stringify(pin.scopeIds));
+        const result = pinStmt.run(pin.id, pin.targetType, pin.targetId, pin.reason ?? null, pin.createdAt, pin.expiresAt ?? null, JSON.stringify(pin.scopeIds), pin.scopeIds.sessionId ?? null, pin.scopeIds.repoId ?? null, pin.scopeIds.agentId ?? null, pin.scopeIds.userId ?? null);
         if (result.changes > 0)
           pinCount++;
       } catch (err2) {
@@ -336,7 +340,7 @@ function importDatabase(db, dataset) {
   };
 }
 
-// ../../packages/kindling-store-sqlite/dist/store/sqlite.js
+// packages/kindling-store-sqlite/dist/store/sqlite.js
 var SqliteKindlingStore = class {
   db;
   constructor(db) {
@@ -353,9 +357,11 @@ var SqliteKindlingStore = class {
   insertObservation(observation) {
     const stmt = this.db.prepare(`
       INSERT INTO observations (
-        id, kind, content, provenance, ts, scope_ids, redacted
+        id, kind, content, provenance, ts, scope_ids, redacted,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @kind, @content, @provenance, @ts, @scopeIds, @redacted
+        @id, @kind, @content, @provenance, @ts, @scopeIds, @redacted,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
     stmt.run({
@@ -365,7 +371,11 @@ var SqliteKindlingStore = class {
       provenance: JSON.stringify(observation.provenance),
       ts: observation.ts,
       scopeIds: JSON.stringify(observation.scopeIds),
-      redacted: observation.redacted ? 1 : 0
+      redacted: observation.redacted ? 1 : 0,
+      sessionId: observation.scopeIds.sessionId ?? null,
+      repoId: observation.scopeIds.repoId ?? null,
+      agentId: observation.scopeIds.agentId ?? null,
+      userId: observation.scopeIds.userId ?? null
     });
   }
   /**
@@ -376,9 +386,11 @@ var SqliteKindlingStore = class {
   createCapsule(capsule) {
     const stmt = this.db.prepare(`
       INSERT INTO capsules (
-        id, type, intent, status, opened_at, closed_at, scope_ids
+        id, type, intent, status, opened_at, closed_at, scope_ids,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @type, @intent, @status, @openedAt, @closedAt, @scopeIds
+        @id, @type, @intent, @status, @openedAt, @closedAt, @scopeIds,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
     stmt.run({
@@ -388,7 +400,11 @@ var SqliteKindlingStore = class {
       status: capsule.status,
       openedAt: capsule.openedAt,
       closedAt: capsule.closedAt ?? null,
-      scopeIds: JSON.stringify(capsule.scopeIds)
+      scopeIds: JSON.stringify(capsule.scopeIds),
+      sessionId: capsule.scopeIds.sessionId ?? null,
+      repoId: capsule.scopeIds.repoId ?? null,
+      agentId: capsule.scopeIds.agentId ?? null,
+      userId: capsule.scopeIds.userId ?? null
     });
   }
   /**
@@ -475,9 +491,11 @@ var SqliteKindlingStore = class {
   insertPin(pin) {
     const stmt = this.db.prepare(`
       INSERT INTO pins (
-        id, target_type, target_id, reason, created_at, expires_at, scope_ids
+        id, target_type, target_id, reason, created_at, expires_at, scope_ids,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @targetType, @targetId, @reason, @createdAt, @expiresAt, @scopeIds
+        @id, @targetType, @targetId, @reason, @createdAt, @expiresAt, @scopeIds,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
     stmt.run({
@@ -487,7 +505,11 @@ var SqliteKindlingStore = class {
       reason: pin.reason ?? null,
       createdAt: pin.createdAt,
       expiresAt: pin.expiresAt ?? null,
-      scopeIds: JSON.stringify(pin.scopeIds)
+      scopeIds: JSON.stringify(pin.scopeIds),
+      sessionId: pin.scopeIds.sessionId ?? null,
+      repoId: pin.scopeIds.repoId ?? null,
+      agentId: pin.scopeIds.agentId ?? null,
+      userId: pin.scopeIds.userId ?? null
     });
   }
   /**
@@ -521,19 +543,19 @@ var SqliteKindlingStore = class {
     const params = [currentTime];
     if (scopeIds) {
       if (scopeIds.sessionId) {
-        query += ` AND json_extract(scope_ids, '$.sessionId') = ?`;
+        query += ` AND session_id = ?`;
         params.push(scopeIds.sessionId);
       }
       if (scopeIds.repoId) {
-        query += ` AND json_extract(scope_ids, '$.repoId') = ?`;
+        query += ` AND repo_id = ?`;
         params.push(scopeIds.repoId);
       }
       if (scopeIds.agentId) {
-        query += ` AND json_extract(scope_ids, '$.agentId') = ?`;
+        query += ` AND agent_id = ?`;
         params.push(scopeIds.agentId);
       }
       if (scopeIds.userId) {
-        query += ` AND json_extract(scope_ids, '$.userId') = ?`;
+        query += ` AND user_id = ?`;
         params.push(scopeIds.userId);
       }
     }
@@ -592,7 +614,7 @@ var SqliteKindlingStore = class {
       SELECT id, type, intent, status, opened_at, closed_at, scope_ids
       FROM capsules
       WHERE status = 'open'
-        AND json_extract(scope_ids, '$.sessionId') = ?
+        AND session_id = ?
       ORDER BY opened_at DESC
       LIMIT 1
     `).get(sessionId);
@@ -736,19 +758,19 @@ var SqliteKindlingStore = class {
     `;
     const params = [];
     if (scopeIds?.sessionId) {
-      query += ` AND json_extract(scope_ids, '$.sessionId') = ?`;
+      query += ` AND session_id = ?`;
       params.push(scopeIds.sessionId);
     }
     if (scopeIds?.repoId) {
-      query += ` AND json_extract(scope_ids, '$.repoId') = ?`;
+      query += ` AND repo_id = ?`;
       params.push(scopeIds.repoId);
     }
     if (scopeIds?.agentId) {
-      query += ` AND json_extract(scope_ids, '$.agentId') = ?`;
+      query += ` AND agent_id = ?`;
       params.push(scopeIds.agentId);
     }
     if (scopeIds?.userId) {
-      query += ` AND json_extract(scope_ids, '$.userId') = ?`;
+      query += ` AND user_id = ?`;
       params.push(scopeIds.userId);
     }
     if (fromTs !== void 0) {
@@ -843,213 +865,190 @@ var SqliteKindlingStore = class {
   }
 };
 
-// ../../packages/kindling-provider-local/dist/provider/local-fts.js
+// packages/kindling-provider-local/dist/provider/local-fts.js
+var MAX_AGE_MS = 30 * 24 * 60 * 60 * 1e3;
 var LocalFtsProvider = class {
   name = "local-fts";
   db;
-  // Weight for FTS relevance vs recency
-  FTS_WEIGHT = 0.7;
-  RECENCY_WEIGHT = 0.3;
-  // Max age in days for recency scoring (30 days)
-  MAX_AGE_DAYS = 30;
   constructor(db) {
     this.db = db;
   }
   async search(options) {
     const { query, scopeIds, maxResults = 50, excludeIds = [], includeRedacted = false } = options;
-    const ftsMatches = this.findFtsMatches(query);
-    if (ftsMatches.length === 0) {
-      return [];
-    }
-    const entities = this.fetchEntities(ftsMatches, scopeIds, excludeIds, includeRedacted);
-    if (entities.length === 0) {
-      return [];
-    }
-    const scoredResults = this.calculateScores(entities);
-    scoredResults.sort((a, b) => b.score - a.score);
-    return scoredResults.slice(0, maxResults);
-  }
-  /**
-   * Find FTS matches using SQLite FTS5
-   */
-  findFtsMatches(query) {
-    const matches = [];
-    try {
-      const obsStmt = this.db.prepare(`
-        SELECT rowid, rank
-        FROM observations_fts
-        WHERE content MATCH ?
-        ORDER BY rank
-      `);
-      const obsMatches = obsStmt.all(query);
-      matches.push(...obsMatches.map((m) => ({
-        rowid: m.rowid,
-        table_name: "observations",
-        rank: m.rank
-      })));
-    } catch (err2) {
-      if (!this.isFtsSyntaxError(err2))
-        throw err2;
-    }
-    try {
-      const sumStmt = this.db.prepare(`
-        SELECT rowid, rank
-        FROM summaries_fts
-        WHERE content MATCH ?
-        ORDER BY rank
-      `);
-      const sumMatches = sumStmt.all(query);
-      matches.push(...sumMatches.map((m) => ({
-        rowid: m.rowid,
-        table_name: "summaries",
-        rank: m.rank
-      })));
-    } catch (err2) {
-      if (!this.isFtsSyntaxError(err2))
-        throw err2;
-    }
-    return matches;
-  }
-  /**
-   * Fetch entities and apply scope/redaction/exclusion filters
-   */
-  fetchEntities(matches, scopeIds, excludeIds, includeRedacted) {
+    const now = Date.now();
     const results = [];
-    const obsMatches = matches.filter((m) => m.table_name === "observations");
-    if (obsMatches.length > 0) {
-      const obsRowids = obsMatches.map((m) => m.rowid);
-      const placeholders = obsRowids.map(() => "?").join(",");
-      const scopeFilter = this.buildScopeFilters(scopeIds);
-      let obsQuery = `
-        SELECT o.rowid, o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted
-        FROM observations o
-        WHERE o.rowid IN (${placeholders})
-      `;
-      if (!includeRedacted) {
-        obsQuery += ` AND o.redacted = 0`;
-      }
-      if (scopeFilter.clauses.length > 0) {
-        obsQuery += ` AND (${scopeFilter.clauses.join(" AND ")})`;
-      }
-      const obsStmt = this.db.prepare(obsQuery);
-      const observations = obsStmt.all(...obsRowids, ...scopeFilter.params);
-      for (const row of observations) {
-        if (excludeIds.includes(row.id))
-          continue;
-        const observation = {
-          id: row.id,
-          kind: row.kind,
-          content: row.content,
-          provenance: JSON.parse(row.provenance),
-          ts: row.ts,
-          scopeIds: JSON.parse(row.scope_ids),
-          redacted: row.redacted === 1
-        };
-        const ftsMatch = obsMatches.find((m) => m.rowid === row.rowid);
-        if (ftsMatch) {
-          results.push({ entity: observation, ftsMatch });
-        }
-      }
-    }
-    const sumMatches = matches.filter((m) => m.table_name === "summaries");
-    if (sumMatches.length > 0) {
-      const sumRowids = sumMatches.map((m) => m.rowid);
-      const placeholders = sumRowids.map(() => "?").join(",");
-      const sumScopeFilter = this.buildScopeFilters(scopeIds, "c");
-      let sumQuery = `
-        SELECT s.rowid, s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at
-        FROM summaries s
-        INNER JOIN capsules c ON s.capsule_id = c.id
-        WHERE s.rowid IN (${placeholders})
-      `;
-      if (sumScopeFilter.clauses.length > 0) {
-        sumQuery += ` AND (${sumScopeFilter.clauses.join(" AND ")})`;
-      }
-      const sumStmt = this.db.prepare(sumQuery);
-      const summaries = sumStmt.all(...sumRowids, ...sumScopeFilter.params);
-      for (const row of summaries) {
-        if (excludeIds.includes(row.id))
-          continue;
-        const summary = {
-          id: row.id,
-          capsuleId: row.capsule_id,
-          content: row.content,
-          confidence: row.confidence,
-          evidenceRefs: JSON.parse(row.evidence_refs),
-          createdAt: row.created_at
-        };
-        const ftsMatch = sumMatches.find((m) => m.rowid === row.rowid);
-        if (ftsMatch) {
-          results.push({ entity: summary, ftsMatch });
-        }
-      }
-    }
-    return results;
+    const obsResults = this.searchObservations(query, scopeIds, excludeIds, includeRedacted, now, maxResults);
+    results.push(...obsResults);
+    const sumResults = this.searchSummaries(query, scopeIds, excludeIds, now, maxResults);
+    results.push(...sumResults);
+    results.sort((a, b) => b.score - a.score);
+    return results.slice(0, maxResults);
   }
   /**
-   * Build scope filter SQL clauses with parameterized queries
+   * Search observations with scoring computed in SQL.
+   *
+   * Uses a CTE + window functions to:
+   * 1. FTS MATCH for candidate rowids
+   * 2. JOIN with observations for entity data + scope filtering
+   * 3. Normalize BM25 ranks to [0,1] using MIN/MAX window functions
+   * 4. Compute recency score inline
+   * 5. Combine into final score, ORDER BY, LIMIT
+   */
+  searchObservations(query, scopeIds, excludeIds, includeRedacted, now, limit) {
+    const scopeFilter = this.buildScopeFilters(scopeIds, "o");
+    const excludeFilter = excludeIds.length > 0 ? `AND o.id NOT IN (${excludeIds.map(() => "?").join(",")})` : "";
+    const redactedFilter = includeRedacted ? "" : "AND o.redacted = 0";
+    const sql = `
+      WITH fts_hits AS (
+        SELECT rowid, rank FROM observations_fts WHERE content MATCH ?
+      ),
+      matched AS (
+        SELECT
+          o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted,
+          f.rank AS fts_rank,
+          MIN(f.rank) OVER() AS min_rank,
+          MAX(f.rank) OVER() AS max_rank
+        FROM fts_hits f
+        JOIN observations o ON f.rowid = o.rowid
+        WHERE 1=1
+          ${redactedFilter}
+          ${scopeFilter.clauses.length > 0 ? "AND " + scopeFilter.clauses.join(" AND ") : ""}
+          ${excludeFilter}
+      )
+      SELECT
+        id, kind, content, provenance, ts, scope_ids, redacted,
+        ROUND(MIN(1.0, MAX(0.0,
+          CASE WHEN max_rank = min_rank THEN 1.0
+               ELSE (max_rank - fts_rank) / (max_rank - min_rank)
+          END * 0.7
+          + MAX(0.0, 1.0 - CAST(? - ts AS REAL) / ?) * 0.3
+        )), 10) AS score
+      FROM matched
+      ORDER BY score DESC
+      LIMIT ?
+    `;
+    const params = [
+      query,
+      ...scopeFilter.params,
+      ...excludeIds,
+      now,
+      MAX_AGE_MS,
+      limit
+    ];
+    let rows;
+    try {
+      rows = this.db.prepare(sql).all(...params);
+    } catch (err2) {
+      if (this.isFtsSyntaxError(err2))
+        return [];
+      throw err2;
+    }
+    return rows.map((row) => ({
+      entity: {
+        id: row.id,
+        kind: row.kind,
+        content: row.content,
+        provenance: JSON.parse(row.provenance),
+        ts: row.ts,
+        scopeIds: JSON.parse(row.scope_ids),
+        redacted: row.redacted === 1
+      },
+      score: row.score,
+      matchContext: row.content.length <= 100 ? row.content : row.content.substring(0, 100) + "..."
+    }));
+  }
+  /**
+   * Search summaries with scoring computed in SQL.
+   * Joins through capsules for scope filtering.
+   */
+  searchSummaries(query, scopeIds, excludeIds, now, limit) {
+    const scopeFilter = this.buildScopeFilters(scopeIds, "c");
+    const excludeFilter = excludeIds.length > 0 ? `AND s.id NOT IN (${excludeIds.map(() => "?").join(",")})` : "";
+    const sql = `
+      WITH fts_hits AS (
+        SELECT rowid, rank FROM summaries_fts WHERE content MATCH ?
+      ),
+      matched AS (
+        SELECT
+          s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at,
+          f.rank AS fts_rank,
+          MIN(f.rank) OVER() AS min_rank,
+          MAX(f.rank) OVER() AS max_rank
+        FROM fts_hits f
+        JOIN summaries s ON f.rowid = s.rowid
+        JOIN capsules c ON s.capsule_id = c.id
+        WHERE 1=1
+          ${scopeFilter.clauses.length > 0 ? "AND " + scopeFilter.clauses.join(" AND ") : ""}
+          ${excludeFilter}
+      )
+      SELECT
+        id, capsule_id, content, confidence, evidence_refs, created_at,
+        ROUND(MIN(1.0, MAX(0.0,
+          CASE WHEN max_rank = min_rank THEN 1.0
+               ELSE (max_rank - fts_rank) / (max_rank - min_rank)
+          END * 0.7
+          + MAX(0.0, 1.0 - CAST(? - created_at AS REAL) / ?) * 0.3
+        )), 10) AS score
+      FROM matched
+      ORDER BY score DESC
+      LIMIT ?
+    `;
+    const params = [
+      query,
+      ...scopeFilter.params,
+      ...excludeIds,
+      now,
+      MAX_AGE_MS,
+      limit
+    ];
+    let rows;
+    try {
+      rows = this.db.prepare(sql).all(...params);
+    } catch (err2) {
+      if (this.isFtsSyntaxError(err2))
+        return [];
+      throw err2;
+    }
+    return rows.map((row) => ({
+      entity: {
+        id: row.id,
+        capsuleId: row.capsule_id,
+        content: row.content,
+        confidence: row.confidence,
+        evidenceRefs: JSON.parse(row.evidence_refs),
+        createdAt: row.created_at
+      },
+      score: row.score,
+      matchContext: row.content.length <= 100 ? row.content : row.content.substring(0, 100) + "..."
+    }));
+  }
+  /**
+   * Build scope filter SQL clauses using denormalized columns
    */
   buildScopeFilters(scopeIds, tablePrefix = "") {
     const clauses = [];
     const params = [];
-    const col = tablePrefix ? `${tablePrefix}.scope_ids` : "scope_ids";
+    const prefix = tablePrefix ? `${tablePrefix}.` : "";
     if (scopeIds.sessionId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.sessionId') = ?`);
+      clauses.push(`${prefix}session_id = ?`);
       params.push(scopeIds.sessionId);
     }
     if (scopeIds.repoId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.repoId') = ?`);
+      clauses.push(`${prefix}repo_id = ?`);
       params.push(scopeIds.repoId);
     }
     if (scopeIds.agentId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.agentId') = ?`);
+      clauses.push(`${prefix}agent_id = ?`);
       params.push(scopeIds.agentId);
     }
     if (scopeIds.userId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.userId') = ?`);
+      clauses.push(`${prefix}user_id = ?`);
       params.push(scopeIds.userId);
     }
     return { clauses, params };
   }
   /**
-   * Calculate combined score: FTS relevance + recency
-   */
-  calculateScores(entities) {
-    const ftsRanks = entities.map((e) => e.ftsMatch.rank);
-    const minRank = Math.min(...ftsRanks);
-    const maxRank = Math.max(...ftsRanks);
-    const rankRange = maxRank - minRank;
-    const now = Date.now();
-    return entities.map(({ entity, ftsMatch }) => {
-      const ftsRelevance = rankRange > 0 ? (maxRank - ftsMatch.rank) / rankRange : 1;
-      const entityTs = this.getTimestamp(entity);
-      const ageDays = (now - entityTs) / (1e3 * 60 * 60 * 24);
-      const recencyScore = Math.max(0, 1 - ageDays / this.MAX_AGE_DAYS);
-      const score = ftsRelevance * this.FTS_WEIGHT + recencyScore * this.RECENCY_WEIGHT;
-      const matchContext = this.extractMatchContext(entity);
-      const clampedScore = Math.min(1, Math.max(0, score));
-      const roundedScore = Math.round(clampedScore * 1e10) / 1e10;
-      return {
-        entity,
-        score: roundedScore,
-        matchContext
-      };
-    });
-  }
-  /**
-   * Get timestamp from entity (observations have ts, summaries have createdAt)
-   */
-  getTimestamp(entity) {
-    if ("ts" in entity) {
-      return entity.ts;
-    } else {
-      return entity.createdAt;
-    }
-  }
-  /**
    * Check if an error is an FTS5 query syntax error (safe to swallow).
-   * Covers all known SQLite/FTS5 error messages for malformed MATCH input.
-   * All other database errors are propagated.
    */
   isFtsSyntaxError(err2) {
     if (err2 instanceof Error) {
@@ -1058,20 +1057,9 @@ var LocalFtsProvider = class {
     }
     return false;
   }
-  /**
-   * Extract snippet showing match context
-   */
-  extractMatchContext(entity) {
-    const content = entity.content;
-    const maxLength = 100;
-    if (content.length <= maxLength) {
-      return content;
-    }
-    return content.substring(0, maxLength) + "...";
-  }
 };
 
-// ../../packages/kindling-core/dist/types/common.js
+// packages/kindling-core/dist/types/common.js
 function ok(value) {
   return { ok: true, value };
 }
@@ -1079,7 +1067,7 @@ function err(error) {
   return { ok: false, error };
 }
 
-// ../../packages/kindling-core/dist/types/observation.js
+// packages/kindling-core/dist/types/observation.js
 var OBSERVATION_KINDS = [
   "tool_call",
   "command",
@@ -1095,7 +1083,7 @@ function isObservationKind(value) {
   return typeof value === "string" && OBSERVATION_KINDS.includes(value);
 }
 
-// ../../packages/kindling-core/dist/types/capsule.js
+// packages/kindling-core/dist/types/capsule.js
 var CAPSULE_TYPES = [
   "session",
   "pocketflow_node"
@@ -1111,12 +1099,12 @@ function isCapsuleStatus(value) {
   return typeof value === "string" && CAPSULE_STATUSES.includes(value);
 }
 
-// ../../packages/kindling-core/dist/types/summary.js
+// packages/kindling-core/dist/types/summary.js
 function isValidConfidence(value) {
   return typeof value === "number" && value >= 0 && value <= 1 && !isNaN(value);
 }
 
-// ../../packages/kindling-core/dist/types/pin.js
+// packages/kindling-core/dist/types/pin.js
 var PIN_TARGET_TYPES = [
   "observation",
   "summary"
@@ -1125,7 +1113,7 @@ function isPinTargetType(value) {
   return typeof value === "string" && PIN_TARGET_TYPES.includes(value);
 }
 
-// ../../packages/kindling-core/dist/validation/observation.js
+// packages/kindling-core/dist/validation/observation.js
 var import_crypto = require("crypto");
 function validateObservation(input) {
   const errors = [];
@@ -1206,7 +1194,7 @@ function validateObservation(input) {
   return ok(observation);
 }
 
-// ../../packages/kindling-core/dist/validation/capsule.js
+// packages/kindling-core/dist/validation/capsule.js
 var import_crypto2 = require("crypto");
 function validateCapsule(input) {
   const errors = [];
@@ -1316,7 +1304,7 @@ function validateCapsule(input) {
   return ok(capsule);
 }
 
-// ../../packages/kindling-core/dist/validation/summary.js
+// packages/kindling-core/dist/validation/summary.js
 var import_crypto3 = require("crypto");
 function validateSummary(input) {
   const errors = [];
@@ -1403,7 +1391,7 @@ function validateSummary(input) {
   return ok(summary);
 }
 
-// ../../packages/kindling-core/dist/validation/pin.js
+// packages/kindling-core/dist/validation/pin.js
 var import_crypto4 = require("crypto");
 function validatePin(input) {
   const errors = [];
@@ -1491,7 +1479,7 @@ function validatePin(input) {
   return ok(pin);
 }
 
-// ../../packages/kindling-core/dist/capsule/lifecycle.js
+// packages/kindling-core/dist/capsule/lifecycle.js
 function openCapsule(store, options) {
   const { type, intent, scopeIds, id } = options;
   if (type === "session" && scopeIds.sessionId) {
@@ -1549,7 +1537,7 @@ function getOpenCapsule(store, sessionId) {
   return store.getOpenCapsuleForSession(sessionId);
 }
 
-// ../../packages/kindling-core/dist/capsule/manager.js
+// packages/kindling-core/dist/capsule/manager.js
 var CapsuleManager = class {
   store;
   activeCache;
@@ -1643,7 +1631,7 @@ var CapsuleManager = class {
   }
 };
 
-// ../../packages/kindling-core/dist/retrieval/orchestrator.js
+// packages/kindling-core/dist/retrieval/orchestrator.js
 async function retrieve(store, provider, options) {
   const { query, scopeIds, maxCandidates = 10, includeRedacted = false } = options;
   const now = Date.now();
@@ -1705,14 +1693,14 @@ async function retrieve(store, provider, options) {
   };
 }
 
-// ../../packages/kindling-core/dist/retrieval/tiering.js
+// packages/kindling-core/dist/retrieval/tiering.js
 var Tier;
 (function(Tier2) {
   Tier2[Tier2["PINNED"] = 0] = "PINNED";
   Tier2[Tier2["CANDIDATE"] = 1] = "CANDIDATE";
 })(Tier || (Tier = {}));
 
-// ../../packages/kindling-core/dist/export/bundle.js
+// packages/kindling-core/dist/export/bundle.js
 function createExportBundle(store, options = {}) {
   const { scope, includeRedacted = false, limit, metadata } = options;
   const dataset = store.exportDatabase({
@@ -1799,7 +1787,7 @@ function deserializeBundle(json) {
   }
 }
 
-// ../../packages/kindling-core/dist/export/restore.js
+// packages/kindling-core/dist/export/restore.js
 function restoreFromBundle(store, bundle, options = {}) {
   const { skipValidation = false, dryRun = false } = options;
   if (!skipValidation) {
@@ -1886,7 +1874,7 @@ function deduplicateById(entities) {
   return deduped;
 }
 
-// ../../packages/kindling-core/dist/service/kindling-service.js
+// packages/kindling-core/dist/service/kindling-service.js
 var KindlingService = class {
   store;
   provider;
@@ -2118,7 +2106,7 @@ var KindlingService = class {
   }
 };
 
-// ../../packages/kindling-adapter-claude-code/dist/claude-code/events.js
+// packages/kindling-adapter-claude-code/dist/claude-code/events.js
 function createPostToolUseEvent(ctx) {
   return {
     type: "post_tool_use",
@@ -2160,7 +2148,7 @@ function createUserPromptEvent(ctx) {
   };
 }
 
-// ../../packages/kindling-adapter-claude-code/dist/claude-code/provenance.js
+// packages/kindling-adapter-claude-code/dist/claude-code/provenance.js
 function extractToolUseProvenance(event) {
   if (event.type !== "post_tool_use") {
     return {};
@@ -2267,7 +2255,7 @@ function extractProvenance(event) {
   }
 }
 
-// ../../packages/kindling-adapter-claude-code/dist/claude-code/filter.js
+// packages/kindling-adapter-claude-code/dist/claude-code/filter.js
 var MAX_CONTENT_LENGTH = 5e4;
 var MAX_RESULT_LENGTH = 1e4;
 var SECRET_PATTERNS = [
@@ -2356,7 +2344,7 @@ function filterToolResult(toolName, result, maxLength = MAX_RESULT_LENGTH) {
   return filterContent(resultStr, { maxLength, maskSecrets: true });
 }
 
-// ../../packages/kindling-adapter-claude-code/dist/claude-code/mapping.js
+// packages/kindling-adapter-claude-code/dist/claude-code/mapping.js
 var TOOL_TO_KIND_MAP = {
   // File operations -> file_diff
   Write: "file_diff",
@@ -2539,7 +2527,7 @@ ${output}`);
   return parts.join("\n\n");
 }
 
-// ../../packages/kindling-adapter-claude-code/dist/claude-code/session.js
+// packages/kindling-adapter-claude-code/dist/claude-code/session.js
 var import_crypto5 = require("crypto");
 var SessionManager = class {
   store;
@@ -2701,7 +2689,7 @@ var SessionManager = class {
   }
 };
 
-// ../../packages/kindling-adapter-claude-code/dist/claude-code/hooks.js
+// packages/kindling-adapter-claude-code/dist/claude-code/hooks.js
 function createHookHandlers(store, config = {}) {
   const { captureResults = true, captureUserMessages = true, captureSubagents = true, defaultIntent = "Claude Code session" } = config;
   const sessionManager = new SessionManager(store);
