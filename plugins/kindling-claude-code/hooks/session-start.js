@@ -42,7 +42,7 @@ async function main() {
 
         // Include recent observations (recency-based, no FTS query needed)
         const recentObs = db.prepare(
-          "SELECT id, kind, content, ts FROM observations WHERE json_extract(scope_ids, '$.repoId') = ? AND redacted = 0 ORDER BY ts DESC LIMIT ?"
+          "SELECT id, kind, content, ts FROM observations WHERE repo_id = ? AND redacted = 0 ORDER BY ts DESC LIMIT ?"
         ).all(repoRoot, maxResults);
 
         if (recentObs.length > 0) {

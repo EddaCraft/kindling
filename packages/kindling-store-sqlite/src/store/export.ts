@@ -83,19 +83,19 @@ export function exportDatabase(db: Database.Database, options: ExportOptions = {
     const params: string[] = [];
 
     if (scope.sessionId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.sessionId') = ?`);
+      conditions.push(`${tableName}.session_id = ?`);
       params.push(scope.sessionId);
     }
     if (scope.repoId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.repoId') = ?`);
+      conditions.push(`${tableName}.repo_id = ?`);
       params.push(scope.repoId);
     }
     if (scope.agentId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.agentId') = ?`);
+      conditions.push(`${tableName}.agent_id = ?`);
       params.push(scope.agentId);
     }
     if (scope.userId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.userId') = ?`);
+      conditions.push(`${tableName}.user_id = ?`);
       params.push(scope.userId);
     }
 
@@ -282,8 +282,9 @@ export function importDatabase(db: Database.Database, dataset: ExportDataset): I
   const importTxn = db.transaction(() => {
     // Import observations
     const obsStmt = db.prepare(`
-      INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted,
+        session_id, repo_id, agent_id, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const obs of dataset.observations) {
@@ -296,6 +297,10 @@ export function importDatabase(db: Database.Database, dataset: ExportDataset): I
           obs.ts,
           JSON.stringify(obs.scopeIds),
           obs.redacted ? 1 : 0,
+          obs.scopeIds.sessionId ?? null,
+          obs.scopeIds.repoId ?? null,
+          obs.scopeIds.agentId ?? null,
+          obs.scopeIds.userId ?? null,
         );
         if (result.changes > 0) obsCount++;
       } catch (err) {
@@ -305,8 +310,9 @@ export function importDatabase(db: Database.Database, dataset: ExportDataset): I
 
     // Import capsules
     const capsuleStmt = db.prepare(`
-      INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids,
+        session_id, repo_id, agent_id, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const capsuleObsStmt = db.prepare(`
@@ -324,6 +330,10 @@ export function importDatabase(db: Database.Database, dataset: ExportDataset): I
           capsule.openedAt,
           capsule.closedAt ?? null,
           JSON.stringify(capsule.scopeIds),
+          capsule.scopeIds.sessionId ?? null,
+          capsule.scopeIds.repoId ?? null,
+          capsule.scopeIds.agentId ?? null,
+          capsule.scopeIds.userId ?? null,
         );
         if (result.changes > 0) {
           capsuleCount++;
@@ -362,8 +372,9 @@ export function importDatabase(db: Database.Database, dataset: ExportDataset): I
 
     // Import pins
     const pinStmt = db.prepare(`
-      INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids,
+        session_id, repo_id, agent_id, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const pin of dataset.pins) {
@@ -376,6 +387,10 @@ export function importDatabase(db: Database.Database, dataset: ExportDataset): I
           pin.createdAt,
           pin.expiresAt ?? null,
           JSON.stringify(pin.scopeIds),
+          pin.scopeIds.sessionId ?? null,
+          pin.scopeIds.repoId ?? null,
+          pin.scopeIds.agentId ?? null,
+          pin.scopeIds.userId ?? null,
         );
         if (result.changes > 0) pinCount++;
       } catch (err) {
