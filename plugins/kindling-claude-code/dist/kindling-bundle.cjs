@@ -123,6 +123,10 @@ function closeDatabase(db) {
 // ../../packages/kindling-store-sqlite/dist/store/export.js
 function exportDatabase(db, options = {}) {
   const { scope, includeRedacted = false, limit } = options;
+  let safeLimit;
+  if (typeof limit === "number" && Number.isFinite(limit) && Number.isInteger(limit) && limit > 0) {
+    safeLimit = limit;
+  }
   const buildScopeFilter = (tableName) => {
     if (!scope) {
       return { where: "", params: [] };
@@ -152,7 +156,7 @@ function exportDatabase(db, options = {}) {
   };
   const obsFilter = buildScopeFilter("observations");
   const obsRedactedFilter = includeRedacted ? "" : "AND redacted = 0";
-  const obsLimitClause = limit ? `LIMIT ${limit}` : "";
+  const obsLimitClause = safeLimit !== void 0 ? `LIMIT ${safeLimit}` : "";
   const observationsQuery = `
     SELECT id, kind, content, provenance, ts, scope_ids, redacted
     FROM observations
