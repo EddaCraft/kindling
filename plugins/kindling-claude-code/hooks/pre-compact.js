@@ -34,7 +34,7 @@ async function main() {
     const latestSummary = db.prepare(
       `SELECT s.content, s.confidence FROM summaries s
        JOIN capsules c ON s.capsule_id = c.id
-       WHERE json_extract(c.scope_ids, '$.repoId') = ?
+       WHERE c.repo_id = ?
        ORDER BY s.created_at DESC LIMIT 1`
     ).get(repoRoot);
 

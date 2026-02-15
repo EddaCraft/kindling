@@ -40,9 +40,11 @@ export class SqliteKindlingStore {
   insertObservation(observation: Observation): void {
     const stmt = this.db.prepare(`
       INSERT INTO observations (
-        id, kind, content, provenance, ts, scope_ids, redacted
+        id, kind, content, provenance, ts, scope_ids, redacted,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @kind, @content, @provenance, @ts, @scopeIds, @redacted
+        @id, @kind, @content, @provenance, @ts, @scopeIds, @redacted,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
 
@@ -54,6 +56,10 @@ export class SqliteKindlingStore {
       ts: observation.ts,
       scopeIds: JSON.stringify(observation.scopeIds),
       redacted: observation.redacted ? 1 : 0,
+      sessionId: observation.scopeIds.sessionId ?? null,
+      repoId: observation.scopeIds.repoId ?? null,
+      agentId: observation.scopeIds.agentId ?? null,
+      userId: observation.scopeIds.userId ?? null,
     });
   }
 
@@ -65,9 +71,11 @@ export class SqliteKindlingStore {
   createCapsule(capsule: Capsule): void {
     const stmt = this.db.prepare(`
       INSERT INTO capsules (
-        id, type, intent, status, opened_at, closed_at, scope_ids
+        id, type, intent, status, opened_at, closed_at, scope_ids,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @type, @intent, @status, @openedAt, @closedAt, @scopeIds
+        @id, @type, @intent, @status, @openedAt, @closedAt, @scopeIds,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
 
@@ -79,6 +87,10 @@ export class SqliteKindlingStore {
       openedAt: capsule.openedAt,
       closedAt: capsule.closedAt ?? null,
       scopeIds: JSON.stringify(capsule.scopeIds),
+      sessionId: capsule.scopeIds.sessionId ?? null,
+      repoId: capsule.scopeIds.repoId ?? null,
+      agentId: capsule.scopeIds.agentId ?? null,
+      userId: capsule.scopeIds.userId ?? null,
     });
   }
 
@@ -189,9 +201,11 @@ export class SqliteKindlingStore {
   insertPin(pin: Pin): void {
     const stmt = this.db.prepare(`
       INSERT INTO pins (
-        id, target_type, target_id, reason, created_at, expires_at, scope_ids
+        id, target_type, target_id, reason, created_at, expires_at, scope_ids,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @targetType, @targetId, @reason, @createdAt, @expiresAt, @scopeIds
+        @id, @targetType, @targetId, @reason, @createdAt, @expiresAt, @scopeIds,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
 
@@ -203,6 +217,10 @@ export class SqliteKindlingStore {
       createdAt: pin.createdAt,
       expiresAt: pin.expiresAt ?? null,
       scopeIds: JSON.stringify(pin.scopeIds),
+      sessionId: pin.scopeIds.sessionId ?? null,
+      repoId: pin.scopeIds.repoId ?? null,
+      agentId: pin.scopeIds.agentId ?? null,
+      userId: pin.scopeIds.userId ?? null,
     });
   }
 
@@ -240,22 +258,22 @@ export class SqliteKindlingStore {
 
     const params: (string | number)[] = [currentTime];
 
-    // Add scope filtering if provided
+    // Add scope filtering using denormalized columns
     if (scopeIds) {
       if (scopeIds.sessionId) {
-        query += ` AND json_extract(scope_ids, '$.sessionId') = ?`;
+        query += ` AND session_id = ?`;
         params.push(scopeIds.sessionId);
       }
       if (scopeIds.repoId) {
-        query += ` AND json_extract(scope_ids, '$.repoId') = ?`;
+        query += ` AND repo_id = ?`;
         params.push(scopeIds.repoId);
       }
       if (scopeIds.agentId) {
-        query += ` AND json_extract(scope_ids, '$.agentId') = ?`;
+        query += ` AND agent_id = ?`;
         params.push(scopeIds.agentId);
       }
       if (scopeIds.userId) {
-        query += ` AND json_extract(scope_ids, '$.userId') = ?`;
+        query += ` AND user_id = ?`;
         params.push(scopeIds.userId);
       }
     }
@@ -336,7 +354,7 @@ export class SqliteKindlingStore {
       SELECT id, type, intent, status, opened_at, closed_at, scope_ids
       FROM capsules
       WHERE status = 'open'
-        AND json_extract(scope_ids, '$.sessionId') = ?
+        AND session_id = ?
       ORDER BY opened_at DESC
       LIMIT 1
     `,
@@ -570,21 +588,21 @@ export class SqliteKindlingStore {
     `;
     const params: (string | number)[] = [];
 
-    // Add scope filtering
+    // Add scope filtering using denormalized columns
     if (scopeIds?.sessionId) {
-      query += ` AND json_extract(scope_ids, '$.sessionId') = ?`;
+      query += ` AND session_id = ?`;
       params.push(scopeIds.sessionId);
     }
     if (scopeIds?.repoId) {
-      query += ` AND json_extract(scope_ids, '$.repoId') = ?`;
+      query += ` AND repo_id = ?`;
       params.push(scopeIds.repoId);
     }
     if (scopeIds?.agentId) {
-      query += ` AND json_extract(scope_ids, '$.agentId') = ?`;
+      query += ` AND agent_id = ?`;
       params.push(scopeIds.agentId);
     }
     if (scopeIds?.userId) {
-      query += ` AND json_extract(scope_ids, '$.userId') = ?`;
+      query += ` AND user_id = ?`;
       params.push(scopeIds.userId);
     }
 
