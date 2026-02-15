@@ -146,6 +146,8 @@ describe('Database Migrations', () => {
     // Denormalized scope columns
     expect(columnNames).toContain('session_id');
     expect(columnNames).toContain('repo_id');
+    expect(columnNames).toContain('agent_id');
+    expect(columnNames).toContain('user_id');
 
     // Check primary key
     const pkColumn = columns.find((c) => c.pk === 1);
@@ -165,6 +167,28 @@ describe('Database Migrations', () => {
     expect(columnNames).toContain('opened_at');
     expect(columnNames).toContain('closed_at');
     expect(columnNames).toContain('scope_ids');
+    // Denormalized scope columns
+    expect(columnNames).toContain('session_id');
+    expect(columnNames).toContain('repo_id');
+    expect(columnNames).toContain('agent_id');
+    expect(columnNames).toContain('user_id');
+  });
+
+  it('should have correct schema for pins table', () => {
+    db = openDatabase({ path: testDbPath });
+
+    const columns = db.prepare(`PRAGMA table_info(pins)`).all() as Array<{ name: string }>;
+
+    const columnNames = columns.map((c) => c.name);
+    expect(columnNames).toContain('id');
+    expect(columnNames).toContain('target_type');
+    expect(columnNames).toContain('target_id');
+    expect(columnNames).toContain('scope_ids');
+    // Denormalized scope columns
+    expect(columnNames).toContain('session_id');
+    expect(columnNames).toContain('repo_id');
+    expect(columnNames).toContain('agent_id');
+    expect(columnNames).toContain('user_id');
   });
 
   it('should sync FTS on insert', () => {
