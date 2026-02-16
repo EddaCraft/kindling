@@ -106,7 +106,7 @@ import { exportDatabase, importDatabase } from '@eddacraft/kindling-store-sqlite
 
 // Export all data
 const bundle = exportDatabase(db, {
-  scopeIds: { repoId: '/repo' },
+  scope: { repoId: '/repo' },
 });
 
 // Import into another database
@@ -134,6 +134,7 @@ The store manages these tables:
 interface DatabaseOptions {
   path?: string; // File path (defaults to ~/.kindling/kindling.db)
   verbose?: boolean; // Enable verbose logging (default: false)
+  readonly?: boolean; // Read-only mode, skips migrations (default: false)
 }
 ```
 
