@@ -7,7 +7,7 @@ Search through past Claude Code sessions to find relevant context.
 Run this command to search:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/memory-search.js" $ARGUMENTS
+node "${CLAUDE_PLUGIN_ROOT}/scripts/memory-search.js" "$ARGUMENTS"
 ```
 
 Show the results to the user in a readable format.

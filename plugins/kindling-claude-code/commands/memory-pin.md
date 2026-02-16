@@ -7,7 +7,7 @@ Pin the most recent observation to mark it as important. Pinned items appear fir
 Run this command:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/memory-pin.js" $ARGUMENTS
+node "${CLAUDE_PLUGIN_ROOT}/scripts/memory-pin.js" "$ARGUMENTS"
 ```
 
 Show the result to the user.
