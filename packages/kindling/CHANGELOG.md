@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated bundled `@eddacraft/kindling-store-sqlite` with denormalized scope columns and backward-compatible export
 - Updated bundled `@eddacraft/kindling-provider-local` with cross-table BM25 normalization
 
+## [0.1.1] - 2025-02-10
+
+### Changed
+
+- Version bump for monorepo release consistency (no functional changes)
+
 ## [0.1.0] - 2025-02-09
 
 ### Added

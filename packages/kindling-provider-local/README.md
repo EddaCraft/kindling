@@ -24,11 +24,10 @@ npm install @eddacraft/kindling-provider-local
 
 ```typescript
 import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
-import { openDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
+import { openDatabase } from '@eddacraft/kindling-store-sqlite';
 
 // Initialize
 const db = openDatabase({ path: './kindling.db' });
-const store = new SqliteKindlingStore(db);
 const provider = new LocalFtsProvider(db);
 
 // Search

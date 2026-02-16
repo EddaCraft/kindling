@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
+import { randomUUID } from 'crypto';
 import { readFileSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { tmpdir } from 'os';
@@ -16,24 +17,31 @@ import { exportDatabase, importDatabase, type ExportDataset } from '../src/store
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/** Remove DB file and WAL sidecar files */
+function cleanupDbFiles(dbPath: string): void {
+  for (const suffix of ['', '-wal', '-shm']) {
+    try {
+      unlinkSync(dbPath + suffix);
+    } catch {
+      /* cleanup */
+    }
+  }
+}
+
 describe('Export/Import', () => {
   let dbPath: string;
   let db: Database.Database;
   let store: SqliteKindlingStore;
 
   beforeEach(() => {
-    dbPath = `/tmp/kindling-test-export-${Date.now()}.db`;
+    dbPath = join(tmpdir(), `kindling-test-export-${randomUUID()}.db`);
     db = openDatabase({ path: dbPath });
     store = new SqliteKindlingStore(db);
   });
 
   afterEach(() => {
     db.close();
-    try {
-      unlinkSync(dbPath);
-    } catch {
-      /* cleanup */
-    }
+    cleanupDbFiles(dbPath);
   });
 
   describe('exportDatabase', () => {
@@ -505,19 +513,8 @@ describe('Export/Import', () => {
       }
     }
 
-    /** Remove DB file and WAL sidecar files */
-    function cleanupDbFiles(dbPath: string): void {
-      for (const suffix of ['', '-wal', '-shm']) {
-        try {
-          unlinkSync(dbPath + suffix);
-        } catch {
-          /* cleanup */
-        }
-      }
-    }
-
     it('should export with scope filter on pre-004 database opened readonly', () => {
-      const pre004Path = join(tmpdir(), `kindling-test-pre004-${Date.now()}.db`);
+      const pre004Path = join(tmpdir(), `kindling-test-pre004-${randomUUID()}.db`);
 
       // Create and populate in read-write mode
       const writableDb = new Database(pre004Path);
@@ -575,7 +572,7 @@ describe('Export/Import', () => {
     });
 
     it('should import into pre-004 database without denormalized columns', () => {
-      const pre004Path = join(tmpdir(), `kindling-test-pre004-import-${Date.now()}.db`);
+      const pre004Path = join(tmpdir(), `kindling-test-pre004-import-${randomUUID()}.db`);
       const pre004Db = new Database(pre004Path);
       applyPre004Migrations(pre004Db);
 
@@ -694,7 +691,7 @@ describe('Export/Import', () => {
       const exported = exportDatabase(db);
 
       // Create new database
-      const db2Path = `/tmp/kindling-test-import-${Date.now()}.db`;
+      const db2Path = join(tmpdir(), `kindling-test-import-${randomUUID()}.db`);
       const db2 = openDatabase({ path: db2Path });
       new SqliteKindlingStore(db2);
 
@@ -718,11 +715,7 @@ describe('Export/Import', () => {
         expect(reexported.pins).toEqual(exported.pins);
       } finally {
         db2.close();
-        try {
-          unlinkSync(db2Path);
-        } catch {
-          /* cleanup */
-        }
+        cleanupDbFiles(db2Path);
       }
     });
   });
