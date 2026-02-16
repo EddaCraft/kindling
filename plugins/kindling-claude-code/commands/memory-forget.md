@@ -7,7 +7,7 @@ Forget (redact) a specific observation. This marks it as redacted and removes it
 Run this command:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/memory-forget.js" $ARGUMENTS
+node "${CLAUDE_PLUGIN_ROOT}/scripts/memory-forget.js" "$ARGUMENTS"
 ```
 
 Show the result to the user.
