@@ -4,11 +4,16 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
-import { unlinkSync } from 'fs';
+import { readFileSync, unlinkSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { Observation, Capsule, Summary, Pin } from '@eddacraft/kindling-core';
 import { openDatabase } from '../src/db/open.js';
 import { SqliteKindlingStore } from '../src/store/sqlite.js';
 import { exportDatabase, importDatabase, type ExportDataset } from '../src/store/export.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 describe('Export/Import', () => {
   let dbPath: string;
@@ -484,6 +489,134 @@ describe('Export/Import', () => {
       expect(obsRows).toHaveLength(2);
       expect(obsRows[0].observation_id).toBe('obs-1');
       expect(obsRows[1].observation_id).toBe('obs-2');
+    });
+  });
+
+  describe('Pre-004 database (readonly)', () => {
+    /**
+     * Creates a database with only migrations 001-003 (no denormalized columns).
+     * Simulates a readonly open of an older database.
+     */
+    function createPre004Database(path: string): Database.Database {
+      const pre004Db = new Database(path);
+      pre004Db.pragma('journal_mode = WAL');
+      pre004Db.pragma('foreign_keys = ON');
+
+      const migrationsDir = join(__dirname, '../migrations');
+      for (const file of ['001_init.sql', '002_fts.sql', '003_indexes.sql']) {
+        pre004Db.exec(readFileSync(join(migrationsDir, file), 'utf-8'));
+      }
+      return pre004Db;
+    }
+
+    it('should export with scope filter on pre-004 database using json_extract fallback', () => {
+      const pre004Path = `/tmp/kindling-test-pre004-${Date.now()}.db`;
+      const pre004Db = createPre004Database(pre004Path);
+
+      try {
+        // Insert data via raw SQL (no denormalized columns exist)
+        pre004Db
+          .prepare(
+            'INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          )
+          .run(
+            'obs-s1',
+            'message',
+            'Session 1 obs',
+            '{}',
+            1000,
+            JSON.stringify({ sessionId: 's1', repoId: '/repo' }),
+            0,
+          );
+
+        pre004Db
+          .prepare(
+            'INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          )
+          .run(
+            'obs-s2',
+            'message',
+            'Session 2 obs',
+            '{}',
+            2000,
+            JSON.stringify({ sessionId: 's2', repoId: '/repo' }),
+            0,
+          );
+
+        // Verify no denormalized columns
+        const cols = pre004Db.prepare('PRAGMA table_info(observations)').all() as Array<{
+          name: string;
+        }>;
+        expect(cols.some((c) => c.name === 'session_id')).toBe(false);
+
+        // Export with scope filter — should use json_extract fallback
+        const dataset = exportDatabase(pre004Db, { scope: { sessionId: 's1' } });
+
+        expect(dataset.observations).toHaveLength(1);
+        expect(dataset.observations[0].id).toBe('obs-s1');
+      } finally {
+        pre004Db.close();
+        try {
+          unlinkSync(pre004Path);
+        } catch {
+          /* cleanup */
+        }
+      }
+    });
+
+    it('should import into pre-004 database without denormalized columns', () => {
+      const pre004Path = `/tmp/kindling-test-pre004-import-${Date.now()}.db`;
+      const pre004Db = createPre004Database(pre004Path);
+
+      try {
+        const dataset: ExportDataset = {
+          version: '1.0',
+          exportedAt: Date.now(),
+          observations: [
+            {
+              id: 'obs-1',
+              kind: 'message',
+              content: 'Imported',
+              provenance: {},
+              ts: 1000,
+              scopeIds: { sessionId: 's1' },
+              redacted: false,
+            },
+          ],
+          capsules: [],
+          summaries: [],
+          pins: [
+            {
+              id: 'pin-1',
+              targetType: 'observation',
+              targetId: 'obs-1',
+              createdAt: 2000,
+              scopeIds: { sessionId: 's1' },
+            },
+          ],
+        };
+
+        const result = importDatabase(pre004Db, dataset);
+
+        expect(result.observations).toBe(1);
+        expect(result.pins).toBe(1);
+        expect(result.errors).toHaveLength(0);
+
+        // Verify data was inserted correctly
+        const obs = pre004Db.prepare('SELECT * FROM observations WHERE id = ?').get('obs-1') as any;
+        expect(obs).toBeDefined();
+        expect(obs.content).toBe('Imported');
+
+        // Verify scope_ids stored as JSON (no denormalized columns)
+        expect(JSON.parse(obs.scope_ids)).toEqual({ sessionId: 's1' });
+      } finally {
+        pre004Db.close();
+        try {
+          unlinkSync(pre004Path);
+        } catch {
+          /* cleanup */
+        }
+      }
     });
   });
 

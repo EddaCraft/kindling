@@ -27,7 +27,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// plugins/kindling-claude-code/scripts/bundle-entry.js
+// scripts/bundle-entry.js
 var bundle_entry_exports = {};
 __export(bundle_entry_exports, {
   KindlingService: () => KindlingService,
@@ -49,7 +49,7 @@ __export(bundle_entry_exports, {
 });
 module.exports = __toCommonJS(bundle_entry_exports);
 
-// packages/kindling-store-sqlite/dist/db/open.js
+// ../../packages/kindling-store-sqlite/dist/db/open.js
 var import_better_sqlite3 = __toESM(require("better-sqlite3"), 1);
 
 // inline:inline-migrate
@@ -85,7 +85,7 @@ function runMigrations(db) {
   return applied;
 }
 
-// packages/kindling-store-sqlite/dist/db/open.js
+// ../../packages/kindling-store-sqlite/dist/db/open.js
 var import_os = require("os");
 var import_path = require("path");
 var import_fs = require("fs");
@@ -121,7 +121,7 @@ function closeDatabase(db) {
   db.close();
 }
 
-// packages/kindling-store-sqlite/dist/store/export.js
+// ../../packages/kindling-store-sqlite/dist/store/export.js
 function exportDatabase(db, options = {}) {
   const { scope, includeRedacted = false, limit } = options;
   let safeLimit;
@@ -393,7 +393,7 @@ function importDatabase(db, dataset) {
   };
 }
 
-// packages/kindling-store-sqlite/dist/store/sqlite.js
+// ../../packages/kindling-store-sqlite/dist/store/sqlite.js
 var SqliteKindlingStore = class {
   db;
   constructor(db) {
@@ -918,7 +918,7 @@ var SqliteKindlingStore = class {
   }
 };
 
-// packages/kindling-provider-local/dist/provider/local-fts.js
+// ../../packages/kindling-provider-local/dist/provider/local-fts.js
 var MAX_AGE_MS = 30 * 24 * 60 * 60 * 1e3;
 var LocalFtsProvider = class {
   name = "local-fts";
@@ -1080,7 +1080,7 @@ var LocalFtsProvider = class {
   }
 };
 
-// packages/kindling-core/dist/types/common.js
+// ../../packages/kindling-core/dist/types/common.js
 function ok(value) {
   return { ok: true, value };
 }
@@ -1088,7 +1088,7 @@ function err(error) {
   return { ok: false, error };
 }
 
-// packages/kindling-core/dist/types/observation.js
+// ../../packages/kindling-core/dist/types/observation.js
 var OBSERVATION_KINDS = [
   "tool_call",
   "command",
@@ -1104,7 +1104,7 @@ function isObservationKind(value) {
   return typeof value === "string" && OBSERVATION_KINDS.includes(value);
 }
 
-// packages/kindling-core/dist/types/capsule.js
+// ../../packages/kindling-core/dist/types/capsule.js
 var CAPSULE_TYPES = [
   "session",
   "pocketflow_node"
@@ -1120,12 +1120,12 @@ function isCapsuleStatus(value) {
   return typeof value === "string" && CAPSULE_STATUSES.includes(value);
 }
 
-// packages/kindling-core/dist/types/summary.js
+// ../../packages/kindling-core/dist/types/summary.js
 function isValidConfidence(value) {
   return typeof value === "number" && value >= 0 && value <= 1 && !isNaN(value);
 }
 
-// packages/kindling-core/dist/types/pin.js
+// ../../packages/kindling-core/dist/types/pin.js
 var PIN_TARGET_TYPES = [
   "observation",
   "summary"
@@ -1134,7 +1134,7 @@ function isPinTargetType(value) {
   return typeof value === "string" && PIN_TARGET_TYPES.includes(value);
 }
 
-// packages/kindling-core/dist/validation/observation.js
+// ../../packages/kindling-core/dist/validation/observation.js
 var import_crypto = require("crypto");
 function validateObservation(input) {
   const errors = [];
@@ -1215,7 +1215,7 @@ function validateObservation(input) {
   return ok(observation);
 }
 
-// packages/kindling-core/dist/validation/capsule.js
+// ../../packages/kindling-core/dist/validation/capsule.js
 var import_crypto2 = require("crypto");
 function validateCapsule(input) {
   const errors = [];
@@ -1325,7 +1325,7 @@ function validateCapsule(input) {
   return ok(capsule);
 }
 
-// packages/kindling-core/dist/validation/summary.js
+// ../../packages/kindling-core/dist/validation/summary.js
 var import_crypto3 = require("crypto");
 function validateSummary(input) {
   const errors = [];
@@ -1412,7 +1412,7 @@ function validateSummary(input) {
   return ok(summary);
 }
 
-// packages/kindling-core/dist/validation/pin.js
+// ../../packages/kindling-core/dist/validation/pin.js
 var import_crypto4 = require("crypto");
 function validatePin(input) {
   const errors = [];
@@ -1500,7 +1500,7 @@ function validatePin(input) {
   return ok(pin);
 }
 
-// packages/kindling-core/dist/capsule/lifecycle.js
+// ../../packages/kindling-core/dist/capsule/lifecycle.js
 function openCapsule(store, options) {
   const { type, intent, scopeIds, id } = options;
   if (type === "session" && scopeIds.sessionId) {
@@ -1558,7 +1558,7 @@ function getOpenCapsule(store, sessionId) {
   return store.getOpenCapsuleForSession(sessionId);
 }
 
-// packages/kindling-core/dist/capsule/manager.js
+// ../../packages/kindling-core/dist/capsule/manager.js
 var CapsuleManager = class {
   store;
   activeCache;
@@ -1652,7 +1652,7 @@ var CapsuleManager = class {
   }
 };
 
-// packages/kindling-core/dist/retrieval/orchestrator.js
+// ../../packages/kindling-core/dist/retrieval/orchestrator.js
 async function retrieve(store, provider, options) {
   const { query, scopeIds, maxCandidates = 10, includeRedacted = false } = options;
   const now = Date.now();
@@ -1714,14 +1714,14 @@ async function retrieve(store, provider, options) {
   };
 }
 
-// packages/kindling-core/dist/retrieval/tiering.js
+// ../../packages/kindling-core/dist/retrieval/tiering.js
 var Tier;
 (function(Tier2) {
   Tier2[Tier2["PINNED"] = 0] = "PINNED";
   Tier2[Tier2["CANDIDATE"] = 1] = "CANDIDATE";
 })(Tier || (Tier = {}));
 
-// packages/kindling-core/dist/export/bundle.js
+// ../../packages/kindling-core/dist/export/bundle.js
 function createExportBundle(store, options = {}) {
   const { scope, includeRedacted = false, limit, metadata } = options;
   const dataset = store.exportDatabase({
@@ -1808,7 +1808,7 @@ function deserializeBundle(json) {
   }
 }
 
-// packages/kindling-core/dist/export/restore.js
+// ../../packages/kindling-core/dist/export/restore.js
 function restoreFromBundle(store, bundle, options = {}) {
   const { skipValidation = false, dryRun = false } = options;
   if (!skipValidation) {
@@ -1895,7 +1895,7 @@ function deduplicateById(entities) {
   return deduped;
 }
 
-// packages/kindling-core/dist/service/kindling-service.js
+// ../../packages/kindling-core/dist/service/kindling-service.js
 var KindlingService = class {
   store;
   provider;
@@ -2127,7 +2127,7 @@ var KindlingService = class {
   }
 };
 
-// packages/kindling-adapter-claude-code/dist/claude-code/events.js
+// ../../packages/kindling-adapter-claude-code/dist/claude-code/events.js
 function createPostToolUseEvent(ctx) {
   return {
     type: "post_tool_use",
@@ -2169,7 +2169,7 @@ function createUserPromptEvent(ctx) {
   };
 }
 
-// packages/kindling-adapter-claude-code/dist/claude-code/provenance.js
+// ../../packages/kindling-adapter-claude-code/dist/claude-code/provenance.js
 function extractToolUseProvenance(event) {
   if (event.type !== "post_tool_use") {
     return {};
@@ -2276,7 +2276,7 @@ function extractProvenance(event) {
   }
 }
 
-// packages/kindling-adapter-claude-code/dist/claude-code/filter.js
+// ../../packages/kindling-adapter-claude-code/dist/claude-code/filter.js
 var MAX_CONTENT_LENGTH = 5e4;
 var MAX_RESULT_LENGTH = 1e4;
 var SECRET_PATTERNS = [
@@ -2365,7 +2365,7 @@ function filterToolResult(toolName, result, maxLength = MAX_RESULT_LENGTH) {
   return filterContent(resultStr, { maxLength, maskSecrets: true });
 }
 
-// packages/kindling-adapter-claude-code/dist/claude-code/mapping.js
+// ../../packages/kindling-adapter-claude-code/dist/claude-code/mapping.js
 var TOOL_TO_KIND_MAP = {
   // File operations -> file_diff
   Write: "file_diff",
@@ -2548,7 +2548,7 @@ ${output}`);
   return parts.join("\n\n");
 }
 
-// packages/kindling-adapter-claude-code/dist/claude-code/session.js
+// ../../packages/kindling-adapter-claude-code/dist/claude-code/session.js
 var import_crypto5 = require("crypto");
 var SessionManager = class {
   store;
@@ -2710,7 +2710,7 @@ var SessionManager = class {
   }
 };
 
-// packages/kindling-adapter-claude-code/dist/claude-code/hooks.js
+// ../../packages/kindling-adapter-claude-code/dist/claude-code/hooks.js
 function createHookHandlers(store, config = {}) {
   const { captureResults = true, captureUserMessages = true, captureSubagents = true, defaultIntent = "Claude Code session" } = config;
   const sessionManager = new SessionManager(store);

@@ -29,7 +29,7 @@ import { openDatabase, SqliteKindlingStore } from '@eddacraft/kindling-store-sql
 // Initialize
 const db = openDatabase({ dbPath: './kindling.db' });
 const store = new SqliteKindlingStore(db);
-const provider = new LocalFtsProvider(store);
+const provider = new LocalFtsProvider(db);
 
 // Search
 const results = await provider.search({
@@ -53,9 +53,12 @@ The provider combines FTS relevance with recency:
 score = (fts_relevance * 0.7) + (recency_score * 0.3)
 
 where:
-  fts_relevance = BM25 score from FTS5 (normalized to 0.0-1.0)
-  recency_score = 1.0 - (age_days / max_age_days)
+  fts_relevance = BM25 rank normalized to [0,1] across all results
+                  (observations + summaries combined)
+  recency_score = MAX(0, 1.0 - age_ms / max_age_ms)
 ```
+
+BM25 normalization is done cross-table in JavaScript so that observation and summary scores are directly comparable. Singleton results receive a relevance of 0.5 (unknown relative relevance).
 
 ## Provider Interface
 
@@ -97,7 +100,7 @@ import { SqliteKindlingStore } from '@eddacraft/kindling-store-sqlite';
 import { LocalFtsProvider } from '@eddacraft/kindling-provider-local';
 
 const store = new SqliteKindlingStore(db);
-const provider = new LocalFtsProvider(store);
+const provider = new LocalFtsProvider(db);
 
 // Provider is used by core for retrieval
 const manager = new CapsuleManager(store, { provider });
