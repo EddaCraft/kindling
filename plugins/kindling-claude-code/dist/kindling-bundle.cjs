@@ -128,26 +128,35 @@ function exportDatabase(db, options = {}) {
   if (typeof limit === "number" && Number.isFinite(limit) && Number.isInteger(limit) && limit > 0) {
     safeLimit = limit;
   }
+  const hasDenormalized = (() => {
+    try {
+      const cols = db.prepare("PRAGMA table_info(observations)").all();
+      return cols.some((c) => c.name === "session_id");
+    } catch {
+      return false;
+    }
+  })();
   const buildScopeFilter = (tableName) => {
     if (!scope) {
       return { where: "", params: [] };
     }
     const conditions = [];
     const params = [];
+    const col = (name, jsonPath) => hasDenormalized ? `${tableName}.${name}` : `json_extract(${tableName}.scope_ids, '${jsonPath}')`;
     if (scope.sessionId) {
-      conditions.push(`${tableName}.session_id = ?`);
+      conditions.push(`${col("session_id", "$.sessionId")} = ?`);
       params.push(scope.sessionId);
     }
     if (scope.repoId) {
-      conditions.push(`${tableName}.repo_id = ?`);
+      conditions.push(`${col("repo_id", "$.repoId")} = ?`);
       params.push(scope.repoId);
     }
     if (scope.agentId) {
-      conditions.push(`${tableName}.agent_id = ?`);
+      conditions.push(`${col("agent_id", "$.agentId")} = ?`);
       params.push(scope.agentId);
     }
     if (scope.userId) {
-      conditions.push(`${tableName}.user_id = ?`);
+      conditions.push(`${col("user_id", "$.userId")} = ?`);
       params.push(scope.userId);
     }
     return {
@@ -261,33 +270,65 @@ function importDatabase(db, dataset) {
       errors
     };
   }
+  const importHasDenormalized = (() => {
+    try {
+      const cols = db.prepare("PRAGMA table_info(observations)").all();
+      return cols.some((c) => c.name === "session_id");
+    } catch {
+      return false;
+    }
+  })();
   const importTxn = db.transaction(() => {
-    const obsStmt = db.prepare(`
-      INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted,
-        session_id, repo_id, agent_id, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    const obsStmt = importHasDenormalized ? db.prepare(`
+          INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted,
+            session_id, repo_id, agent_id, user_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `) : db.prepare(`
+          INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
     for (const obs of dataset.observations) {
       try {
-        const result = obsStmt.run(obs.id, obs.kind, obs.content, JSON.stringify(obs.provenance), obs.ts, JSON.stringify(obs.scopeIds), obs.redacted ? 1 : 0, obs.scopeIds.sessionId ?? null, obs.scopeIds.repoId ?? null, obs.scopeIds.agentId ?? null, obs.scopeIds.userId ?? null);
+        const baseParams = [
+          obs.id,
+          obs.kind,
+          obs.content,
+          JSON.stringify(obs.provenance),
+          obs.ts,
+          JSON.stringify(obs.scopeIds),
+          obs.redacted ? 1 : 0
+        ];
+        const result = importHasDenormalized ? obsStmt.run(...baseParams, obs.scopeIds.sessionId ?? null, obs.scopeIds.repoId ?? null, obs.scopeIds.agentId ?? null, obs.scopeIds.userId ?? null) : obsStmt.run(...baseParams);
         if (result.changes > 0)
           obsCount++;
       } catch (err2) {
         errors.push(`Failed to import observation ${obs.id}: ${err2}`);
       }
     }
-    const capsuleStmt = db.prepare(`
-      INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids,
-        session_id, repo_id, agent_id, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    const capsuleStmt = importHasDenormalized ? db.prepare(`
+          INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids,
+            session_id, repo_id, agent_id, user_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `) : db.prepare(`
+          INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
     const capsuleObsStmt = db.prepare(`
       INSERT OR IGNORE INTO capsule_observations (capsule_id, observation_id, seq)
       VALUES (?, ?, ?)
     `);
     for (const capsule of dataset.capsules) {
       try {
-        const result = capsuleStmt.run(capsule.id, capsule.type, capsule.intent, capsule.status, capsule.openedAt, capsule.closedAt ?? null, JSON.stringify(capsule.scopeIds), capsule.scopeIds.sessionId ?? null, capsule.scopeIds.repoId ?? null, capsule.scopeIds.agentId ?? null, capsule.scopeIds.userId ?? null);
+        const baseParams = [
+          capsule.id,
+          capsule.type,
+          capsule.intent,
+          capsule.status,
+          capsule.openedAt,
+          capsule.closedAt ?? null,
+          JSON.stringify(capsule.scopeIds)
+        ];
+        const result = importHasDenormalized ? capsuleStmt.run(...baseParams, capsule.scopeIds.sessionId ?? null, capsule.scopeIds.repoId ?? null, capsule.scopeIds.agentId ?? null, capsule.scopeIds.userId ?? null) : capsuleStmt.run(...baseParams);
         if (result.changes > 0) {
           capsuleCount++;
           capsule.observationIds.forEach((obsId, seq) => {
@@ -311,14 +352,26 @@ function importDatabase(db, dataset) {
         errors.push(`Failed to import summary ${summary.id}: ${err2}`);
       }
     }
-    const pinStmt = db.prepare(`
-      INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids,
-        session_id, repo_id, agent_id, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    const pinStmt = importHasDenormalized ? db.prepare(`
+          INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids,
+            session_id, repo_id, agent_id, user_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `) : db.prepare(`
+          INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
     for (const pin of dataset.pins) {
       try {
-        const result = pinStmt.run(pin.id, pin.targetType, pin.targetId, pin.reason ?? null, pin.createdAt, pin.expiresAt ?? null, JSON.stringify(pin.scopeIds), pin.scopeIds.sessionId ?? null, pin.scopeIds.repoId ?? null, pin.scopeIds.agentId ?? null, pin.scopeIds.userId ?? null);
+        const baseParams = [
+          pin.id,
+          pin.targetType,
+          pin.targetId,
+          pin.reason ?? null,
+          pin.createdAt,
+          pin.expiresAt ?? null,
+          JSON.stringify(pin.scopeIds)
+        ];
+        const result = importHasDenormalized ? pinStmt.run(...baseParams, pin.scopeIds.sessionId ?? null, pin.scopeIds.repoId ?? null, pin.scopeIds.agentId ?? null, pin.scopeIds.userId ?? null) : pinStmt.run(...baseParams);
         if (result.changes > 0)
           pinCount++;
       } catch (err2) {
@@ -878,10 +931,7 @@ var LocalFtsProvider = class {
     const now = Date.now();
     const obsRaw = this.searchObservationsRaw(query, scopeIds, excludeIds, includeRedacted, now, maxResults);
     const sumRaw = this.searchSummariesRaw(query, scopeIds, excludeIds, now, maxResults);
-    const allRanks = [
-      ...obsRaw.map((r) => r.fts_rank),
-      ...sumRaw.map((r) => r.fts_rank)
-    ];
+    const allRanks = [...obsRaw.map((r) => r.fts_rank), ...sumRaw.map((r) => r.fts_rank)];
     const minRank = allRanks.length > 0 ? Math.min(...allRanks) : 0;
     const maxRank = allRanks.length > 0 ? Math.max(...allRanks) : 0;
     const rankRange = maxRank - minRank;
