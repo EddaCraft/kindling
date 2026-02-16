@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { readFileSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
+import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import type { Observation, Capsule, Summary, Pin } from '@eddacraft/kindling-core';
 import { openDatabase } from '../src/db/open.js';
@@ -492,81 +493,91 @@ describe('Export/Import', () => {
     });
   });
 
-  describe('Pre-004 database (readonly)', () => {
-    /**
-     * Creates a database with only migrations 001-003 (no denormalized columns).
-     * Simulates a readonly open of an older database.
-     */
-    function createPre004Database(path: string): Database.Database {
-      const pre004Db = new Database(path);
-      pre004Db.pragma('journal_mode = WAL');
-      pre004Db.pragma('foreign_keys = ON');
+  describe('Pre-004 database', () => {
+    const migrationsDir = join(__dirname, '../migrations');
 
-      const migrationsDir = join(__dirname, '../migrations');
+    /** Apply only migrations 001-003 to a writable database */
+    function applyPre004Migrations(db: Database.Database): void {
+      db.pragma('journal_mode = WAL');
+      db.pragma('foreign_keys = ON');
       for (const file of ['001_init.sql', '002_fts.sql', '003_indexes.sql']) {
-        pre004Db.exec(readFileSync(join(migrationsDir, file), 'utf-8'));
+        db.exec(readFileSync(join(migrationsDir, file), 'utf-8'));
       }
-      return pre004Db;
     }
 
-    it('should export with scope filter on pre-004 database using json_extract fallback', () => {
-      const pre004Path = `/tmp/kindling-test-pre004-${Date.now()}.db`;
-      const pre004Db = createPre004Database(pre004Path);
+    /** Remove DB file and WAL sidecar files */
+    function cleanupDbFiles(dbPath: string): void {
+      for (const suffix of ['', '-wal', '-shm']) {
+        try {
+          unlinkSync(dbPath + suffix);
+        } catch {
+          /* cleanup */
+        }
+      }
+    }
+
+    it('should export with scope filter on pre-004 database opened readonly', () => {
+      const pre004Path = join(tmpdir(), `kindling-test-pre004-${Date.now()}.db`);
+
+      // Create and populate in read-write mode
+      const writableDb = new Database(pre004Path);
+      applyPre004Migrations(writableDb);
+
+      writableDb
+        .prepare(
+          'INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        )
+        .run(
+          'obs-s1',
+          'message',
+          'Session 1 obs',
+          '{}',
+          1000,
+          JSON.stringify({ sessionId: 's1', repoId: '/repo' }),
+          0,
+        );
+
+      writableDb
+        .prepare(
+          'INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        )
+        .run(
+          'obs-s2',
+          'message',
+          'Session 2 obs',
+          '{}',
+          2000,
+          JSON.stringify({ sessionId: 's2', repoId: '/repo' }),
+          0,
+        );
+
+      writableDb.close();
+
+      // Reopen in readonly mode — simulates opening an existing pre-004 DB
+      const readonlyDb = new Database(pre004Path, { readonly: true, fileMustExist: true });
 
       try {
-        // Insert data via raw SQL (no denormalized columns exist)
-        pre004Db
-          .prepare(
-            'INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          )
-          .run(
-            'obs-s1',
-            'message',
-            'Session 1 obs',
-            '{}',
-            1000,
-            JSON.stringify({ sessionId: 's1', repoId: '/repo' }),
-            0,
-          );
-
-        pre004Db
-          .prepare(
-            'INSERT INTO observations (id, kind, content, provenance, ts, scope_ids, redacted) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          )
-          .run(
-            'obs-s2',
-            'message',
-            'Session 2 obs',
-            '{}',
-            2000,
-            JSON.stringify({ sessionId: 's2', repoId: '/repo' }),
-            0,
-          );
-
         // Verify no denormalized columns
-        const cols = pre004Db.prepare('PRAGMA table_info(observations)').all() as Array<{
+        const cols = readonlyDb.prepare('PRAGMA table_info(observations)').all() as Array<{
           name: string;
         }>;
         expect(cols.some((c) => c.name === 'session_id')).toBe(false);
 
         // Export with scope filter — should use json_extract fallback
-        const dataset = exportDatabase(pre004Db, { scope: { sessionId: 's1' } });
+        const dataset = exportDatabase(readonlyDb, { scope: { sessionId: 's1' } });
 
         expect(dataset.observations).toHaveLength(1);
         expect(dataset.observations[0].id).toBe('obs-s1');
       } finally {
-        pre004Db.close();
-        try {
-          unlinkSync(pre004Path);
-        } catch {
-          /* cleanup */
-        }
+        readonlyDb.close();
+        cleanupDbFiles(pre004Path);
       }
     });
 
     it('should import into pre-004 database without denormalized columns', () => {
-      const pre004Path = `/tmp/kindling-test-pre004-import-${Date.now()}.db`;
-      const pre004Db = createPre004Database(pre004Path);
+      const pre004Path = join(tmpdir(), `kindling-test-pre004-import-${Date.now()}.db`);
+      const pre004Db = new Database(pre004Path);
+      applyPre004Migrations(pre004Db);
 
       try {
         const dataset: ExportDataset = {
@@ -611,11 +622,7 @@ describe('Export/Import', () => {
         expect(JSON.parse(obs.scope_ids)).toEqual({ sessionId: 's1' });
       } finally {
         pre004Db.close();
-        try {
-          unlinkSync(pre004Path);
-        } catch {
-          /* cleanup */
-        }
+        cleanupDbFiles(pre004Path);
       }
     });
   });
