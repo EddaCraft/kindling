@@ -348,14 +348,14 @@ pnpm run type-check
 
 ## Documentation
 
-Full documentation is available at **[docs.eddacraft.ai/docs/kindling](https://docs.eddacraft.ai/docs/kindling/overview)**:
+Full documentation is available at **[docs.eddacraft.ai/kindling/overview](https://docs.eddacraft.ai/kindling/overview)**:
 
-- [Overview](https://docs.eddacraft.ai/docs/kindling/overview) - What Kindling is and how it fits
-- [Quickstart](https://docs.eddacraft.ai/docs/kindling/quickstart/install) - Install, create capsules, capture observations, search
-- [Core Concepts](https://docs.eddacraft.ai/docs/kindling/concepts/capsules) - Capsules, observations, storage, retrieval
-- [CLI Reference](https://docs.eddacraft.ai/docs/kindling/reference/cli) - Command-line usage
-- [Configuration](https://docs.eddacraft.ai/docs/kindling/reference/config) - Settings and options
-- [Writing Adapters](https://docs.eddacraft.ai/docs/kindling/adapters/custom) - Build your own integration
+- [Overview](https://docs.eddacraft.ai/kindling/overview) - What Kindling is and how it fits
+- [Quickstart](https://docs.eddacraft.ai/kindling/quickstart/install) - Install, create capsules, capture observations, search
+- [Core Concepts](https://docs.eddacraft.ai/kindling/concepts/capsules) - Capsules, observations, storage, retrieval
+- [CLI Reference](https://docs.eddacraft.ai/kindling/reference/cli) - Command-line usage
+- [Configuration](https://docs.eddacraft.ai/kindling/reference/config) - Settings and options
+- [Writing Adapters](https://docs.eddacraft.ai/kindling/adapters/custom) - Build your own integration
 
 ### Contributing
 
