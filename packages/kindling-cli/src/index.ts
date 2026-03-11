@@ -11,6 +11,8 @@ import { initCommand } from './commands/init.js';
 import { statusCommand } from './commands/status.js';
 import { searchCommand } from './commands/search.js';
 import { listCommand } from './commands/list.js';
+import { logCommand } from './commands/log.js';
+import { capsuleOpenCommand, capsuleCloseCommand } from './commands/capsule.js';
 import { pinCommand, unpinCommand } from './commands/pin.js';
 import { exportCommand, importCommand } from './commands/export.js';
 import { serveCommand } from './commands/serve.js';
@@ -32,6 +34,40 @@ program
   .option('--skip-db', 'Skip database creation (only configure hooks)')
   .option('--json', 'Output as JSON')
   .action(initCommand);
+
+// Log command
+program
+  .command('log <content>')
+  .description('Log an observation to memory')
+  .option('--kind <kind>', 'Observation kind (default: message)')
+  .option('--session <id>', 'Session scope ID')
+  .option('--repo <id>', 'Repository scope ID')
+  .option('--capsule <id>', 'Attach to existing capsule')
+  .option('--db <path>', 'Database path (default: ~/.kindling/kindling.db)')
+  .option('--json', 'Output as JSON')
+  .action(logCommand);
+
+// Capsule commands
+const capsuleCommand = program.command('capsule').description('Manage capsules (open/close)');
+
+capsuleCommand
+  .command('open')
+  .description('Open a new capsule')
+  .requiredOption('--intent <text>', 'Purpose of the capsule')
+  .option('--type <type>', 'Capsule type (default: session)')
+  .option('--session <id>', 'Session scope ID')
+  .option('--repo <id>', 'Repository scope ID')
+  .option('--db <path>', 'Database path (default: ~/.kindling/kindling.db)')
+  .option('--json', 'Output as JSON')
+  .action(capsuleOpenCommand);
+
+capsuleCommand
+  .command('close <id>')
+  .description('Close a capsule')
+  .option('--summary <text>', 'Summary text for the capsule')
+  .option('--db <path>', 'Database path (default: ~/.kindling/kindling.db)')
+  .option('--json', 'Output as JSON')
+  .action(capsuleCloseCommand);
 
 // Status command
 program

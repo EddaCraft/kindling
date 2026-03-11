@@ -1,0 +1,29 @@
+{
+  "name": "kindling",
+  "displayName": "Kindling Memory",
+  "description": "Local memory and continuity engine - captures tool calls, file edits, commands, and errors across Claude Code sessions",
+  "version": "0.1.0",
+  "author": "EddaCraft",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/EddaCraft/kindling",
+  "hooks": {
+    "SessionStart": {
+      "command": "kindling-hook session-start"
+    },
+    "PostToolUse": {
+      "command": "kindling-hook post-tool-use"
+    },
+    "Stop": {
+      "command": "kindling-hook stop"
+    },
+    "UserPromptSubmit": {
+      "command": "kindling-hook user-prompt-submit"
+    },
+    "SubagentStop": {
+      "command": "kindling-hook subagent-stop"
+    }
+  },
+  "dependencies": {
+    "@eddacraft/kindling-cli": ">=0.1.0"
+  }
+}
