@@ -42,13 +42,16 @@ pnpm run type-check
 The monorepo (pnpm workspaces) has the following packages:
 
 ```
-@eddacraft/kindling                  → Main package (core + SQLite store + provider + API server)
-@eddacraft/kindling-core             → Domain types, capsule lifecycle, retrieval orchestration
-@eddacraft/kindling-store-sqljs      → Browser/WASM store (sql.js)
-@eddacraft/kindling-adapter-opencode → Session integration for OpenCode
+@eddacraft/kindling                    → Main package (re-exports core + SQLite store + local FTS provider)
+@eddacraft/kindling-core               → Domain types, capsule lifecycle, retrieval orchestration
+@eddacraft/kindling-store-sqlite       → SQLite persistence with FTS5 and WAL mode
+@eddacraft/kindling-store-sqljs        → Browser/WASM store (sql.js)
+@eddacraft/kindling-provider-local     → Local FTS-based retrieval provider
+@eddacraft/kindling-server             → HTTP API server (Fastify) for multi-agent concurrency
+@eddacraft/kindling-cli                → CLI tools (Commander.js)
+@eddacraft/kindling-adapter-opencode   → Session integration for OpenCode
 @eddacraft/kindling-adapter-pocketflow → Workflow node integration (PocketFlow)
 @eddacraft/kindling-adapter-claude-code → Claude Code hooks integration
-@eddacraft/kindling-cli              → CLI tools (uses Commander.js)
 ```
 
 The main `@eddacraft/kindling` package is what most users install. It re-exports everything from core, bundles the SQLite store (better-sqlite3, FTS5, WAL mode), the local FTS provider, and the API server. Adapter authors and browser users can depend on the lighter `@eddacraft/kindling-core` instead.

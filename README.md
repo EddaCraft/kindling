@@ -213,6 +213,21 @@ service.closeCapsule(capsule.id, {
 db.close();
 ```
 
+## Packages
+
+| Package                                                                              | Description                                                              |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| [`@eddacraft/kindling`](./packages/kindling)                                         | **Main package**: re-exports core + SQLite store + local FTS provider    |
+| [`@eddacraft/kindling-core`](./packages/kindling-core)                               | Domain types, KindlingService, validation (for adapter authors, browser) |
+| [`@eddacraft/kindling-store-sqlite`](./packages/kindling-store-sqlite)               | SQLite persistence with FTS5 and WAL mode                                |
+| [`@eddacraft/kindling-store-sqljs`](./packages/kindling-store-sqljs)                 | sql.js WASM store for browser compatibility                              |
+| [`@eddacraft/kindling-provider-local`](./packages/kindling-provider-local)           | Local FTS-based retrieval provider with deterministic ranking            |
+| [`@eddacraft/kindling-server`](./packages/kindling-server)                           | HTTP API server for multi-agent concurrency (Fastify)                    |
+| [`@eddacraft/kindling-cli`](./packages/kindling-cli)                                 | CLI tools for inspection, search, and management                         |
+| [`@eddacraft/kindling-adapter-opencode`](./packages/kindling-adapter-opencode)       | OpenCode session integration                                             |
+| [`@eddacraft/kindling-adapter-pocketflow`](./packages/kindling-adapter-pocketflow)   | PocketFlow workflow integration with intent and confidence tracking      |
+| [`@eddacraft/kindling-adapter-claude-code`](./packages/kindling-adapter-claude-code) | Claude Code hooks integration                                            |
+
 ## Architecture
 
 ```diagram
@@ -244,6 +259,134 @@ db.close();
      │                              │
      │  API Server (Fastify)        │
      └──────────────────────────────┘
+```
+
+## CLI Usage
+
+```bash
+# Show database status
+kindling status
+
+# Search for context
+kindling search "authentication error"
+kindling search --session session-123
+
+# List entities
+kindling list capsules
+kindling list pins
+kindling list observations
+
+# Pin important findings
+kindling pin observation obs_abc123 --note "Root cause identified"
+
+# Remove a pin
+kindling unpin pin_xyz789
+```
+
+## Core Concepts
+
+### Observations
+
+Atomic units of captured context:
+
+| Kind                         | Description                                  |
+| ---------------------------- | -------------------------------------------- |
+| `tool_call`                  | AI tool invocations (Read, Edit, Bash, etc.) |
+| `command`                    | Shell commands with exit codes and output    |
+| `file_diff`                  | File changes with paths                      |
+| `error`                      | Errors with stack traces                     |
+| `message`                    | User/assistant messages                      |
+| `node_start` / `node_end`    | Workflow node lifecycle                      |
+| `node_output` / `node_error` | Workflow node results                        |
+
+### Capsules
+
+Bounded units of meaning that group observations:
+
+- **Session** - Interactive development session
+- **PocketFlowNode** - Single workflow node execution
+
+Each capsule has:
+
+- Type and intent (debug, implement, test, etc.)
+- Open/close lifecycle with automatic summary generation
+- Scope (sessionId, repoId, agentId, userId)
+
+### Retrieval Tiers
+
+Deterministic, explainable retrieval with 3 tiers:
+
+1. **Pins** - Non-evictable, user-controlled priority content
+2. **Current Summary** - Active session/capsule context
+3. **Provider Hits** - Ranked FTS results with explainability
+
+## Use Cases
+
+### Session Continuity
+
+Resume work without re-explaining context:
+
+```typescript
+import { SessionManager } from '@eddacraft/kindling-adapter-opencode';
+
+const manager = new SessionManager(store);
+
+// Start session
+manager.onSessionStart({
+  sessionId: 'session-1',
+  intent: 'Fix authentication bug',
+  repoId: '/home/user/my-project',
+});
+
+// Events flow in automatically...
+
+// Later: retrieve session context
+const context = service.retrieve({
+  scopeIds: { sessionId: 'session-1' },
+});
+```
+
+### Workflow Memory
+
+Capture high-signal workflow executions with PocketFlow nodes:
+
+```typescript
+import { KindlingNode, KindlingFlow } from '@eddacraft/kindling-adapter-pocketflow';
+import type { KindlingNodeContext } from '@eddacraft/kindling-adapter-pocketflow';
+
+// Define a node that auto-captures its lifecycle as observations
+class TestRunnerNode extends KindlingNode<KindlingNodeContext> {
+  constructor() {
+    super({ name: 'run-integration-tests', intent: 'test' });
+  }
+
+  async exec(): Promise<unknown> {
+    // Your node logic here — prep/exec/post are auto-instrumented
+    return { passed: 42, failed: 0 };
+  }
+}
+
+// Run inside a flow with a Kindling-aware shared store
+const node = new TestRunnerNode();
+const flow = new KindlingFlow(node);
+await flow.run({ store, scopeIds: { repoId: 'my-app' } });
+```
+
+### Pin Critical Findings
+
+Mark important discoveries for non-evictable retrieval:
+
+```typescript
+service.pin({
+  targetType: 'observation',
+  targetId: errorObs.id,
+  note: 'Root cause of production outage',
+  ttlMs: 7 * 24 * 60 * 60 * 1000, // 1 week
+});
+
+// Pins always appear first in retrieval
+const results = service.retrieve({ query: 'outage' });
+console.log(results.pins); // Includes the pinned error
 ```
 
 ## Design Principles
