@@ -5,7 +5,7 @@
 | Status  | In Progress |
 | Owner   | @aneki      |
 | Created | 2026-03-14  |
-| Updated | 2026-03-14  |
+| Updated | 2026-03-18  |
 
 ## Problem
 
@@ -32,6 +32,7 @@ Kindling is functional (596 tests passing, 9 packages building) but not yet publ
 | [01-npm-publish](./modules/01-npm-publish.aps.md)           | Package metadata, READMEs, publish scripts, CI | Ready  | —            |
 | [02-rust-hook-binary](./modules/02-rust-hook-binary.aps.md) | Rust binary for Claude Code hook invocations   | Ready  | 01           |
 | [03-rust-cli](./modules/03-rust-cli.aps.md)                 | Full Rust CLI replacing Commander.js           | Draft  | 02           |
+| [04-intent-capture-events](./modules/04-intent-capture-events.aps.md) | Kindling-native intent event primitive + export | Ready  | 01           |
 
 ## Schedule
 
@@ -40,6 +41,7 @@ Kindling is functional (596 tests passing, 9 packages building) but not yet publ
 | Next  | 01-npm-publish      | Merge open PRs, publish to npm |
 | Then  | 02-rust-hook-binary | Rust hook binary (highest ROI) |
 | Later | 03-rust-cli         | Full Rust CLI + HTTP server    |
+| Next  | 04-intent-capture-events | Ship intent capture primitive + export |
 
 ## Risks
 
