@@ -125,6 +125,17 @@ Validation uses a Result type pattern (`ok()` / `err()`) rather than exceptions.
 
 ESM-only (`"type": "module"`) with `.js` extensions in imports.
 
+## Branching Workflow
+
+```
+feature branches → dev (default) → main (releases/publishing)
+```
+
+- **`dev`** is the default branch. All feature branches are created from and merged into `dev` via PR.
+- **`main`** is the release branch. Only `dev` → `main` PRs are merged here, and these trigger npm publishing.
+- CI runs on pushes and PRs to both `dev` and `main`.
+- Never push directly to `main` or `dev` — always use pull requests.
+
 ## PocketFlow (Vendored)
 
 The project vendors PocketFlow at `packages/kindling-adapter-pocketflow/vendor/pocketflow/`. Key concepts:
