@@ -54,14 +54,29 @@ pnpm clean
 - **Tests alongside implementation** - high coverage for core functionality
 - **ESM only** - use `.js` extensions in imports
 
+## Branching Model
+
+This project uses a two-tier branching workflow:
+
+```
+feature branches → dev (default) → main (releases)
+```
+
+- **`dev`** is the default branch and integration target for all development.
+- **`main`** is the release branch. Merges into `main` trigger publishing.
+- **Feature branches** are created from `dev` and merged back via PR.
+- PRs into both `dev` and `main` require CI to pass.
+- Only maintainers merge `dev` → `main` for releases.
+
 ## Pull Request Process
 
 1. **Open an issue first** for significant changes to discuss approach
-2. **Create a feature branch** from `main`
+2. **Create a feature branch** from `dev`
 3. **Write tests** for new functionality
 4. **Update documentation** if behavior changes
 5. **Keep PRs focused** - one logical change per PR
 6. **Ensure CI passes** before requesting review
+7. **Target `dev`** — PRs should target the `dev` branch, not `main`
 
 ### Commit Messages
 
