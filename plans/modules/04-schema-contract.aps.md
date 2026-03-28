@@ -2,7 +2,7 @@
 
 | ID     | Owner  | Status |
 | ------ | ------ | ------ |
-| SCHEMA | @aneki | Ready  |
+| SCHEMA | @aneki | Done   |
 
 ## Purpose
 
@@ -58,14 +58,14 @@ This work was requested by the Anvil agents after reviewing what the Rust crate 
 - **Intent:** Single source of truth for the SQLite DDL, extracted from migration files
 - **Expected Outcome:** `schema/schema.sql` contains all `CREATE TABLE`, `CREATE INDEX`, and `CREATE VIRTUAL TABLE` statements reflecting the current schema at migration 004, with inline comments on non-obvious columns and constraints
 - **Validation:** Running `schema.sql` against a fresh SQLite database produces an identical structure to a database that has run all 4 migrations
-- **Status:** Ready
+- **Status:** Done
 
 ### SCHEMA-002: Set PRAGMA user_version in migrations
 
 - **Intent:** Make schema version discoverable via a single SQLite read from Rust or any other language
 - **Expected Outcome:** Migration 004 (or a new migration 005 if 004 is already shipped) sets `PRAGMA user_version = 4`; each future migration increments it; documented in `schema/README.md`
-- **Validation:** `sqlite3 <db> 'PRAGMA user_version;'` returns `4` on any migrated database
-- **Status:** Ready
+- **Validation:** `sqlite3 <db> 'PRAGMA user_version;'` returns `5` on any migrated database
+- **Status:** Done
 - **Dependencies:** SCHEMA-001
 
 ### SCHEMA-003: Document FTS5 tokenizer config
@@ -73,15 +73,15 @@ This work was requested by the Anvil agents after reviewing what the Rust crate 
 - **Intent:** Pin the FTS5 tokenizer as part of the contract so Rust-side search queries are compatible
 - **Expected Outcome:** `schema/schema.sql` includes the `tokenize='porter unicode61'` config in the FTS virtual table definitions with a comment explaining why it must match exactly; `schema/README.md` calls this out as a breaking-change surface
 - **Validation:** FTS table definitions in `schema.sql` match production migration output exactly
-- **Status:** Ready
+- **Status:** Done
 - **Dependencies:** SCHEMA-001
 
 ### SCHEMA-004: Add schema/version.json
 
 - **Intent:** Machine-readable version metadata for Rust crate compatibility checks at build time or startup
-- **Expected Outcome:** `schema/version.json` contains `{ "version": 4, "minCompatible": 1, "ftsTokenizer": "porter unicode61" }`; Rust crate can parse this at startup to assert it was compiled against the right schema
+- **Expected Outcome:** `schema/version.json` contains `{ "version": 5, "minCompatible": 1, "ftsTokenizer": "porter unicode61" }`; Rust crate can parse this at startup to assert it was compiled against the right schema
 - **Validation:** File is valid JSON; `version` matches `PRAGMA user_version` value from SCHEMA-002
-- **Status:** Ready
+- **Status:** Done
 - **Dependencies:** SCHEMA-002, SCHEMA-003
 
 ### SCHEMA-005: Add schema/README.md
@@ -89,5 +89,5 @@ This work was requested by the Anvil agents after reviewing what the Rust crate 
 - **Intent:** Document the contract, how to update it, and what constitutes a breaking change
 - **Expected Outcome:** `schema/README.md` explains: (1) what the schema directory is for, (2) how to update `schema.sql` when adding a migration, (3) what counts as a breaking change (column removal, type change, FTS tokenizer change), (4) `PRAGMA user_version` convention, (5) how the Rust crate uses these files
 - **Validation:** A new contributor can read the README and know how to add a migration without breaking Rust compatibility
-- **Status:** Ready
+- **Status:** Done
 - **Dependencies:** SCHEMA-001, SCHEMA-002, SCHEMA-003, SCHEMA-004

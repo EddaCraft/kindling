@@ -89,11 +89,12 @@ describe('Database Migrations', () => {
       )
       .all() as { version: number; name: string }[];
 
-    expect(migrations).toHaveLength(4);
+    expect(migrations).toHaveLength(5);
     expect(migrations[0]).toMatchObject({ version: 1, name: '001_init' });
     expect(migrations[1]).toMatchObject({ version: 2, name: '002_fts' });
     expect(migrations[2]).toMatchObject({ version: 3, name: '003_indexes' });
     expect(migrations[3]).toMatchObject({ version: 4, name: '004_denormalize_scopes' });
+    expect(migrations[4]).toMatchObject({ version: 5, name: '005_pragma_user_version' });
   });
 
   it('should be idempotent (safe to re-run)', () => {
@@ -107,8 +108,8 @@ describe('Database Migrations', () => {
       count: number;
     };
 
-    // Should still have exactly 4 migrations
-    expect(migrations.count).toBe(4);
+    // Should still have exactly 5 migrations
+    expect(migrations.count).toBe(5);
   });
 
   it('should enable WAL mode', () => {
@@ -246,9 +247,9 @@ describe('Database Migrations', () => {
 
     const status = getMigrationStatus(db);
 
-    expect(status.currentVersion).toBe(4);
-    expect(status.latestVersion).toBe(4);
-    expect(status.appliedMigrations).toHaveLength(4);
+    expect(status.currentVersion).toBe(5);
+    expect(status.latestVersion).toBe(5);
+    expect(status.appliedMigrations).toHaveLength(5);
     expect(status.pendingMigrations).toHaveLength(0);
   });
 
