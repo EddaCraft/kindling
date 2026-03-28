@@ -46,6 +46,11 @@ function getMigrations(): Migration[] {
       name: '004_denormalize_scopes',
       sql: readFileSync(join(migrationsDir, '004_denormalize_scopes.sql'), 'utf-8'),
     },
+    {
+      version: 5,
+      name: '005_pragma_user_version',
+      sql: readFileSync(join(migrationsDir, '005_pragma_user_version.sql'), 'utf-8'),
+    },
   ];
 }
 
