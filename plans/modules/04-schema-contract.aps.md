@@ -56,14 +56,14 @@ This work was requested by the Anvil agents after reviewing what the Rust crate 
 ### SCHEMA-001: Extract schema to schema/schema.sql
 
 - **Intent:** Single source of truth for the SQLite DDL, extracted from migration files
-- **Expected Outcome:** `schema/schema.sql` contains all `CREATE TABLE`, `CREATE INDEX`, and `CREATE VIRTUAL TABLE` statements reflecting the current schema at migration 004, with inline comments on non-obvious columns and constraints
-- **Validation:** Running `schema.sql` against a fresh SQLite database produces an identical structure to a database that has run all 4 migrations
+- **Expected Outcome:** `schema/schema.sql` contains all `CREATE TABLE`, `CREATE INDEX`, and `CREATE VIRTUAL TABLE` statements reflecting the current schema at migration 005, with inline comments on non-obvious columns and constraints
+- **Validation:** Running `schema.sql` against a fresh SQLite database produces an identical structure to a database that has run all 5 migrations
 - **Status:** Done
 
 ### SCHEMA-002: Set PRAGMA user_version in migrations
 
 - **Intent:** Make schema version discoverable via a single SQLite read from Rust or any other language
-- **Expected Outcome:** Migration 004 (or a new migration 005 if 004 is already shipped) sets `PRAGMA user_version = 4`; each future migration increments it; documented in `schema/README.md`
+- **Expected Outcome:** Migration 005 sets `PRAGMA user_version = 5`; each future migration increments it; documented in `schema/README.md`
 - **Validation:** `sqlite3 <db> 'PRAGMA user_version;'` returns `5` on any migrated database
 - **Status:** Done
 - **Dependencies:** SCHEMA-001
