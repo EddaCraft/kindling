@@ -124,26 +124,39 @@ function closeDatabase(db) {
 // ../../packages/kindling-store-sqlite/dist/store/export.js
 function exportDatabase(db, options = {}) {
   const { scope, includeRedacted = false, limit } = options;
+  let safeLimit;
+  if (typeof limit === "number" && Number.isFinite(limit) && Number.isInteger(limit) && limit > 0) {
+    safeLimit = limit;
+  }
+  const hasDenormalized = (() => {
+    try {
+      const cols = db.prepare("PRAGMA table_info(observations)").all();
+      return cols.some((c) => c.name === "session_id");
+    } catch {
+      return false;
+    }
+  })();
   const buildScopeFilter = (tableName) => {
     if (!scope) {
       return { where: "", params: [] };
     }
     const conditions = [];
     const params = [];
+    const col = (name, jsonPath) => hasDenormalized ? `${tableName}.${name}` : `json_extract(${tableName}.scope_ids, '${jsonPath}')`;
     if (scope.sessionId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.sessionId') = ?`);
+      conditions.push(`${col("session_id", "$.sessionId")} = ?`);
       params.push(scope.sessionId);
     }
     if (scope.repoId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.repoId') = ?`);
+      conditions.push(`${col("repo_id", "$.repoId")} = ?`);
       params.push(scope.repoId);
     }
     if (scope.agentId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.agentId') = ?`);
+      conditions.push(`${col("agent_id", "$.agentId")} = ?`);
       params.push(scope.agentId);
     }
     if (scope.userId) {
-      conditions.push(`json_extract(${tableName}.scope_ids, '$.userId') = ?`);
+      conditions.push(`${col("user_id", "$.userId")} = ?`);
       params.push(scope.userId);
     }
     return {
@@ -153,7 +166,7 @@ function exportDatabase(db, options = {}) {
   };
   const obsFilter = buildScopeFilter("observations");
   const obsRedactedFilter = includeRedacted ? "" : "AND redacted = 0";
-  const obsLimitClause = limit ? `LIMIT ${limit}` : "";
+  const obsLimitClause = safeLimit !== void 0 ? `LIMIT ${safeLimit}` : "";
   const observationsQuery = `
     SELECT id, kind, content, provenance, ts, scope_ids, redacted
     FROM observations
@@ -257,31 +270,65 @@ function importDatabase(db, dataset) {
       errors
     };
   }
+  const importHasDenormalized = (() => {
+    try {
+      const cols = db.prepare("PRAGMA table_info(observations)").all();
+      return cols.some((c) => c.name === "session_id");
+    } catch {
+      return false;
+    }
+  })();
   const importTxn = db.transaction(() => {
-    const obsStmt = db.prepare(`
-      INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
+    const obsStmt = importHasDenormalized ? db.prepare(`
+          INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted,
+            session_id, repo_id, agent_id, user_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `) : db.prepare(`
+          INSERT OR IGNORE INTO observations (id, kind, content, provenance, ts, scope_ids, redacted)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
     for (const obs of dataset.observations) {
       try {
-        const result = obsStmt.run(obs.id, obs.kind, obs.content, JSON.stringify(obs.provenance), obs.ts, JSON.stringify(obs.scopeIds), obs.redacted ? 1 : 0);
+        const baseParams = [
+          obs.id,
+          obs.kind,
+          obs.content,
+          JSON.stringify(obs.provenance),
+          obs.ts,
+          JSON.stringify(obs.scopeIds),
+          obs.redacted ? 1 : 0
+        ];
+        const result = importHasDenormalized ? obsStmt.run(...baseParams, obs.scopeIds.sessionId ?? null, obs.scopeIds.repoId ?? null, obs.scopeIds.agentId ?? null, obs.scopeIds.userId ?? null) : obsStmt.run(...baseParams);
         if (result.changes > 0)
           obsCount++;
       } catch (err2) {
         errors.push(`Failed to import observation ${obs.id}: ${err2}`);
       }
     }
-    const capsuleStmt = db.prepare(`
-      INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
+    const capsuleStmt = importHasDenormalized ? db.prepare(`
+          INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids,
+            session_id, repo_id, agent_id, user_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `) : db.prepare(`
+          INSERT OR IGNORE INTO capsules (id, type, intent, status, opened_at, closed_at, scope_ids)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
     const capsuleObsStmt = db.prepare(`
       INSERT OR IGNORE INTO capsule_observations (capsule_id, observation_id, seq)
       VALUES (?, ?, ?)
     `);
     for (const capsule of dataset.capsules) {
       try {
-        const result = capsuleStmt.run(capsule.id, capsule.type, capsule.intent, capsule.status, capsule.openedAt, capsule.closedAt ?? null, JSON.stringify(capsule.scopeIds));
+        const baseParams = [
+          capsule.id,
+          capsule.type,
+          capsule.intent,
+          capsule.status,
+          capsule.openedAt,
+          capsule.closedAt ?? null,
+          JSON.stringify(capsule.scopeIds)
+        ];
+        const result = importHasDenormalized ? capsuleStmt.run(...baseParams, capsule.scopeIds.sessionId ?? null, capsule.scopeIds.repoId ?? null, capsule.scopeIds.agentId ?? null, capsule.scopeIds.userId ?? null) : capsuleStmt.run(...baseParams);
         if (result.changes > 0) {
           capsuleCount++;
           capsule.observationIds.forEach((obsId, seq) => {
@@ -305,13 +352,26 @@ function importDatabase(db, dataset) {
         errors.push(`Failed to import summary ${summary.id}: ${err2}`);
       }
     }
-    const pinStmt = db.prepare(`
-      INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
+    const pinStmt = importHasDenormalized ? db.prepare(`
+          INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids,
+            session_id, repo_id, agent_id, user_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `) : db.prepare(`
+          INSERT OR IGNORE INTO pins (id, target_type, target_id, reason, created_at, expires_at, scope_ids)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
     for (const pin of dataset.pins) {
       try {
-        const result = pinStmt.run(pin.id, pin.targetType, pin.targetId, pin.reason ?? null, pin.createdAt, pin.expiresAt ?? null, JSON.stringify(pin.scopeIds));
+        const baseParams = [
+          pin.id,
+          pin.targetType,
+          pin.targetId,
+          pin.reason ?? null,
+          pin.createdAt,
+          pin.expiresAt ?? null,
+          JSON.stringify(pin.scopeIds)
+        ];
+        const result = importHasDenormalized ? pinStmt.run(...baseParams, pin.scopeIds.sessionId ?? null, pin.scopeIds.repoId ?? null, pin.scopeIds.agentId ?? null, pin.scopeIds.userId ?? null) : pinStmt.run(...baseParams);
         if (result.changes > 0)
           pinCount++;
       } catch (err2) {
@@ -350,9 +410,11 @@ var SqliteKindlingStore = class {
   insertObservation(observation) {
     const stmt = this.db.prepare(`
       INSERT INTO observations (
-        id, kind, content, provenance, ts, scope_ids, redacted
+        id, kind, content, provenance, ts, scope_ids, redacted,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @kind, @content, @provenance, @ts, @scopeIds, @redacted
+        @id, @kind, @content, @provenance, @ts, @scopeIds, @redacted,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
     stmt.run({
@@ -362,7 +424,11 @@ var SqliteKindlingStore = class {
       provenance: JSON.stringify(observation.provenance),
       ts: observation.ts,
       scopeIds: JSON.stringify(observation.scopeIds),
-      redacted: observation.redacted ? 1 : 0
+      redacted: observation.redacted ? 1 : 0,
+      sessionId: observation.scopeIds.sessionId ?? null,
+      repoId: observation.scopeIds.repoId ?? null,
+      agentId: observation.scopeIds.agentId ?? null,
+      userId: observation.scopeIds.userId ?? null
     });
   }
   /**
@@ -373,9 +439,11 @@ var SqliteKindlingStore = class {
   createCapsule(capsule) {
     const stmt = this.db.prepare(`
       INSERT INTO capsules (
-        id, type, intent, status, opened_at, closed_at, scope_ids
+        id, type, intent, status, opened_at, closed_at, scope_ids,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @type, @intent, @status, @openedAt, @closedAt, @scopeIds
+        @id, @type, @intent, @status, @openedAt, @closedAt, @scopeIds,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
     stmt.run({
@@ -385,7 +453,11 @@ var SqliteKindlingStore = class {
       status: capsule.status,
       openedAt: capsule.openedAt,
       closedAt: capsule.closedAt ?? null,
-      scopeIds: JSON.stringify(capsule.scopeIds)
+      scopeIds: JSON.stringify(capsule.scopeIds),
+      sessionId: capsule.scopeIds.sessionId ?? null,
+      repoId: capsule.scopeIds.repoId ?? null,
+      agentId: capsule.scopeIds.agentId ?? null,
+      userId: capsule.scopeIds.userId ?? null
     });
   }
   /**
@@ -472,9 +544,11 @@ var SqliteKindlingStore = class {
   insertPin(pin) {
     const stmt = this.db.prepare(`
       INSERT INTO pins (
-        id, target_type, target_id, reason, created_at, expires_at, scope_ids
+        id, target_type, target_id, reason, created_at, expires_at, scope_ids,
+        session_id, repo_id, agent_id, user_id
       ) VALUES (
-        @id, @targetType, @targetId, @reason, @createdAt, @expiresAt, @scopeIds
+        @id, @targetType, @targetId, @reason, @createdAt, @expiresAt, @scopeIds,
+        @sessionId, @repoId, @agentId, @userId
       )
     `);
     stmt.run({
@@ -484,7 +558,11 @@ var SqliteKindlingStore = class {
       reason: pin.reason ?? null,
       createdAt: pin.createdAt,
       expiresAt: pin.expiresAt ?? null,
-      scopeIds: JSON.stringify(pin.scopeIds)
+      scopeIds: JSON.stringify(pin.scopeIds),
+      sessionId: pin.scopeIds.sessionId ?? null,
+      repoId: pin.scopeIds.repoId ?? null,
+      agentId: pin.scopeIds.agentId ?? null,
+      userId: pin.scopeIds.userId ?? null
     });
   }
   /**
@@ -518,19 +596,19 @@ var SqliteKindlingStore = class {
     const params = [currentTime];
     if (scopeIds) {
       if (scopeIds.sessionId) {
-        query += ` AND json_extract(scope_ids, '$.sessionId') = ?`;
+        query += ` AND session_id = ?`;
         params.push(scopeIds.sessionId);
       }
       if (scopeIds.repoId) {
-        query += ` AND json_extract(scope_ids, '$.repoId') = ?`;
+        query += ` AND repo_id = ?`;
         params.push(scopeIds.repoId);
       }
       if (scopeIds.agentId) {
-        query += ` AND json_extract(scope_ids, '$.agentId') = ?`;
+        query += ` AND agent_id = ?`;
         params.push(scopeIds.agentId);
       }
       if (scopeIds.userId) {
-        query += ` AND json_extract(scope_ids, '$.userId') = ?`;
+        query += ` AND user_id = ?`;
         params.push(scopeIds.userId);
       }
     }
@@ -589,7 +667,7 @@ var SqliteKindlingStore = class {
       SELECT id, type, intent, status, opened_at, closed_at, scope_ids
       FROM capsules
       WHERE status = 'open'
-        AND json_extract(scope_ids, '$.sessionId') = ?
+        AND session_id = ?
       ORDER BY opened_at DESC
       LIMIT 1
     `).get(sessionId);
@@ -733,19 +811,19 @@ var SqliteKindlingStore = class {
     `;
     const params = [];
     if (scopeIds?.sessionId) {
-      query += ` AND json_extract(scope_ids, '$.sessionId') = ?`;
+      query += ` AND session_id = ?`;
       params.push(scopeIds.sessionId);
     }
     if (scopeIds?.repoId) {
-      query += ` AND json_extract(scope_ids, '$.repoId') = ?`;
+      query += ` AND repo_id = ?`;
       params.push(scopeIds.repoId);
     }
     if (scopeIds?.agentId) {
-      query += ` AND json_extract(scope_ids, '$.agentId') = ?`;
+      query += ` AND agent_id = ?`;
       params.push(scopeIds.agentId);
     }
     if (scopeIds?.userId) {
-      query += ` AND json_extract(scope_ids, '$.userId') = ?`;
+      query += ` AND user_id = ?`;
       params.push(scopeIds.userId);
     }
     if (fromTs !== void 0) {
@@ -841,99 +919,32 @@ var SqliteKindlingStore = class {
 };
 
 // ../../packages/kindling-provider-local/dist/provider/local-fts.js
+var MAX_AGE_MS = 30 * 24 * 60 * 60 * 1e3;
 var LocalFtsProvider = class {
   name = "local-fts";
   db;
-  // Weight for FTS relevance vs recency
-  FTS_WEIGHT = 0.7;
-  RECENCY_WEIGHT = 0.3;
-  // Max age in days for recency scoring (30 days)
-  MAX_AGE_DAYS = 30;
   constructor(db) {
     this.db = db;
   }
   async search(options) {
     const { query, scopeIds, maxResults = 50, excludeIds = [], includeRedacted = false } = options;
-    const ftsMatches = this.findFtsMatches(query);
-    if (ftsMatches.length === 0) {
-      return [];
-    }
-    const entities = this.fetchEntities(ftsMatches, scopeIds, excludeIds, includeRedacted);
-    if (entities.length === 0) {
-      return [];
-    }
-    const scoredResults = this.calculateScores(entities);
-    scoredResults.sort((a, b) => b.score - a.score);
-    return scoredResults.slice(0, maxResults);
-  }
-  /**
-   * Find FTS matches using SQLite FTS5
-   */
-  findFtsMatches(query) {
-    const matches = [];
-    try {
-      const obsStmt = this.db.prepare(`
-        SELECT rowid, rank
-        FROM observations_fts
-        WHERE content MATCH ?
-        ORDER BY rank
-      `);
-      const obsMatches = obsStmt.all(query);
-      matches.push(...obsMatches.map((m) => ({
-        rowid: m.rowid,
-        table_name: "observations",
-        rank: m.rank
-      })));
-    } catch (err2) {
-      if (!this.isFtsSyntaxError(err2))
-        throw err2;
-    }
-    try {
-      const sumStmt = this.db.prepare(`
-        SELECT rowid, rank
-        FROM summaries_fts
-        WHERE content MATCH ?
-        ORDER BY rank
-      `);
-      const sumMatches = sumStmt.all(query);
-      matches.push(...sumMatches.map((m) => ({
-        rowid: m.rowid,
-        table_name: "summaries",
-        rank: m.rank
-      })));
-    } catch (err2) {
-      if (!this.isFtsSyntaxError(err2))
-        throw err2;
-    }
-    return matches;
-  }
-  /**
-   * Fetch entities and apply scope/redaction/exclusion filters
-   */
-  fetchEntities(matches, scopeIds, excludeIds, includeRedacted) {
+    const now = Date.now();
+    const obsRaw = this.searchObservationsRaw(query, scopeIds, excludeIds, includeRedacted, now, maxResults);
+    const sumRaw = this.searchSummariesRaw(query, scopeIds, excludeIds, now, maxResults);
+    const allRanks = [...obsRaw.map((r) => r.fts_rank), ...sumRaw.map((r) => r.fts_rank)];
+    const minRank = allRanks.length > 0 ? Math.min(...allRanks) : 0;
+    const maxRank = allRanks.length > 0 ? Math.max(...allRanks) : 0;
+    const rankRange = maxRank - minRank;
+    const normalizeFts = (rank) => {
+      if (rankRange === 0)
+        return 0.5;
+      return (maxRank - rank) / rankRange;
+    };
     const results = [];
-    const obsMatches = matches.filter((m) => m.table_name === "observations");
-    if (obsMatches.length > 0) {
-      const obsRowids = obsMatches.map((m) => m.rowid);
-      const placeholders = obsRowids.map(() => "?").join(",");
-      const scopeFilter = this.buildScopeFilters(scopeIds);
-      let obsQuery = `
-        SELECT o.rowid, o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted
-        FROM observations o
-        WHERE o.rowid IN (${placeholders})
-      `;
-      if (!includeRedacted) {
-        obsQuery += ` AND o.redacted = 0`;
-      }
-      if (scopeFilter.clauses.length > 0) {
-        obsQuery += ` AND (${scopeFilter.clauses.join(" AND ")})`;
-      }
-      const obsStmt = this.db.prepare(obsQuery);
-      const observations = obsStmt.all(...obsRowids, ...scopeFilter.params);
-      for (const row of observations) {
-        if (excludeIds.includes(row.id))
-          continue;
-        const observation = {
+    for (const row of obsRaw) {
+      const score = Math.min(1, Math.max(0, normalizeFts(row.fts_rank) * 0.7 + row.recency * 0.3));
+      results.push({
+        entity: {
           id: row.id,
           kind: row.kind,
           content: row.content,
@@ -941,112 +952,124 @@ var LocalFtsProvider = class {
           ts: row.ts,
           scopeIds: JSON.parse(row.scope_ids),
           redacted: row.redacted === 1
-        };
-        const ftsMatch = obsMatches.find((m) => m.rowid === row.rowid);
-        if (ftsMatch) {
-          results.push({ entity: observation, ftsMatch });
-        }
-      }
+        },
+        score: Math.round(score * 1e10) / 1e10,
+        matchContext: row.content.length <= 100 ? row.content : row.content.substring(0, 100) + "..."
+      });
     }
-    const sumMatches = matches.filter((m) => m.table_name === "summaries");
-    if (sumMatches.length > 0) {
-      const sumRowids = sumMatches.map((m) => m.rowid);
-      const placeholders = sumRowids.map(() => "?").join(",");
-      const sumScopeFilter = this.buildScopeFilters(scopeIds, "c");
-      let sumQuery = `
-        SELECT s.rowid, s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at
-        FROM summaries s
-        INNER JOIN capsules c ON s.capsule_id = c.id
-        WHERE s.rowid IN (${placeholders})
-      `;
-      if (sumScopeFilter.clauses.length > 0) {
-        sumQuery += ` AND (${sumScopeFilter.clauses.join(" AND ")})`;
-      }
-      const sumStmt = this.db.prepare(sumQuery);
-      const summaries = sumStmt.all(...sumRowids, ...sumScopeFilter.params);
-      for (const row of summaries) {
-        if (excludeIds.includes(row.id))
-          continue;
-        const summary = {
+    for (const row of sumRaw) {
+      const score = Math.min(1, Math.max(0, normalizeFts(row.fts_rank) * 0.7 + row.recency * 0.3));
+      results.push({
+        entity: {
           id: row.id,
           capsuleId: row.capsule_id,
           content: row.content,
           confidence: row.confidence,
           evidenceRefs: JSON.parse(row.evidence_refs),
           createdAt: row.created_at
-        };
-        const ftsMatch = sumMatches.find((m) => m.rowid === row.rowid);
-        if (ftsMatch) {
-          results.push({ entity: summary, ftsMatch });
-        }
-      }
+        },
+        score: Math.round(score * 1e10) / 1e10,
+        matchContext: row.content.length <= 100 ? row.content : row.content.substring(0, 100) + "..."
+      });
     }
-    return results;
+    results.sort((a, b) => b.score - a.score);
+    return results.slice(0, maxResults);
   }
   /**
-   * Build scope filter SQL clauses with parameterized queries
+   * Search observations — returns raw rows with fts_rank and recency.
+   * BM25 normalization is done in the caller across all entity types
+   * so scores are comparable between observations and summaries.
+   */
+  searchObservationsRaw(query, scopeIds, excludeIds, includeRedacted, now, limit) {
+    const scopeFilter = this.buildScopeFilters(scopeIds, "o");
+    const excludeFilter = excludeIds.length > 0 ? `AND o.id NOT IN (${excludeIds.map(() => "?").join(",")})` : "";
+    const redactedFilter = includeRedacted ? "" : "AND o.redacted = 0";
+    const sql = `
+      WITH fts_hits AS (
+        SELECT rowid, rank FROM observations_fts WHERE content MATCH ?
+      )
+      SELECT
+        o.id, o.kind, o.content, o.provenance, o.ts, o.scope_ids, o.redacted,
+        f.rank AS fts_rank,
+        MAX(0.0, 1.0 - CAST(? - o.ts AS REAL) / ?) AS recency
+      FROM fts_hits f
+      JOIN observations o ON f.rowid = o.rowid
+      WHERE 1=1
+        ${redactedFilter}
+        ${scopeFilter.clauses.length > 0 ? "AND " + scopeFilter.clauses.join(" AND ") : ""}
+        ${excludeFilter}
+      ORDER BY f.rank ASC
+      LIMIT ?
+    `;
+    const params = [query, now, MAX_AGE_MS, ...scopeFilter.params, ...excludeIds, limit];
+    try {
+      return this.db.prepare(sql).all(...params);
+    } catch (err2) {
+      if (this.isFtsSyntaxError(err2))
+        return [];
+      throw err2;
+    }
+  }
+  /**
+   * Search summaries — returns raw rows with fts_rank and recency.
+   * BM25 normalization is done in the caller across all entity types.
+   */
+  searchSummariesRaw(query, scopeIds, excludeIds, now, limit) {
+    const scopeFilter = this.buildScopeFilters(scopeIds, "c");
+    const excludeFilter = excludeIds.length > 0 ? `AND s.id NOT IN (${excludeIds.map(() => "?").join(",")})` : "";
+    const sql = `
+      WITH fts_hits AS (
+        SELECT rowid, rank FROM summaries_fts WHERE content MATCH ?
+      )
+      SELECT
+        s.id, s.capsule_id, s.content, s.confidence, s.evidence_refs, s.created_at,
+        f.rank AS fts_rank,
+        MAX(0.0, 1.0 - CAST(? - s.created_at AS REAL) / ?) AS recency
+      FROM fts_hits f
+      JOIN summaries s ON f.rowid = s.rowid
+      JOIN capsules c ON s.capsule_id = c.id
+      WHERE 1=1
+        ${scopeFilter.clauses.length > 0 ? "AND " + scopeFilter.clauses.join(" AND ") : ""}
+        ${excludeFilter}
+      ORDER BY f.rank ASC
+      LIMIT ?
+    `;
+    const params = [query, now, MAX_AGE_MS, ...scopeFilter.params, ...excludeIds, limit];
+    try {
+      return this.db.prepare(sql).all(...params);
+    } catch (err2) {
+      if (this.isFtsSyntaxError(err2))
+        return [];
+      throw err2;
+    }
+  }
+  /**
+   * Build scope filter SQL clauses using denormalized columns
    */
   buildScopeFilters(scopeIds, tablePrefix = "") {
     const clauses = [];
     const params = [];
-    const col = tablePrefix ? `${tablePrefix}.scope_ids` : "scope_ids";
+    const prefix = tablePrefix ? `${tablePrefix}.` : "";
     if (scopeIds.sessionId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.sessionId') = ?`);
+      clauses.push(`${prefix}session_id = ?`);
       params.push(scopeIds.sessionId);
     }
     if (scopeIds.repoId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.repoId') = ?`);
+      clauses.push(`${prefix}repo_id = ?`);
       params.push(scopeIds.repoId);
     }
     if (scopeIds.agentId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.agentId') = ?`);
+      clauses.push(`${prefix}agent_id = ?`);
       params.push(scopeIds.agentId);
     }
     if (scopeIds.userId !== void 0) {
-      clauses.push(`json_extract(${col}, '$.userId') = ?`);
+      clauses.push(`${prefix}user_id = ?`);
       params.push(scopeIds.userId);
     }
     return { clauses, params };
   }
   /**
-   * Calculate combined score: FTS relevance + recency
-   */
-  calculateScores(entities) {
-    const ftsRanks = entities.map((e) => e.ftsMatch.rank);
-    const minRank = Math.min(...ftsRanks);
-    const maxRank = Math.max(...ftsRanks);
-    const rankRange = maxRank - minRank;
-    const now = Date.now();
-    return entities.map(({ entity, ftsMatch }) => {
-      const ftsRelevance = rankRange > 0 ? (maxRank - ftsMatch.rank) / rankRange : 1;
-      const entityTs = this.getTimestamp(entity);
-      const ageDays = (now - entityTs) / (1e3 * 60 * 60 * 24);
-      const recencyScore = Math.max(0, 1 - ageDays / this.MAX_AGE_DAYS);
-      const score = ftsRelevance * this.FTS_WEIGHT + recencyScore * this.RECENCY_WEIGHT;
-      const matchContext = this.extractMatchContext(entity);
-      const clampedScore = Math.min(1, Math.max(0, score));
-      const roundedScore = Math.round(clampedScore * 1e10) / 1e10;
-      return {
-        entity,
-        score: roundedScore,
-        matchContext
-      };
-    });
-  }
-  /**
-   * Get timestamp from entity (observations have ts, summaries have createdAt)
-   */
-  getTimestamp(entity) {
-    if ("ts" in entity) {
-      return entity.ts;
-    } else {
-      return entity.createdAt;
-    }
-  }
-  /**
    * Check if an error is an FTS5 query syntax error (safe to swallow).
-   * Covers all known SQLite/FTS5 error messages for malformed MATCH input.
-   * All other database errors are propagated.
    */
   isFtsSyntaxError(err2) {
     if (err2 instanceof Error) {
@@ -1054,17 +1077,6 @@ var LocalFtsProvider = class {
       return msg.includes("fts5") || msg.includes("fts syntax") || msg.includes("unterminated string") || msg.includes("unknown special query");
     }
     return false;
-  }
-  /**
-   * Extract snippet showing match context
-   */
-  extractMatchContext(entity) {
-    const content = entity.content;
-    const maxLength = 100;
-    if (content.length <= maxLength) {
-      return content;
-    }
-    return content.substring(0, maxLength) + "...";
   }
 };
 
