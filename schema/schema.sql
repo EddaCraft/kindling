@@ -22,6 +22,16 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at  INTEGER NOT NULL          -- epoch milliseconds
 );
 
+-- Seed migration history so the TypeScript runner (which checks
+-- schema_migrations to determine the current version) does not attempt
+-- to replay migrations against an already-complete schema.
+INSERT OR IGNORE INTO schema_migrations (version, name, applied_at) VALUES
+  (1, '001_init',                  0),
+  (2, '002_fts',                   0),
+  (3, '003_indexes',               0),
+  (4, '004_denormalize_scopes',    0),
+  (5, '005_pragma_user_version',   0);
+
 -- Atomic units of captured context.
 CREATE TABLE IF NOT EXISTS observations (
   id          TEXT    PRIMARY KEY,
