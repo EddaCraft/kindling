@@ -24,6 +24,7 @@ post-v0.3 integration changes, and conversion-surface depth.
 - [x] anvil emits observations directly via `kindling-client` — no TS bridge (`command.invoked` via `KindlingDaemonSink`, anvil PR #2897; opt-in `ANVIL_KINDLING_SINK=daemon`, default `ndjson` unchanged)
 - [x] `pnpm add @eddacraft/kindling` installs the binary and exposes a typed thin client with no native deps (in-repo: per-platform `optionalDependencies` injected at publish; end-to-end registry validation user-gated)
 - [x] All deprecated TS implementation packages removed from this repo (source dirs deleted; formal `1.0.0` tag + `npm deprecate` remain user-gated)
+- [ ] Public north star, contribution acceptance lanes, curated roadmap, and contributor-ready issue surface are established without making GitHub a second planning authority
 
 ## Constraints
 
@@ -44,6 +45,7 @@ post-v0.3 integration changes, and conversion-surface depth.
 | [06-downstream-integration-surface](./modules/06-downstream-integration-surface.aps.md) | Harden the daemon/client contract anvil consumes (publish, dedup, query, handshake, observability, redaction evidence, runtime facade) | In Progress | 05-rust-port       |
 | [07-intent-capture-events](./modules/07-intent-capture-events.aps.md)                   | kindling-native intent event primitive + export (independent of the Rust port)                                                         | Done        | —                  |
 | [08-conversion-surface](./modules/08-conversion-surface.aps.md)                         | Public first impressions: merge built work, release ops, CLI depth, adapter/docs distribution                                          | In Progress | 05-rust-port       |
+| [09-public-direction-and-contribution](./modules/09-public-direction-and-contribution.aps.md) | Public north star, contribution boundaries, curated roadmap, contributor opportunities, and one-way APS-to-Issues projection           | Draft       | —                  |
 
 See `plans/specs/2026-05-03-rust-canonical-thin-client-design.md` for the current design (daemon, transport, distribution, TS deprecation strategy). The earlier dual-maintain spec at `plans/specs/2026-04-15-rust-port-design.md` is superseded but retained for historical context.
 
@@ -54,6 +56,7 @@ See `plans/specs/2026-05-03-rust-canonical-thin-client-design.md` for the curren
 | Now   | 05-rust-port                      | Close PORT-020 with credential-gated npm deprecation, the formal removal tag, and remaining anvil TS-bridge follow-up |
 | Now   | 06-downstream-integration-surface | Finish KINTEG-013/014 performance work; release and publish the merged post-v0.3 changes                              |
 | Now   | 08-conversion-surface             | Reconcile C12 post-release verification, then select bounded conversion work for Ready promotion                      |
+| Next  | 09-public-direction-and-contribution | Accept the north star and contribution lanes, then publish a small curated contributor-opportunity set before automating sync |
 | Done  | 05-rust-port (implementation)     | Rust engine, daemon, hooks, CLI, distribution scaffolding, thin client, adapters, and anvil KDS integration           |
 | Done  | 06-downstream-integration-surface | KINTEG-001..012 implementation merged; release and registry publication remain lifecycle work                         |
 | Done  | 07-intent-capture-events          | Intent capture primitive + export shipped (independent of the Rust port; KINTENT-001..006 merged)                     |
