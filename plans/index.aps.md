@@ -1,22 +1,26 @@
 # kindling — Plan Index
 
-| Field   | Value                                                          |
-| ------- | -------------------------------------------------------------- |
-| Status  | In Progress                                                    |
-| Owner   | @aneki                                                         |
-| Created | 2026-03-14                                                     |
-| Updated | 2026-06-26 (KINTEG-008 Merged #129; KINTEG-003 In Review #128) |
+| Field   | Value                                                        |
+| ------- | ------------------------------------------------------------ |
+| Status  | In Progress                                                  |
+| Owner   | @aneki                                                       |
+| Created | 2026-03-14                                                   |
+| Updated | 2026-08-04 (KINTEG-006/007/010/011/012 reconciled as Merged) |
 
 ## Problem
 
-kindling is functional (596 tests passing, 10 packages building) and the TypeScript packages are published to npm at v0.1.2. The remaining work is to port kindling to Rust as the **only** implementation. Non-Rust consumers reach kindling via a long-running local daemon (`kindling serve`) over a Unix domain socket, accessed by a thin TypeScript HTTP client distributed as `@eddacraft/kindling` on npm. The current TypeScript implementation packages are deprecated and removed after the cutover.
+kindling's Rust-canonical engine, daemon, hook binary, CLI, client, runtime facade,
+and thin TypeScript client are implemented. Non-Rust consumers reach the daemon
+through `@eddacraft/kindling`; the deprecated TypeScript implementation source has
+been removed. Remaining work is lifecycle closeout for the retired packages,
+post-v0.3 integration changes, and conversion-surface depth.
 
 ## Success Criteria
 
 - [x] All packages published to npm under `@eddacraft` scope
 - [x] Single statically-linked `kindling` binary distributed via cargo (`cargo install eddacraft-kindling` @ 0.2.0 on crates.io); brew, curl|sh, and npm registry validation remain user-gated
-- [ ] `kindling serve` daemon: auto-spawn on first call, idle shutdown after 30 min default, UDS transport (TCP fallback on Windows)
-- [ ] All 7 Claude Code hook types complete in <10ms warm, <100ms cold
+- [x] `kindling serve` daemon: auto-spawn on first call, idle shutdown after 30 min default, UDS transport (authenticated TCP fallback on Windows)
+- [x] All 7 Claude Code hook types complete in <10ms warm, <100ms cold
 - [x] anvil emits observations directly via `kindling-client` — no TS bridge (`command.invoked` via `KindlingDaemonSink`, anvil PR #2897; opt-in `ANVIL_KINDLING_SINK=daemon`, default `ndjson` unchanged)
 - [x] `pnpm add @eddacraft/kindling` installs the binary and exposes a typed thin client with no native deps (in-repo: per-platform `optionalDependencies` injected at publish; end-to-end registry validation user-gated)
 - [x] All deprecated TS implementation packages removed from this repo (source dirs deleted; formal `1.0.0` tag + `npm deprecate` remain user-gated)
@@ -45,16 +49,14 @@ See `plans/specs/2026-05-03-rust-canonical-thin-client-design.md` for the curren
 
 ## Schedule
 
-| Phase | Modules                                   | Target                                                                                                                  |
-| ----- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Now   | 05-rust-port (Phase 1)                    | Foundation crates: workspace, types, store, filter                                                                      |
-| Next  | 05-rust-port (Phase 2)                    | Service + daemon + hook + Rust client; anvil unblocks                                                                   |
-| Then  | 05-rust-port (Phase 3)                    | CLI + umbrella binary + cross-platform builds + cargo/brew/curl distribution                                            |
-| Then  | 05-rust-port (Phase 4)                    | Thin TS client SDK on npm; deprecate TS implementation packages and anvil bridge                                        |
-| Now   | 06-downstream-integration-surface         | KINTEG-003 list API In Review (#128); publish `kindling-client` ≥0.3.0 + `kindling-runtime` (KINTEG-009/008) user-gated |
-| Done  | 05-rust-port (slice)                      | PORT-011 (anvil KDS #2897)                                                                                              |
-| Done  | 06-downstream-integration-surface (slice) | KINTEG-001, KINTEG-002 (#121), KINTEG-004, KINTEG-005, KINTEG-008 (#129), KINTEG-009 (D-009 #125 + spool cap #126)      |
-| Done  | 07-intent-capture-events                  | Intent capture primitive + export shipped (independent of the Rust port; KINTENT-001..006 merged)                       |
+| Phase | Modules                           | Target                                                                                                                |
+| ----- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Now   | 05-rust-port                      | Close PORT-020 with credential-gated npm deprecation, the formal removal tag, and remaining anvil TS-bridge follow-up |
+| Now   | 06-downstream-integration-surface | Finish KINTEG-013/014 performance work; release and publish the merged post-v0.3 changes                              |
+| Now   | 08-conversion-surface             | Reconcile C12 post-release verification, then select bounded conversion work for Ready promotion                      |
+| Done  | 05-rust-port (implementation)     | Rust engine, daemon, hooks, CLI, distribution scaffolding, thin client, adapters, and anvil KDS integration           |
+| Done  | 06-downstream-integration-surface | KINTEG-001..012 implementation merged; release and registry publication remain lifecycle work                         |
+| Done  | 07-intent-capture-events          | Intent capture primitive + export shipped (independent of the Rust port; KINTENT-001..006 merged)                     |
 
 ## Risks
 
