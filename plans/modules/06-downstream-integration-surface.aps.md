@@ -4,22 +4,21 @@
 | ------ | ------ | ----------- |
 | KINTEG | @aneki | In Progress |
 
-**Last reviewed:** 2026-06-27 (KINTEG-008 Merged PR #129; KINTEG-002 Merged PR #121;
-KINTEG-003 Merged PR #128; KINTEG-009 Merged PR #126; PORT-011 Merged;
-KINTEG-010/011/012 drafted from clawpatch review of `main`. All three 0.3.0 items
-shipped; crates.io publish user-gated.)
+**Last reviewed:** 2026-08-04 (KINTEG-006 Merged PR #136; KINTEG-007 Merged PR #135;
+KINTEG-010 Merged PR #140; KINTEG-011 Merged PR #133; KINTEG-012 Merged PR #134.
+KINTEG-013/014 are In Progress; release and crates.io publication remain user-gated.)
 
 ## Purpose
 
 Harden the contract kindling exposes to downstream consumers — chiefly **anvil**,
 whose KDS module proved direct `kindling-client` integration (**PORT-011 Merged** —
-anvil PR #2897/2906). Anvil **KDS-004** remains blocked on kindling **KINTEG-003**
-(list API, #2910); **KDS-005** spool-cap prereq is satisfied (**KINTEG-009** Merged
-PR #126 — publish `kindling-client` 0.3.0 user-gated). Kindling-side
-follow-ups: contract hardening (KINTEG-006/007) and publish of the new runtime crate.
-This
-module turns anvil's integration wishlist (received 2026-06-22) into a vetted,
-deduplicated work plan, grounded against what kindling already ships.
+anvil PR #2897/2906). The kindling-side prerequisites for anvil's structured reads
+and bounded spool are merged (**KINTEG-003** PR #128 and **KINTEG-009** PR #126).
+Contract hardening from KINTEG-006/007/010/011/012 is also merged. Remaining work
+combines KINTEG-013/014 performance hardening with release and registry
+publication. This module turns anvil's integration wishlist (received 2026-06-22)
+into a vetted, deduplicated work plan, grounded against what kindling already
+ships.
 
 kindling stays **mechanism, not policy**: this module exposes capabilities
 (query, handshake, observability, redaction evidence) without encoding anvil's
@@ -286,11 +285,13 @@ Verified against the tree on 2026-06-22:
 - **Validation:** Service test asserting the evidence (count + classes) for a
   payload with N secrets; assert no raw secret bytes appear in the response.
 - **Dependencies:** —
-- **Status:** Proposed
-- **Notes:** Masking already happens in `filter/secrets.rs`; today only a
-  `redacted` bool survives. Add class tagging to the masking pass and thread an
-  evidence struct out. Keep it non-bypassable — evidence is derived from the same
-  pass that masks, not a second optional scan.
+- **Status:** Merged — PR #136 (`feat/service-redaction-evidence`, merged
+  2026-07-12). `RedactionEvidence` now carries the masked-match count and distinct
+  secret classes through service, server, Rust client, and generated TypeScript
+  bindings without exposing matched values.
+- **Notes:** Evidence is produced by the same masking pass that redacts content,
+  including on deduplicated appends, and defaults safely for rolling upgrades
+  against older daemons.
 
 ### KINTEG-007: Publish adapter fixtures (+ export compatibility doc if missing)
 
@@ -305,13 +306,14 @@ Verified against the tree on 2026-06-22:
 - **Validation:** A consumer test that loads the published fixtures and
   round-trips them; doc lint that the compatibility note is reachable.
 - **Dependencies:** KINTEG-004 (kind registry anchors fixture validity)
-- **Status:** Proposed
-- **Notes:** Scope narrowed after anvil's 2026-06-22 confirmation: they dropped
-  the `--dry-run` error-path-with-paths idea I had speculatively added (it was not
-  asked for) and reduced import/export to "request compatibility docs only if
-  missing." Fixtures are the primary deliverable: promote/derive from the internal
-  `crates/kindling/tests/fixtures/capture-cases.json` into a published, versioned
-  fixture set (npm `@eddacraft/kindling` and/or a `fixtures/` dir).
+- **Status:** Merged — PR #135 (`feat/publish-adapter-fixtures`, merged
+  2026-07-12). Versioned Claude Code hook fixtures now ship from the repository
+  and the `@eddacraft/kindling` package, with deterministic sync and consumer
+  round-trip tests; `docs/data-model.md` defines the export-bundle compatibility
+  contract.
+- **Notes:** The fixture set is derived from
+  `crates/kindling/tests/fixtures/capture-cases.json`; `check:fixtures` gates drift
+  between the internal source, repository fixture, and npm package copy.
 
 ### KINTEG-008: `kindling-runtime` — anvil-first integration facade
 
@@ -377,12 +379,13 @@ Verified against the tree on 2026-06-22:
   rejected, with it accepted; assert an arbitrary `X-Kindling-Project` header
   alone cannot read or modify another project's memory.
 - **Dependencies:** —
-- **Status:** Draft
-- **Notes:** Surfaced by clawpatch/codex review (2026-06-26), confirmed-bug
-  (high/high). `crates/kindling-server/src/lib.rs` (`serve_on_tcp`, ~L189-203).
-  The UDS path relies on filesystem permissions; the TCP path only publishes the
-  port number. Treat as a **design decision first** — confirm the intended TCP
-  trust model (a decision record may be warranted) before implementing.
+- **Status:** Merged — PR #140 (`fix/tcp-daemon-auth`, merged 2026-07-12).
+  The daemon now writes an owner-only per-daemon bearer token beside the TCP port
+  file; every TCP request except health requires it, while UDS behaviour is
+  unchanged.
+- **Notes:** The client reads and sends the token automatically. Tests cover
+  missing, incorrect, and correct tokens; prove `X-Kindling-Project` alone grants
+  no access; and verify owner-only token permissions on Unix.
 
 ### KINTEG-011: Make capsule close atomic when the summary is missing
 
@@ -400,10 +403,10 @@ Verified against the tree on 2026-06-22:
   to assert the capsule remains open (status and `closed_at` unchanged) after a
   `SummaryNotFound` failure.
 - **Dependencies:** —
-- **Status:** Draft
-- **Notes:** Surfaced by clawpatch/codex review (2026-06-26), confirmed-bug
-  (medium/high). Touches `kindling-store` — sequence after / coordinate with any
-  in-flight store work (KINTEG-002) to avoid collision.
+- **Status:** Merged — PR #133 (`fix/atomic-capsule-close`, merged 2026-07-12).
+  `close_capsule` now validates the summary before updating capsule status.
+- **Notes:** The integration test proves a missing summary returns
+  `SummaryNotFound` while leaving the capsule open with `closed_at` unchanged.
 
 ### KINTEG-012: Honor `--db` routing hint in daemon-backed commands
 
@@ -421,10 +424,12 @@ Verified against the tree on 2026-06-22:
   current import-only `--via-daemon` + `--db` coverage.
 - **Dependencies:** Relates to KINTEG-003 (read/query API also rides daemon
   routing).
-- **Status:** Draft
-- **Notes:** Surfaced by clawpatch/codex review (2026-06-26), contract-mismatch
-  (medium/medium). `crates/kindling/src/lib.rs` (`build_client`, ~L188); coverage
-  gap in `crates/kindling/tests/daemon.rs`.
+- **Status:** Merged — PR #134 (`fix/reject-via-daemon-db`, merged 2026-07-12).
+  Every daemon-backed command now rejects `--via-daemon` combined with `--db`
+  instead of silently routing to the default project.
+- **Notes:** Centralised client construction enforces the rejection for log,
+  capsule, search, pin, unpin, and forget commands; daemon tests cover each verb
+  and require an error that names both conflicting flags.
 
 ### KINTEG-013: Keep outage spooling independent of backlog depth
 
