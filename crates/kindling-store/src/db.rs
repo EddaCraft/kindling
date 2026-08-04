@@ -17,6 +17,20 @@ use rusqlite::{Connection, OpenFlags};
 use crate::error::{StoreError, StoreResult};
 use crate::schema::{schema_version, SCHEMA_SQL};
 
+const MIGRATION_006_SCOPED_KEYSET_INDEXES: &str = r#"
+BEGIN IMMEDIATE;
+DROP INDEX IF EXISTS idx_obs_session_ts;
+DROP INDEX IF EXISTS idx_obs_repo_ts;
+CREATE INDEX idx_obs_session_ts
+  ON observations(session_id, ts ASC, id ASC) WHERE session_id IS NOT NULL;
+CREATE INDEX idx_obs_repo_ts
+  ON observations(repo_id, ts ASC, id ASC) WHERE repo_id IS NOT NULL;
+INSERT OR REPLACE INTO schema_migrations (version, name, applied_at)
+  VALUES (6, '006_scoped_keyset_indexes', unixepoch('subsec') * 1000);
+PRAGMA user_version = 6;
+COMMIT;
+"#;
+
 /// Database open options.
 #[derive(Debug, Clone, Default)]
 pub struct StoreOptions {
@@ -107,6 +121,9 @@ fn ensure_schema(conn: &Connection, readonly: bool) -> StoreResult<()> {
             found: user_version,
             supported: contract.version,
         });
+    }
+    if user_version == 5 && contract.version == 6 && !readonly {
+        conn.execute_batch(MIGRATION_006_SCOPED_KEYSET_INDEXES)?;
     }
     Ok(())
 }

@@ -201,6 +201,58 @@ async fn spooled_when_daemon_down() {
     assert_eq!(spooled.pending_count().unwrap(), 1);
 }
 
+/// A known outage must not trigger a whole-backlog replay attempt for every
+/// newly buffered observation. One burst is deliberately shorter than the
+/// client's recovery-probe interval.
+#[tokio::test]
+async fn sustained_outage_burst_bounds_replay_attempts() {
+    let dir = tempfile::tempdir().unwrap();
+    let socket = dir.path().join("nope.sock");
+    let (_spool_dir, spool_path) = spool_tempdir();
+    let spooled = SpooledClient::new(down_client(socket, PROJECT), spool_path);
+
+    const BURST: usize = 64;
+    for index in 0..BURST {
+        let outcome = spooled
+            .append_observation(message_input(&format!("outage burst {index}")), None, None)
+            .await
+            .expect("outage append");
+        assert!(matches!(outcome, AppendOutcome::Spooled));
+    }
+
+    let status = spooled.spool_status().await.expect("spool status");
+    assert_eq!(status.pending_count, BURST);
+    assert!(
+        status.replay_attempts <= 1,
+        "one outage burst made {} replay attempts",
+        status.replay_attempts
+    );
+}
+
+/// Once the retry interval expires, an unavailable-daemon probe must not parse
+/// and replay the backlog merely to rediscover the same outage.
+#[tokio::test]
+async fn sustained_outage_probe_does_not_replay_backlog() {
+    let dir = tempfile::tempdir().unwrap();
+    let socket = dir.path().join("nope.sock");
+    let (_spool_dir, spool_path) = spool_tempdir();
+    let spooled = SpooledClient::new(down_client(socket, PROJECT), spool_path);
+
+    spooled
+        .append_observation(message_input("before retry interval"), None, None)
+        .await
+        .unwrap();
+    tokio::time::sleep(std::time::Duration::from_millis(1_050)).await;
+    spooled
+        .append_observation(message_input("after retry interval"), None, None)
+        .await
+        .unwrap();
+
+    let status = spooled.spool_status().await.unwrap();
+    assert_eq!(status.pending_count, 2);
+    assert_eq!(status.replay_attempts, 0);
+}
+
 /// 3. Flush replays all spooled entries, in order, into the daemon.
 #[tokio::test]
 async fn flush_replays_in_order() {
@@ -626,6 +678,38 @@ async fn byte_cap_trims_oldest_on_flush_then_drains() {
     let report = live.flush().await.expect("drain");
     assert_eq!(report.replayed, kept.len());
     assert_eq!(live.pending_count().unwrap(), 0);
+}
+
+/// The outage fast path still enforces configured retention without requiring
+/// an explicit flush. It may exceed the target by only the newest NDJSON row.
+#[tokio::test]
+async fn byte_cap_remains_bounded_during_sustained_outage_appends() {
+    let dir = tempfile::tempdir().unwrap();
+    let socket = dir.path().join("nope.sock");
+    let (_spool_dir, spool_path) = spool_tempdir();
+    const MAX_BYTES: u64 = 1_200;
+    let spooled = SpooledClient::with_config(
+        down_client(socket, PROJECT),
+        SpoolConfig::new(spool_path.clone()).with_max_bytes(MAX_BYTES),
+    );
+
+    for index in 0..100 {
+        spooled
+            .append_observation(message_input(&format!("bounded {index}")), None, None)
+            .await
+            .unwrap();
+    }
+
+    let contents = std::fs::read_to_string(&spool_path).unwrap();
+    let largest_row = contents.lines().map(str::len).max().unwrap_or(0) as u64 + 1;
+    let bytes = std::fs::metadata(&spool_path).unwrap().len();
+    assert!(bytes <= MAX_BYTES + largest_row, "{bytes} > bounded cap");
+    assert_eq!(
+        spooled.pending_count().unwrap(),
+        contents.lines().count(),
+        "cached count must track retention compaction"
+    );
+    assert!(spooled.spool_status().await.unwrap().dropped_count > 0);
 }
 
 /// An age cap drops the leading run of over-age entries and spares the rest.

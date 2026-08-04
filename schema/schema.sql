@@ -1,6 +1,6 @@
 -- kindling SQLite Schema Contract
 -- =================================
--- Canonical DDL reflecting the state after all migrations (through 005).
+-- Canonical DDL reflecting the state after all migrations (through 006).
 -- Both the TypeScript store (better-sqlite3) and the Rust crate MUST produce
 -- an identical structure when creating a fresh database.
 --
@@ -9,7 +9,7 @@
 -- Runtime schema version — readable from any SQLite client via:
 --   PRAGMA user_version;
 -- Must match the "version" field in version.json.
-PRAGMA user_version = 5;
+PRAGMA user_version = 6;
 
 -- ============================================================================
 -- Core tables
@@ -30,7 +30,8 @@ INSERT OR IGNORE INTO schema_migrations (version, name, applied_at) VALUES
   (2, '002_fts',                   0),
   (3, '003_indexes',               0),
   (4, '004_denormalize_scopes',    0),
-  (5, '005_pragma_user_version',   0);
+  (5, '005_pragma_user_version',   0),
+  (6, '006_scoped_keyset_indexes', 0);
 
 -- Atomic units of captured context.
 CREATE TABLE IF NOT EXISTS observations (
@@ -188,8 +189,8 @@ END;
 -- Observations
 CREATE INDEX IF NOT EXISTS idx_observations_ts        ON observations(ts DESC);
 CREATE INDEX IF NOT EXISTS idx_observations_kind       ON observations(kind);
-CREATE INDEX IF NOT EXISTS idx_obs_session_ts          ON observations(session_id, ts DESC) WHERE session_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_obs_repo_ts             ON observations(repo_id, ts DESC)    WHERE repo_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_obs_session_ts          ON observations(session_id, ts ASC, id ASC) WHERE session_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_obs_repo_ts             ON observations(repo_id, ts ASC, id ASC)    WHERE repo_id IS NOT NULL;
 
 -- Capsules
 CREATE INDEX IF NOT EXISTS idx_capsules_opened_at      ON capsules(opened_at DESC);

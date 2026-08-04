@@ -1,0 +1,245 @@
+//! Low-overhead process resource sampling for repeatable workload profiles.
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread::{self, JoinHandle};
+use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, Default)]
+struct Snapshot {
+    rss_kib: Option<u64>,
+    threads: Option<u64>,
+    fds: Option<u64>,
+    process_jiffies: Option<u64>,
+    total_jiffies: Option<u64>,
+    read_bytes: Option<u64>,
+    write_bytes: Option<u64>,
+}
+
+/// Resource usage observed while one workload runs.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceSummary {
+    pub platform: String,
+    pub available: bool,
+    pub rss_start_mib: Option<f64>,
+    pub rss_end_mib: Option<f64>,
+    pub peak_rss_mib: Option<f64>,
+    /// End minus start RSS for this workload window (may be negative).
+    pub rss_growth_mib: Option<f64>,
+    /// Peak RSS above the workload's starting baseline.
+    pub peak_rss_over_start_mib: Option<f64>,
+    pub threads_start: Option<u64>,
+    pub peak_threads: Option<u64>,
+    pub peak_threads_over_start: Option<u64>,
+    pub file_descriptors_start: Option<u64>,
+    pub peak_file_descriptors: Option<u64>,
+    pub peak_file_descriptors_over_start: Option<u64>,
+    /// Average CPU consumption where 1.0 is one fully saturated core.
+    pub cpu_cores: Option<f64>,
+    pub read_bytes: Option<u64>,
+    pub write_bytes: Option<u64>,
+}
+
+/// Background sampler. On Linux it samples `/proc/self`; elsewhere resource
+/// fields are reported as unavailable without failing the benchmark.
+pub struct ResourceSampler {
+    before: Snapshot,
+    stop: Arc<AtomicBool>,
+    handle: Option<JoinHandle<Snapshot>>,
+}
+
+impl ResourceSampler {
+    #[must_use]
+    pub fn start(interval: Duration) -> Self {
+        let before = snapshot();
+        let stop = Arc::new(AtomicBool::new(false));
+        let thread_stop = Arc::clone(&stop);
+        let handle = thread::spawn(move || {
+            let mut peak = snapshot();
+            while !thread_stop.load(Ordering::Relaxed) {
+                thread::sleep(interval);
+                let current = snapshot();
+                peak.rss_kib = option_max(peak.rss_kib, current.rss_kib);
+                peak.threads = option_max(peak.threads, current.threads);
+                peak.fds = option_max(peak.fds, current.fds);
+            }
+            peak
+        });
+        Self {
+            before,
+            stop,
+            handle: Some(handle),
+        }
+    }
+
+    #[must_use]
+    pub fn finish(mut self) -> ResourceSummary {
+        self.stop.store(true, Ordering::Relaxed);
+        let peak = self
+            .handle
+            .take()
+            .and_then(|handle| handle.join().ok())
+            .unwrap_or_default();
+        let after = snapshot();
+        let ncpus = thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get);
+        let cpu_cores = match (
+            self.before.process_jiffies,
+            after.process_jiffies,
+            self.before.total_jiffies,
+            after.total_jiffies,
+        ) {
+            (Some(proc_before), Some(proc_after), Some(total_before), Some(total_after)) => {
+                Some(cpu_cores_for_window(
+                    proc_after.saturating_sub(proc_before),
+                    total_after.saturating_sub(total_before),
+                    ncpus,
+                ))
+            }
+            _ => None,
+        };
+        let peak_rss_kib = option_max(option_max(peak.rss_kib, self.before.rss_kib), after.rss_kib);
+        let peak_threads = option_max(option_max(peak.threads, self.before.threads), after.threads);
+        let peak_fds = option_max(option_max(peak.fds, self.before.fds), after.fds);
+        let rss_start_mib = self.before.rss_kib.map(kib_to_mib);
+        let rss_end_mib = after.rss_kib.map(kib_to_mib);
+        let peak_rss_mib = peak_rss_kib.map(kib_to_mib);
+
+        ResourceSummary {
+            platform: std::env::consts::OS.to_string(),
+            available: self.before.rss_kib.is_some(),
+            rss_start_mib,
+            rss_end_mib,
+            peak_rss_mib,
+            rss_growth_mib: rss_end_mib
+                .zip(rss_start_mib)
+                .map(|(end, start)| end - start),
+            peak_rss_over_start_mib: peak_rss_mib
+                .zip(rss_start_mib)
+                .map(|(peak, start)| (peak - start).max(0.0)),
+            threads_start: self.before.threads,
+            peak_threads,
+            peak_threads_over_start: peak_threads
+                .zip(self.before.threads)
+                .map(|(peak, start)| peak.saturating_sub(start)),
+            file_descriptors_start: self.before.fds,
+            peak_file_descriptors: peak_fds,
+            peak_file_descriptors_over_start: peak_fds
+                .zip(self.before.fds)
+                .map(|(peak, start)| peak.saturating_sub(start)),
+            cpu_cores,
+            read_bytes: delta(self.before.read_bytes, after.read_bytes),
+            write_bytes: delta(self.before.write_bytes, after.write_bytes),
+        }
+    }
+}
+
+fn option_max(left: Option<u64>, right: Option<u64>) -> Option<u64> {
+    match (left, right) {
+        (Some(left), Some(right)) => Some(left.max(right)),
+        (left, right) => left.or(right),
+    }
+}
+
+fn delta(before: Option<u64>, after: Option<u64>) -> Option<u64> {
+    Some(after?.saturating_sub(before?))
+}
+
+fn kib_to_mib(kib: u64) -> f64 {
+    kib as f64 / 1024.0
+}
+
+/// Convert process and aggregate CPU deltas into saturated-core units.
+#[must_use]
+pub fn cpu_cores_for_window(process_delta: u64, total_delta: u64, ncpus: usize) -> f64 {
+    if total_delta == 0 {
+        return 0.0;
+    }
+    process_delta as f64 * ncpus as f64 / total_delta as f64
+}
+
+/// Parse resident memory and thread count from `/proc/<pid>/status`.
+#[must_use]
+pub fn parse_proc_status(status: &str) -> Option<(u64, u64)> {
+    let mut rss_kib = None;
+    let mut threads = None;
+    for line in status.lines() {
+        if let Some(value) = line.strip_prefix("VmRSS:") {
+            rss_kib = value.split_whitespace().next()?.parse().ok();
+        } else if let Some(value) = line.strip_prefix("Threads:") {
+            threads = value.trim().parse().ok();
+        }
+    }
+    Some((rss_kib?, threads?))
+}
+
+/// Parse user + system CPU jiffies from `/proc/<pid>/stat`.
+#[must_use]
+pub fn parse_proc_stat(stat: &str) -> Option<u64> {
+    let after_comm = stat.rfind(") ").and_then(|index| stat.get(index + 2..))?;
+    let fields = after_comm.split_whitespace().collect::<Vec<_>>();
+    let user = fields.get(11)?.parse::<u64>().ok()?;
+    let system = fields.get(12)?.parse::<u64>().ok()?;
+    Some(user.saturating_add(system))
+}
+
+/// Parse physical read/write byte counters from `/proc/<pid>/io`.
+#[must_use]
+pub fn parse_proc_io(io: &str) -> Option<(u64, u64)> {
+    let mut read_bytes = None;
+    let mut write_bytes = None;
+    for line in io.lines() {
+        if let Some(value) = line.strip_prefix("read_bytes:") {
+            read_bytes = value.trim().parse().ok();
+        } else if let Some(value) = line.strip_prefix("write_bytes:") {
+            write_bytes = value.trim().parse().ok();
+        }
+    }
+    Some((read_bytes?, write_bytes?))
+}
+
+#[cfg(target_os = "linux")]
+fn snapshot() -> Snapshot {
+    let (rss_kib, threads) = std::fs::read_to_string("/proc/self/status")
+        .ok()
+        .and_then(|value| parse_proc_status(&value))
+        .map_or((None, None), |(rss, threads)| (Some(rss), Some(threads)));
+    let process_jiffies = std::fs::read_to_string("/proc/self/stat")
+        .ok()
+        .and_then(|value| parse_proc_stat(&value));
+    let total_jiffies = std::fs::read_to_string("/proc/stat")
+        .ok()
+        .and_then(|value| parse_total_cpu_jiffies(&value));
+    let (read_bytes, write_bytes) = std::fs::read_to_string("/proc/self/io")
+        .ok()
+        .and_then(|value| parse_proc_io(&value))
+        .map_or((None, None), |(read, write)| (Some(read), Some(write)));
+    let fds = std::fs::read_dir("/proc/self/fd")
+        .ok()
+        .map(|entries| entries.filter_map(Result::ok).count() as u64);
+    Snapshot {
+        rss_kib,
+        threads,
+        fds,
+        process_jiffies,
+        total_jiffies,
+        read_bytes,
+        write_bytes,
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn snapshot() -> Snapshot {
+    Snapshot::default()
+}
+
+fn parse_total_cpu_jiffies(stat: &str) -> Option<u64> {
+    let mut fields = stat.lines().next()?.split_whitespace();
+    (fields.next()? == "cpu").then_some(())?;
+    fields
+        .take(8)
+        .map(str::parse::<u64>)
+        .try_fold(0u64, |total, value| Some(total.saturating_add(value.ok()?)))
+}

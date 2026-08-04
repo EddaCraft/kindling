@@ -171,6 +171,9 @@ cargo build && cargo test
 pnpm install && pnpm run build && pnpm run test
 ```
 
+Performance work uses the Criterion and resource-profiling harness documented
+in [`crates/kindling-bench`](./crates/kindling-bench/README.md).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Contributing

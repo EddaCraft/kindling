@@ -178,3 +178,10 @@ packages/kindling/platforms/
 
 # APS session baseline (ephemeral)
 .claude/.aps-session-baseline
+
+# Local benchmark dumps (file consumer evidence in anvil, not here)
+kindling-perf.json
+kindling-stress.json
+benchmark-results/
+**/criterion/
+.dev-loop/

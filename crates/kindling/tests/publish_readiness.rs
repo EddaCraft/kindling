@@ -104,9 +104,15 @@ fn spool_module_lives_only_under_kindling_client() {
         .filter_map(Result::ok)
         .map(|e| e.file_name().to_string_lossy().into_owned())
         .collect();
-    assert_eq!(members.len(), 8, "workspace must have exactly eight crates");
+    assert_eq!(members.len(), 9, "workspace must have exactly nine crates");
     assert!(members.contains(&"kindling-client".to_string()));
     assert!(members.contains(&"kindling-runtime".to_string()));
+    assert!(members.contains(&"kindling-bench".to_string()));
+    let benchmark_manifest = read(root.join("crates/kindling-bench/Cargo.toml"));
+    assert!(
+        benchmark_manifest.contains("publish = false"),
+        "kindling-bench must remain a private workspace-only crate"
+    );
     assert!(
         root.join("crates/kindling-client/src/spool.rs").is_file(),
         "spool.rs must live under kindling-client"

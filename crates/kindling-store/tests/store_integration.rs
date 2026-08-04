@@ -568,6 +568,101 @@ fn rejects_newer_schema_versions() {
 }
 
 #[test]
+fn upgrades_v5_scope_indexes_for_keyset_order() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("kindling.db");
+    {
+        let store = SqliteKindlingStore::open(&path).unwrap();
+        store
+            .connection()
+            .execute_batch(
+                "DROP INDEX idx_obs_repo_ts;
+                 DROP INDEX idx_obs_session_ts;
+                 CREATE INDEX idx_obs_repo_ts
+                   ON observations(repo_id, ts DESC) WHERE repo_id IS NOT NULL;
+                 CREATE INDEX idx_obs_session_ts
+                   ON observations(session_id, ts DESC) WHERE session_id IS NOT NULL;
+                 DELETE FROM schema_migrations WHERE version > 5;
+                 PRAGMA user_version = 5;",
+            )
+            .unwrap();
+    }
+
+    let store = SqliteKindlingStore::open(&path).expect("upgrade v5 database");
+    let user_version: i64 = store
+        .connection()
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(user_version, 6);
+
+    for (index, scope_column) in [
+        ("idx_obs_repo_ts", "repo_id"),
+        ("idx_obs_session_ts", "session_id"),
+    ] {
+        let mut stmt = store
+            .connection()
+            .prepare(&format!("PRAGMA index_info('{index}')"))
+            .unwrap();
+        let columns = stmt
+            .query_map([], |row| row.get::<_, String>(2))
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(columns, [scope_column, "ts", "id"]);
+    }
+}
+
+#[test]
+fn readonly_v5_database_remains_compatible_without_migration() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("kindling.db");
+    {
+        let store = SqliteKindlingStore::open(&path).unwrap();
+        store
+            .insert_observation(&observation("obs-v5", "compatible", 1_000, "session"))
+            .unwrap();
+        store
+            .connection()
+            .execute_batch(
+                "DELETE FROM schema_migrations WHERE version = 6; PRAGMA user_version = 5;",
+            )
+            .unwrap();
+    }
+
+    let store = SqliteKindlingStore::open_with_options(&path, &StoreOptions { readonly: true })
+        .expect("read-only v5 remains compatible");
+    assert!(store.get_observation_by_id("obs-v5").unwrap().is_some());
+    let user_version: i64 = store
+        .connection()
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(user_version, 5, "read-only open must not migrate");
+}
+
+#[test]
+fn repo_keyset_list_uses_covering_order_without_temp_sort() {
+    let store = SqliteKindlingStore::open_in_memory().unwrap();
+    let sql = "EXPLAIN QUERY PLAN
+        SELECT id, kind, content, provenance, ts, scope_ids, redacted
+        FROM observations
+        WHERE repo_id = ?1 AND redacted = 0
+          AND (ts > ?2 OR (ts = ?2 AND id > ?3))
+        ORDER BY ts ASC, id ASC
+        LIMIT ?4";
+    let mut stmt = store.connection().prepare(sql).unwrap();
+    let details = stmt
+        .query_map(rusqlite::params!["repo", 0_i64, "cursor", 501_i64], |row| {
+            row.get::<_, String>(3)
+        })
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    let plan = details.join("\n");
+    assert!(plan.contains("idx_obs_repo_ts"), "{plan}");
+    assert!(!plan.contains("TEMP B-TREE"), "{plan}");
+}
+
+#[test]
 fn rejects_pre_contract_databases() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("kindling.db");
