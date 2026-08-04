@@ -44,7 +44,15 @@ CI and lab runs:
 cargo run -p kindling-bench --release -- --profile smoke --pretty
 cargo run -p kindling-bench --release -- --profile standard > kindling-perf.json
 cargo run -p kindling-bench --release -- --profile stress > kindling-stress.json
+
+# Per-group resource isolation (recommended for release RSS/thread/FD gates):
+cargo run -p kindling-bench --release -- --profile standard --isolated-process \
+  > kindling-perf-isolated.json
 ```
+
+Do **not** commit `kindling-perf.json` / `kindling-stress.json` or Criterion
+trees here. Consumer-side historical tables live in the **anvil** repo under
+`benchmarks/history/kindling/`.
 
 | Profile    | Purpose                          | Seed rows | Measured writes | Concurrent writes | Spool/replay rows |
 | ---------- | -------------------------------- | --------: | --------------: | ----------------: | ----------------: |
@@ -57,15 +65,24 @@ operations/second. Full-scan metrics also report rows processed so pagination
 completeness is visible. Outage writes include aggregate, first-10%, and
 last-10% windows so backlog-dependent latency is not hidden by one percentile.
 
-Resource sampling uses `/proc/self` on Linux because the bundled daemon runs in
-the same process. It reports average CPU in saturated-core units (`1.0` means
-one fully used core), start/end/peak RSS, peak RSS above the workload baseline,
-RSS growth, starting and peak threads/file descriptors with peak-over-start
-deltas, and physical read/write byte deltas. Absolute values describe the
-benchmark process; the delta fields describe resources added during one
-workload window. Unsupported operating systems return
-`available: false` and `null` resource fields while still producing latency,
-throughput, and storage measurements.
+Resource sampling uses `/proc/self` on Linux. Default mode is **in-process**:
+groups share one process, so RSS/thread peaks can accumulate across groups
+(directional only). Prefer **`--isolated-process`** when collecting numbers for
+release resource gates: each group runs in a fresh child so deltas are
+per-workload.
+
+Each group reports:
+
+- average CPU in saturated-core units (`1.0` = one fully used core);
+- start/end/peak RSS and peak-over-start;
+- threads and file descriptors with peak-over-start deltas;
+- **physical** `read_bytes` / `write_bytes` (kernel disk accounting — often `0`
+  on tmpfs or when writeback has not flushed);
+- **logical** `logicalReadBytes` / `logicalWriteBytes` (`rchar` / `wchar`) which
+  still advance when physical counters stay flat.
+
+Unsupported operating systems return `available: false` and `null` resource
+fields while still producing latency, throughput, and storage measurements.
 
 For comparable numbers, use the same release build, hardware, filesystem,
 power profile, dataset profile, and background-load conditions. Run the suite

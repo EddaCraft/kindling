@@ -1,5 +1,6 @@
 use kindling_bench::resources::{
-    cpu_cores_for_window, parse_proc_io, parse_proc_stat, parse_proc_status, ResourceSampler,
+    cpu_cores_for_window, parse_proc_io, parse_proc_stat, parse_proc_status, ProcIo,
+    ResourceSampler,
 };
 use std::time::Duration;
 
@@ -7,11 +8,19 @@ use std::time::Duration;
 fn linux_resource_documents_are_parsed() {
     let status = "Name:\tkindling-bench\nVmRSS:\t  12345 kB\nThreads:\t7\n";
     let process_stat = "123 (kindling bench) R 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16";
-    let io = "read_bytes: 4096\nwrite_bytes: 8192\n";
+    let io = "rchar: 100\nwchar: 200\nread_bytes: 4096\nwrite_bytes: 8192\n";
 
     assert_eq!(parse_proc_status(status), Some((12_345, 7)));
     assert_eq!(parse_proc_stat(process_stat), Some(23));
-    assert_eq!(parse_proc_io(io), Some((4_096, 8_192)));
+    assert_eq!(
+        parse_proc_io(io),
+        Some(ProcIo {
+            read_bytes: 4_096,
+            write_bytes: 8_192,
+            rchar: 100,
+            wchar: 200,
+        })
+    );
 }
 
 #[test]
