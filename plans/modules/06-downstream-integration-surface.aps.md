@@ -443,11 +443,12 @@ Verified against the tree on 2026-06-22:
   profile pass. The benchmark records early and late outage-write windows so
   backlog-dependent latency remains visible.
 - **Dependencies:** KINTEG-002, KINTEG-005, KINTEG-009 (all closed).
-- **Status:** In Progress
+- **Status:** Merged — PR #143 (`feat/performance-benchmarks`, merged 2026-08-04, tip `f6dcd7d`).
 - **Notes:** Standard-risk performance hardening under the existing
   single-producer-per-spool invariant. It does not add aggregation policy,
   cross-process locking, or change retention defaults. Design:
   `plans/specs/2026-08-03-kindling-performance-hardening-design.md`.
+  Anvil consumer history: eddacraft/anvil-001 `benchmarks/history/kindling/2026-08-04.json`.
 
 ### KINTEG-014: Index deterministic scoped reads
 
@@ -463,7 +464,7 @@ Verified against the tree on 2026-06-22:
   `EXPLAIN QUERY PLAN` regression check rejects temporary ordering for the
   representative repo-scoped keyset query; workspace schema drift gates pass.
 - **Dependencies:** KINTEG-003 (closed).
-- **Status:** In Progress
+- **Status:** Merged — PR #143 (`feat/performance-benchmarks`, merged 2026-08-04, tip `f6dcd7d`).
 - **Notes:** This implements the index migration explicitly deferred by D-009
   until profiling proved a filesort. It adds no aggregation endpoint or
   downstream policy. Design:
