@@ -425,3 +425,46 @@ Verified against the tree on 2026-06-22:
 - **Notes:** Surfaced by clawpatch/codex review (2026-06-26), contract-mismatch
   (medium/medium). `crates/kindling/src/lib.rs` (`build_client`, ~L188); coverage
   gap in `crates/kindling/tests/daemon.rs`.
+
+### KINTEG-013: Keep outage spooling independent of backlog depth
+
+- **Intent:** Prevent sustained daemon outages from making each buffered append
+  progressively slower as the spool grows. The current append path parses and
+  rewrites the whole backlog and retries a known-unavailable daemon for nearly
+  every new observation.
+- **Expected Outcome:** A single-producer `SpooledClient` caches its live pending
+  count, applies a bounded retry backoff after connectivity failures, and appends
+  behind an existing backlog without rescanning it. Ordered replay, stable ids,
+  passive on-disk status, retention trimming, and exactly-once-ish application
+  remain unchanged.
+- **Validation:** A public-interface regression test proves a burst during one
+  outage does not attempt backlog replay per appended observation; the client
+  spool integration suite, workspace tests, clippy, and the outage benchmark
+  profile pass. The benchmark records early and late outage-write windows so
+  backlog-dependent latency remains visible.
+- **Dependencies:** KINTEG-002, KINTEG-005, KINTEG-009 (all closed).
+- **Status:** In Progress
+- **Notes:** Standard-risk performance hardening under the existing
+  single-producer-per-spool invariant. It does not add aggregation policy,
+  cross-process locking, or change retention defaults. Design:
+  `plans/specs/2026-08-03-kindling-performance-hardening-design.md`.
+
+### KINTEG-014: Index deterministic scoped reads
+
+- **Intent:** Remove SQLite's temporary sort from the bounded observation-list
+  path. Existing scope indexes end at `ts`, while deterministic keyset ordering
+  and cursors use `(ts, id)`.
+- **Expected Outcome:** Schema migration 006 rebuilds the repo and session scope
+  indexes as `(scope_id, ts, id)`, preserving their partial predicates. Fresh
+  and upgraded databases expose the same indexes, older read-only databases
+  remain readable, and list results/cursors are unchanged.
+- **Validation:** Migration coverage upgrades a v5-shaped database and checks
+  index columns plus `user_version`; list filtering/pagination suites pass; an
+  `EXPLAIN QUERY PLAN` regression check rejects temporary ordering for the
+  representative repo-scoped keyset query; workspace schema drift gates pass.
+- **Dependencies:** KINTEG-003 (closed).
+- **Status:** In Progress
+- **Notes:** This implements the index migration explicitly deferred by D-009
+  until profiling proved a filesort. It adds no aggregation endpoint or
+  downstream policy. Design:
+  `plans/specs/2026-08-03-kindling-scoped-read-index-design.md`.

@@ -309,8 +309,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn expected_schema_version_parses_to_five() {
-        // schema/version.json currently pins version 5.
-        assert_eq!(EXPECTED_SCHEMA_VERSION, 5);
+    fn expected_schema_version_parses_to_six() {
+        // schema/version.json currently pins version 6.
+        assert_eq!(EXPECTED_SCHEMA_VERSION, 6);
     }
 }

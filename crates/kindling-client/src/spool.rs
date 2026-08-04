@@ -80,11 +80,13 @@
 //! and do not drop a newer entry while keeping an older one* — not infinite
 //! retention. Shed entries are counted in
 //! [`SpoolStatus::dropped_count`](crate::SpoolStatus). The append-under-outage
-//! path stays near the cap because `append_observation` opportunistically
-//! `flush`es (and therefore trims) whenever a backlog already exists, so the
-//! spool exceeds the cap by at most the entry appended since the last flush.
+//! path checks the physical byte cap before appending and age retention at most
+//! once per second. Byte compaction trims to a 90% low-water mark so writes near
+//! the cap remain amortized rather than rewriting the spool for every row; the
+//! file can exceed the configured target by at most the newest appended entry.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -93,6 +95,9 @@ use uuid::Uuid;
 
 use crate::{AppendResult, Client, ClientError};
 use kindling_types::{Id, ObservationInput};
+
+const PENDING_COUNT_UNKNOWN: usize = usize::MAX;
+const CONNECTIVITY_RETRY_BACKOFF_MS: i64 = 1_000;
 
 /// Live + on-disk spool observability snapshot.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -268,6 +273,14 @@ pub struct SpooledClient {
     file_lock: Mutex<()>,
     /// Live flush/error/replay counters for this client instance.
     runtime: Mutex<SpoolRuntime>,
+    /// Live count under the single-producer contract. A sentinel preserves
+    /// construction's infallible API when the existing spool cannot be read.
+    pending_count: AtomicUsize,
+    /// Wall-clock deadline before opportunistic appends probe recovery again.
+    /// Explicit [`flush`](Self::flush) calls always probe immediately.
+    retry_after_ms: AtomicI64,
+    /// Last time the outage fast path checked age-based retention.
+    last_retention_check_ms: AtomicI64,
 }
 
 impl SpooledClient {
@@ -276,6 +289,7 @@ impl SpooledClient {
     /// retention cap.
     pub fn new(client: Client, spool_path: PathBuf) -> Self {
         let runtime = load_runtime_sidecar(&spool_path);
+        let pending_count = initial_pending_count(&spool_path);
         Self {
             client,
             spool_path,
@@ -283,12 +297,16 @@ impl SpooledClient {
             max_age_ms: None,
             file_lock: Mutex::new(()),
             runtime: Mutex::new(runtime),
+            pending_count: AtomicUsize::new(pending_count),
+            retry_after_ms: AtomicI64::new(0),
+            last_retention_check_ms: AtomicI64::new(0),
         }
     }
 
     /// Build from a [`SpoolConfig`], carrying its retention caps.
     pub fn with_config(client: Client, config: SpoolConfig) -> Self {
         let runtime = load_runtime_sidecar(&config.spool_path);
+        let pending_count = initial_pending_count(&config.spool_path);
         Self {
             client,
             spool_path: config.spool_path,
@@ -296,6 +314,9 @@ impl SpooledClient {
             max_age_ms: config.max_age_ms,
             file_lock: Mutex::new(()),
             runtime: Mutex::new(runtime),
+            pending_count: AtomicUsize::new(pending_count),
+            retry_after_ms: AtomicI64::new(0),
+            last_retention_check_ms: AtomicI64::new(0),
         }
     }
 
@@ -335,10 +356,26 @@ impl SpooledClient {
         // If the drain can't reach the daemon, this new entry will spool behind
         // it below, still in order.
         if self.pending_count()? > 0 {
+            if self.connectivity_retry_deferred() {
+                self.maintain_retention_if_due().await?;
+                return self.spool_observation(input, capsule_id, validate).await;
+            }
+            match self.client.health().await {
+                Ok(_) => {}
+                Err(err) if is_connectivity_error(&err) => {
+                    self.record_connectivity_error(&err).await;
+                    self.maintain_retention_if_due().await?;
+                    return self.spool_observation(input, capsule_id, validate).await;
+                }
+                Err(err) => return Err(SpoolError::Client(err)),
+            }
             // Best-effort: a connectivity failure here is fine — we proceed and
             // (most likely) spool the new entry behind the backlog. A
             // *propagating* client error from a backlog entry must surface.
-            self.flush().await?;
+            let report = self.flush().await?;
+            if report.remaining > 0 {
+                return self.spool_observation(input, capsule_id, validate).await;
+            }
         }
 
         match self
@@ -349,14 +386,7 @@ impl SpooledClient {
             Ok(result) => Ok(AppendOutcome::Delivered(Box::new(result))),
             Err(err) if is_connectivity_error(&err) => {
                 self.record_connectivity_error(&err).await;
-                let entry = SpoolEntry {
-                    input,
-                    capsule_id,
-                    validate,
-                    spooled_at: Some(now_ms()),
-                };
-                self.append_to_spool(&entry).await?;
-                Ok(AppendOutcome::Spooled)
+                self.spool_observation(input, capsule_id, validate).await
             }
             Err(err) => Err(SpoolError::Client(err)),
         }
@@ -383,6 +413,7 @@ impl SpooledClient {
         let entries = read_spool(&self.spool_path)?;
         let total = entries.len();
         if total == 0 {
+            self.pending_count.store(0, Ordering::Release);
             return Ok(FlushReport {
                 replayed: 0,
                 remaining: 0,
@@ -390,10 +421,11 @@ impl SpooledClient {
         }
 
         let mut replayed = 0usize;
+        let mut replay_attempts = 0u64;
         let mut propagate: Option<ClientError> = None;
 
         for (idx, entry) in entries.iter().enumerate() {
-            self.bump_replay_attempts().await;
+            replay_attempts = replay_attempts.saturating_add(1);
             match self
                 .client
                 .append_observation(
@@ -418,6 +450,7 @@ impl SpooledClient {
                 }
             }
         }
+        self.bump_replay_attempts(replay_attempts).await;
 
         // Apply the retention cap to the *retained* remainder (the un-replayed
         // tail), then rewrite. Trimming only the oldest leading prefix keeps the
@@ -436,6 +469,7 @@ impl SpooledClient {
             0
         };
         rewrite_spool(&self.spool_path, &remainder)?;
+        self.pending_count.store(remainder.len(), Ordering::Release);
 
         if dropped > 0 {
             self.bump_dropped(dropped as u64).await;
@@ -455,9 +489,9 @@ impl SpooledClient {
         })
     }
 
-    async fn bump_replay_attempts(&self) {
+    async fn bump_replay_attempts(&self, attempts: u64) {
         let mut rt = self.runtime.lock().await;
-        rt.replay_attempts = rt.replay_attempts.saturating_add(1);
+        rt.replay_attempts = rt.replay_attempts.saturating_add(attempts);
         persist_runtime_sidecar(&self.spool_path, &rt);
     }
 
@@ -468,12 +502,17 @@ impl SpooledClient {
     }
 
     async fn record_connectivity_error(&self, err: &ClientError) {
+        self.retry_after_ms.store(
+            now_ms().saturating_add(CONNECTIVITY_RETRY_BACKOFF_MS),
+            Ordering::Release,
+        );
         let mut rt = self.runtime.lock().await;
         rt.last_error = Some(err.to_string());
         persist_runtime_sidecar(&self.spool_path, &rt);
     }
 
     async fn record_successful_flush(&self) {
+        self.retry_after_ms.store(0, Ordering::Release);
         let mut rt = self.runtime.lock().await;
         rt.last_flush_time_ms = Some(now_ms());
         rt.last_error = None;
@@ -482,7 +521,14 @@ impl SpooledClient {
 
     /// Count of pending (un-replayed) spool entries.
     pub fn pending_count(&self) -> Result<usize, SpoolError> {
-        Ok(read_spool(&self.spool_path)?.len())
+        let cached = self.pending_count.load(Ordering::Acquire);
+        if cached != PENDING_COUNT_UNKNOWN {
+            return Ok(cached);
+        }
+
+        let count = read_spool(&self.spool_path)?.len();
+        self.pending_count.store(count, Ordering::Release);
+        Ok(count)
     }
 
     /// Observability snapshot for this client (pending count + live counters).
@@ -530,8 +576,80 @@ impl SpooledClient {
         file.write_all(line.as_bytes())?;
         file.write_all(b"\n")?;
         file.flush()?;
+        self.pending_count.fetch_add(1, Ordering::AcqRel);
         Ok(())
     }
+
+    async fn spool_observation(
+        &self,
+        input: ObservationInput,
+        capsule_id: Option<Id>,
+        validate: Option<bool>,
+    ) -> Result<AppendOutcome, SpoolError> {
+        let entry = SpoolEntry {
+            input,
+            capsule_id,
+            validate,
+            spooled_at: Some(now_ms()),
+        };
+        self.append_to_spool(&entry).await?;
+        Ok(AppendOutcome::Spooled)
+    }
+
+    fn connectivity_retry_deferred(&self) -> bool {
+        now_ms() < self.retry_after_ms.load(Ordering::Acquire)
+    }
+
+    fn retention_maintenance_due(&self, now: i64) -> Result<bool, SpoolError> {
+        if let Some(max_bytes) = self.max_bytes {
+            match std::fs::metadata(&self.spool_path) {
+                Ok(metadata) if metadata.len() > max_bytes => return Ok(true),
+                Ok(_) => {}
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+                Err(err) => return Err(SpoolError::Io(err)),
+            }
+        }
+        if let Some(max_age_ms) = self.max_age_ms {
+            let interval = max_age_ms.clamp(1, 1_000);
+            let last = self.last_retention_check_ms.load(Ordering::Acquire);
+            return Ok(now.saturating_sub(last) >= interval);
+        }
+        Ok(false)
+    }
+
+    async fn maintain_retention_if_due(&self) -> Result<(), SpoolError> {
+        let now = now_ms();
+        if !self.retention_maintenance_due(now)? {
+            return Ok(());
+        }
+
+        let _guard = self.file_lock.lock().await;
+        let entries = read_spool(&self.spool_path)?;
+        let current_bytes: u64 = entries.iter().map(entry_size).sum();
+        let byte_target = self.max_bytes.map(|max_bytes| {
+            if current_bytes > max_bytes {
+                max_bytes.saturating_mul(9) / 10
+            } else {
+                max_bytes
+            }
+        });
+        let before = entries.len();
+        let remainder = trim_entries(entries, byte_target, self.max_age_ms, now);
+        let dropped = before - remainder.len();
+        if dropped > 0 {
+            rewrite_spool(&self.spool_path, &remainder)?;
+            self.pending_count.store(remainder.len(), Ordering::Release);
+            self.bump_dropped(dropped as u64).await;
+        }
+        self.last_retention_check_ms.store(now, Ordering::Release);
+        Ok(())
+    }
+}
+
+fn initial_pending_count(spool_path: &Path) -> usize {
+    read_spool(spool_path)
+        .map(|entries| entries.len())
+        .unwrap_or(PENDING_COUNT_UNKNOWN)
 }
 
 /// Sidecar path for flush/error/replay metadata: `{spool_path}.status.json`.

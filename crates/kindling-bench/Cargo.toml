@@ -1,0 +1,30 @@
+[package]
+name = "kindling-bench"
+description = "Performance and resource benchmark harness for kindling workloads."
+publish = false
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+kindling-client = { path = "../kindling-client", features = ["spool"] }
+kindling-runtime = { path = "../kindling-runtime" }
+kindling-service = { path = "../kindling-service" }
+kindling-types = { path = "../kindling-types" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+
+[dev-dependencies]
+criterion = { version = "0.7", features = ["async_tokio"] }
+
+[[bench]]
+name = "workloads"
+harness = false
+
+[lints]
+workspace = true

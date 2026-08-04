@@ -18,6 +18,7 @@ kindling/
 │   ├── kindling-server/    #   daemon runtime (HTTP/1 over UDS)
 │   ├── kindling-store/     #   SQLite persistence (FTS5 + WAL)
 │   ├── kindling-provider/  #   deterministic local retrieval (FTS5 BM25 + recency)
+│   ├── kindling-bench/     #   latency, throughput, and resource benchmark harness
 │   └── kindling-types/     #   shared domain types (+ ts-rs bindings)
 ├── packages/               # npm: thin @eddacraft/kindling client + adapters
 ├── schema/                 # cross-language schema contract (schema.sql, version.json)
@@ -58,6 +59,10 @@ cargo test
 
 # Rust: a single crate
 cargo test -p kindling-provider
+
+# Performance and resource profiles
+cargo bench -p kindling-bench --bench workloads
+cargo run -p kindling-bench --release -- --profile smoke --pretty
 
 # Domain-type bindings (regenerates + checks the ts-rs projection)
 cargo test -p kindling-types --features ts-rs

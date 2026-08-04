@@ -242,7 +242,7 @@ Pin (N) --------- (1) Observation | Summary
 
 ### Database Schema
 
-The **canonical schema** is `schema/schema.sql` (the DDL reflecting the state after all migrations) together with `schema/version.json` (currently **version 5**). Both the Rust store and the deprecated TypeScript store MUST produce an identical structure from a fresh database. The runtime version is also readable from any SQLite client via `PRAGMA user_version;`.
+The **canonical schema** is `schema/schema.sql` (the DDL reflecting the state after all migrations) together with `schema/version.json` (currently **version 6**). Both the Rust store and the deprecated TypeScript store MUST produce an identical structure from a fresh database. The runtime version is also readable from any SQLite client via `PRAGMA user_version;`.
 
 Key facts (authoritative source is `schema/schema.sql`):
 
@@ -254,7 +254,7 @@ The excerpt below is **illustrative only** — refer to `schema/schema.sql` for 
 
 ```sql
 -- ILLUSTRATIVE EXCERPT — canonical source is schema/schema.sql
-PRAGMA user_version = 5;
+PRAGMA user_version = 6;
 
 CREATE TABLE observations (
   id          TEXT    PRIMARY KEY,
