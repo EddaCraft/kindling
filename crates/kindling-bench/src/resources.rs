@@ -14,8 +14,15 @@ struct Snapshot {
     fds: Option<u64>,
     process_jiffies: Option<u64>,
     total_jiffies: Option<u64>,
+    /// Physical disk I/O from `/proc/.../io` (`read_bytes` / `write_bytes`).
+    /// Often stays 0 when the page cache absorbs writes and no writeback
+    /// has flushed yet (common on tmpfs and heavily cached local disks).
     read_bytes: Option<u64>,
     write_bytes: Option<u64>,
+    /// Logical syscall I/O (`rchar` / `wchar`) — increments even when physical
+    /// writeback has not run, so storage growth remains visible.
+    rchar: Option<u64>,
+    wchar: Option<u64>,
 }
 
 /// Resource usage observed while one workload runs.
@@ -24,6 +31,9 @@ struct Snapshot {
 pub struct ResourceSummary {
     pub platform: String,
     pub available: bool,
+    /// `in-process` shares the harness process across groups; `isolated-child`
+    /// runs each group in a fresh process so RSS/threads/FDs are per-group.
+    pub measurement_scope: String,
     pub rss_start_mib: Option<f64>,
     pub rss_end_mib: Option<f64>,
     pub peak_rss_mib: Option<f64>,
@@ -39,8 +49,14 @@ pub struct ResourceSummary {
     pub peak_file_descriptors_over_start: Option<u64>,
     /// Average CPU consumption where 1.0 is one fully saturated core.
     pub cpu_cores: Option<f64>,
+    /// Physical disk bytes read (`/proc/self/io` `read_bytes`).
     pub read_bytes: Option<u64>,
+    /// Physical disk bytes written (`/proc/self/io` `write_bytes`).
     pub write_bytes: Option<u64>,
+    /// Logical read chars (`rchar`) — use when physical counters stay zero.
+    pub logical_read_bytes: Option<u64>,
+    /// Logical write chars (`wchar`) — use when physical counters stay zero.
+    pub logical_write_bytes: Option<u64>,
 }
 
 /// Background sampler. On Linux it samples `/proc/self`; elsewhere resource
@@ -49,11 +65,23 @@ pub struct ResourceSampler {
     before: Snapshot,
     stop: Arc<AtomicBool>,
     handle: Option<JoinHandle<Snapshot>>,
+    measurement_scope: &'static str,
 }
 
 impl ResourceSampler {
     #[must_use]
     pub fn start(interval: Duration) -> Self {
+        Self::start_self(interval, "in-process")
+    }
+
+    /// Sample the current process but label the result as an isolated child
+    /// (used inside a one-group child process).
+    #[must_use]
+    pub fn start_isolated_child(interval: Duration) -> Self {
+        Self::start_self(interval, "isolated-child")
+    }
+
+    fn start_self(interval: Duration, measurement_scope: &'static str) -> Self {
         let before = snapshot();
         let stop = Arc::new(AtomicBool::new(false));
         let thread_stop = Arc::clone(&stop);
@@ -72,6 +100,7 @@ impl ResourceSampler {
             before,
             stop,
             handle: Some(handle),
+            measurement_scope,
         }
     }
 
@@ -110,6 +139,7 @@ impl ResourceSampler {
         ResourceSummary {
             platform: std::env::consts::OS.to_string(),
             available: self.before.rss_kib.is_some(),
+            measurement_scope: self.measurement_scope.to_string(),
             rss_start_mib,
             rss_end_mib,
             peak_rss_mib,
@@ -132,6 +162,8 @@ impl ResourceSampler {
             cpu_cores,
             read_bytes: delta(self.before.read_bytes, after.read_bytes),
             write_bytes: delta(self.before.write_bytes, after.write_bytes),
+            logical_read_bytes: delta(self.before.rchar, after.rchar),
+            logical_write_bytes: delta(self.before.wchar, after.wchar),
         }
     }
 }
@@ -185,19 +217,41 @@ pub fn parse_proc_stat(stat: &str) -> Option<u64> {
     Some(user.saturating_add(system))
 }
 
-/// Parse physical read/write byte counters from `/proc/<pid>/io`.
+/// Parsed `/proc/<pid>/io` counters.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ProcIo {
+    pub read_bytes: u64,
+    pub write_bytes: u64,
+    pub rchar: u64,
+    pub wchar: u64,
+}
+
+/// Parse physical and logical I/O counters from `/proc/<pid>/io`.
+///
+/// Physical `read_bytes`/`write_bytes` only advance when the kernel accounts
+/// storage I/O. Logical `rchar`/`wchar` advance on syscall traffic and remain
+/// useful when page cache or tmpfs leaves physical counters at zero.
 #[must_use]
-pub fn parse_proc_io(io: &str) -> Option<(u64, u64)> {
-    let mut read_bytes = None;
-    let mut write_bytes = None;
+pub fn parse_proc_io(io: &str) -> Option<ProcIo> {
+    let mut counters = ProcIo::default();
+    let mut saw_physical = false;
+    let mut saw_logical = false;
     for line in io.lines() {
         if let Some(value) = line.strip_prefix("read_bytes:") {
-            read_bytes = value.trim().parse().ok();
+            counters.read_bytes = value.trim().parse().ok()?;
+            saw_physical = true;
         } else if let Some(value) = line.strip_prefix("write_bytes:") {
-            write_bytes = value.trim().parse().ok();
+            counters.write_bytes = value.trim().parse().ok()?;
+            saw_physical = true;
+        } else if let Some(value) = line.strip_prefix("rchar:") {
+            counters.rchar = value.trim().parse().ok()?;
+            saw_logical = true;
+        } else if let Some(value) = line.strip_prefix("wchar:") {
+            counters.wchar = value.trim().parse().ok()?;
+            saw_logical = true;
         }
     }
-    Some((read_bytes?, write_bytes?))
+    (saw_physical || saw_logical).then_some(counters)
 }
 
 #[cfg(target_os = "linux")]
@@ -212,10 +266,9 @@ fn snapshot() -> Snapshot {
     let total_jiffies = std::fs::read_to_string("/proc/stat")
         .ok()
         .and_then(|value| parse_total_cpu_jiffies(&value));
-    let (read_bytes, write_bytes) = std::fs::read_to_string("/proc/self/io")
+    let io = std::fs::read_to_string("/proc/self/io")
         .ok()
-        .and_then(|value| parse_proc_io(&value))
-        .map_or((None, None), |(read, write)| (Some(read), Some(write)));
+        .and_then(|value| parse_proc_io(&value));
     let fds = std::fs::read_dir("/proc/self/fd")
         .ok()
         .map(|entries| entries.filter_map(Result::ok).count() as u64);
@@ -225,8 +278,10 @@ fn snapshot() -> Snapshot {
         fds,
         process_jiffies,
         total_jiffies,
-        read_bytes,
-        write_bytes,
+        read_bytes: io.map(|c| c.read_bytes),
+        write_bytes: io.map(|c| c.write_bytes),
+        rchar: io.map(|c| c.rchar),
+        wchar: io.map(|c| c.wchar),
     }
 }
 
