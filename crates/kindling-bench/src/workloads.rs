@@ -263,10 +263,7 @@ fn direct_service_group(
     })
 }
 
-async fn daemon_group(
-    profile: &Profile,
-    mode: MeasurementMode,
-) -> Result<WorkloadGroup, BoxError> {
+async fn daemon_group(profile: &Profile, mode: MeasurementMode) -> Result<WorkloadGroup, BoxError> {
     let temp = tempfile::tempdir()?;
     let runtime = Runtime::start(RuntimeConfig::with_home(
         temp.path(),
@@ -363,10 +360,7 @@ async fn daemon_group(
     })
 }
 
-async fn spool_group(
-    profile: &Profile,
-    mode: MeasurementMode,
-) -> Result<WorkloadGroup, BoxError> {
+async fn spool_group(profile: &Profile, mode: MeasurementMode) -> Result<WorkloadGroup, BoxError> {
     let temp = tempfile::tempdir()?;
     let spool_path = temp.path().join("spool.ndjson");
     let down_client = Client::with_config(ClientConfig {
