@@ -100,6 +100,7 @@ pub fn run(args: LogArgs, via_daemon: bool) -> CliResult {
         println!("ID:        {}", observation.id);
         println!("Kind:      {}", kind_to_str(&observation.kind));
         println!("Timestamp: {}", format_timestamp(observation.ts));
+        // Already redacted: append_observation always runs mask_secrets_with_evidence.
         println!("Content:   {truncated}");
         println!();
     }

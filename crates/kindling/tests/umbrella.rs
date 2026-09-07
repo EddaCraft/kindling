@@ -80,6 +80,34 @@ fn cli_log_then_status_json() {
     assert_eq!(v["counts"]["observations"], json!(1));
 }
 
+/// `kindling log` echoes observation content only after the service-boundary
+/// masker has run (CodeQL rust/cleartext-logging #14).
+#[test]
+fn cli_log_echoes_already_redacted_content() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("kindling.db");
+    let db = db.to_string_lossy().into_owned();
+
+    let log = Command::new(kindling_bin())
+        .args(["log", "api_key=abcdef123456789", "--db", &db])
+        .output()
+        .expect("run kindling log");
+    assert!(
+        log.status.success(),
+        "log failed: {}",
+        String::from_utf8_lossy(&log.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&log.stdout);
+    assert!(
+        stdout.contains("api_key=[REDACTED]"),
+        "CLI must echo the masked assignment, got {stdout:?}"
+    );
+    assert!(
+        !stdout.contains("abcdef123456789"),
+        "plaintext secret must not appear on stdout, got {stdout:?}"
+    );
+}
+
 /// An unrecognized verb is a clap usage error → non-zero exit.
 #[test]
 fn cli_bad_verb_exits_nonzero() {

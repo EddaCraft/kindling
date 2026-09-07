@@ -114,3 +114,32 @@ If you accidentally discover secrets, tokens, private keys, credentials, or
 sensitive data, stop testing and report the issue immediately. Do not copy,
 reuse, disclose, or retain sensitive material beyond what is necessary to
 demonstrate the finding.
+
+## Automated scanning
+
+kindling is itself a secret-redaction engine. Automated scanners that do not
+model the maskers as sanitizers will flag already-redacted flows. Known
+dispositions:
+
+### GitHub secret scanning
+
+Synthetic credentials in `crates/kindling-service/tests/fixtures/**` exist only
+to prove the redactor catches them. They are ignored via
+`.github/secret_scanning.yml`. Nothing to rotate.
+
+### CodeQL `rust/cleartext-logging`
+
+The query treats `println!` / `assert!` format args as log sinks and does not
+treat our maskers as barriers, so it reports taint *through* redaction.
+
+| Alert | Location | Disposition | Rationale |
+| ----- | -------- | ----------- | --------- |
+| #11, #12 | `crates/kindling/src/hook/filter.rs` (unit test `secret_assignment_is_masked`) | used in tests | Was assert-message interpolation of already-masked `filter_content` output. Test no longer interpolates that string. |
+| #13 | `crates/kindling/tests/capture_mapping.rs` | used in tests | Was failure-message interpolation of mapped fixture content (`$ boom`). Test no longer interpolates it. |
+| #14 | `crates/kindling/src/commands/log.rs` | false positive: redacted before write | CLI echoes `observation.content` after `KindlingService::append_observation`, which always runs `mask_secrets_with_evidence` (in-process and daemon). |
+
+A CodeQL model pack at `.github/codeql/extensions/kindling-rust/` marks
+`mask_secrets` / `mask_secrets_with_evidence` as `log-injection` barriers so
+later scans should stop reporting those sanitized flows. If an alert remains
+(especially #13, which never touches a masker), dismiss it with the rationale
+above rather than adding inline suppressions.

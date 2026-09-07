@@ -1,0 +1,20 @@
+# Barriers for rust/cleartext-logging (sink kind: log-injection).
+#
+# CodeQL taint-tracks "sensitive" strings through our maskers because it does
+# not understand regex replacement. The returned text has matching secrets
+# replaced with `[REDACTED]` / `key=[REDACTED]`; treat that output as sanitized.
+#
+# Canonical paths follow each crate's internal module layout (not re-exports).
+# The umbrella crate is published as `eddacraft-kindling` with lib name
+# `kindling`; both crate-name forms are listed so either resolution works.
+extensions:
+  - addsTo:
+      pack: codeql/rust-all
+      extensible: barrierModel
+    data:
+      # Service-boundary masker (KindlingService::append_observation).
+      - ["kindling_service::filter::secrets::mask_secrets", "ReturnValue", "log-injection", "manual"]
+      - ["kindling_service::filter::secrets::mask_secrets_with_evidence", "ReturnValue.Field[0]", "log-injection", "manual"]
+      # Hook-adapter masker (Claude Code capture mapping).
+      - ["kindling::hook::filter::mask_secrets", "ReturnValue", "log-injection", "manual"]
+      - ["eddacraft_kindling::hook::filter::mask_secrets", "ReturnValue", "log-injection", "manual"]

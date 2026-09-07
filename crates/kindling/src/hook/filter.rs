@@ -110,6 +110,9 @@ pub fn contains_secrets(content: &str) -> bool {
 /// Mask secrets in content, mirroring the adapter `maskSecrets` replacement
 /// callback: a match containing `:` or `=` becomes everything before the first
 /// separator plus `=[REDACTED]`; any other match becomes `[REDACTED]`.
+///
+/// This is a cleartext-logging sanitizer. CodeQL is taught that via
+/// `.github/codeql/extensions/kindling-rust`.
 pub fn mask_secrets(content: &str) -> String {
     let mut masked = content.to_string();
     for (idx, pattern) in secret_patterns().iter().enumerate() {
@@ -272,7 +275,15 @@ mod tests {
     #[test]
     fn secret_assignment_is_masked() {
         let masked = filter_content("api_key=supersecretvalue123", 50_000);
-        assert!(masked.contains("[REDACTED]"), "got {masked}");
-        assert!(!masked.contains("supersecretvalue123"), "got {masked}");
+        // Do not interpolate `masked` into the assert message: CodeQL treats
+        // that as rust/cleartext-logging (#11, #12) even after mask_secrets.
+        assert!(
+            masked.contains("[REDACTED]"),
+            "secret assignment should be redacted"
+        );
+        assert!(
+            !masked.contains("supersecretvalue123"),
+            "plaintext secret must not remain"
+        );
     }
 }
