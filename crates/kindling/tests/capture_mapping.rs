@@ -78,10 +78,11 @@ fn failure_hook_defaults_missing_error() {
         ..HookInput::default()
     };
     let obs = map_capture(HookType::PostToolUseFailure, &input).expect("observation");
+    // Fixture content is `$ boom` + a default error — no secrets. Do not
+    // interpolate it into the assert message (CodeQL rust/cleartext-logging #13).
     assert!(
         obs.content.ends_with("Error: Unknown error"),
-        "{}",
-        obs.content
+        "failure hook should default a missing error"
     );
     assert_eq!(obs.provenance.unwrap()["hasError"], serde_json::json!(true));
 }

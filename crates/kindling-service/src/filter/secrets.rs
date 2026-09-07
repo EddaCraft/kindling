@@ -63,6 +63,10 @@ pub fn contains_secrets(content: &str) -> bool {
 /// Output is byte-for-byte identical to the Node filter (pinned by
 /// `tests/node_fixtures.rs`); evidence is discarded. Prefer
 /// [`mask_secrets_with_evidence`] when the caller needs redaction evidence.
+///
+/// This is a cleartext-logging sanitizer: matching secrets become
+/// `[REDACTED]`. CodeQL is taught that via
+/// `.github/codeql/extensions/kindling-rust`.
 pub fn mask_secrets(content: &str) -> String {
     mask_secrets_with_evidence(content).0
 }
@@ -74,6 +78,10 @@ pub fn mask_secrets(content: &str) -> String {
 /// order). Because the evidence is produced by the masking pass itself, it
 /// cannot be bypassed or drift from what was masked. The masked string is
 /// identical to [`mask_secrets`].
+///
+/// The returned content string is a cleartext-logging sanitizer (same
+/// replacement as [`mask_secrets`]). CodeQL is taught that via
+/// `.github/codeql/extensions/kindling-rust`.
 pub fn mask_secrets_with_evidence(content: &str) -> (String, RedactionEvidence) {
     let mut masked = content.to_string();
     let mut count: u32 = 0;
