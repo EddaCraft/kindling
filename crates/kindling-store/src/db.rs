@@ -9,7 +9,7 @@
 //! whose `PRAGMA user_version` falls outside the compatibility window in
 //! `schema/version.json` (see `schema/README.md`).
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use rusqlite::{Connection, OpenFlags};
@@ -44,7 +44,14 @@ pub struct StoreOptions {
 /// Creates parent directories as needed (read-write mode only), configures
 /// the connection, applies the canonical schema to fresh databases, and
 /// verifies schema-version compatibility on existing ones.
+///
+/// `path` is validated by [`validate_db_path`] before any directory is created
+/// or SQLite is opened. The store still accepts any local filesystem location
+/// (CLI `--db`, `KINDLING_DB_PATH`, tests) — it does not confine opens to a
+/// single root — but it rejects traversal segments, NUL, and SQLite URI names.
 pub fn open_database(path: &Path, options: &StoreOptions) -> StoreResult<Connection> {
+    let path = validate_db_path(path)?;
+
     if !options.readonly {
         if let Some(parent) = path.parent() {
             if !parent.as_os_str().is_empty() {
@@ -53,18 +60,82 @@ pub fn open_database(path: &Path, options: &StoreOptions) -> StoreResult<Connect
         }
     }
 
-    let flags = if options.readonly {
-        OpenFlags::SQLITE_OPEN_READ_ONLY
-            | OpenFlags::SQLITE_OPEN_URI
-            | OpenFlags::SQLITE_OPEN_NO_MUTEX
-    } else {
-        OpenFlags::default()
-    };
-
-    let conn = Connection::open_with_flags(path, flags)?;
+    let conn = Connection::open_with_flags(&path, open_flags(options.readonly))?;
     configure(&conn, options.readonly)?;
     ensure_schema(&conn, options.readonly)?;
     Ok(conn)
+}
+
+/// Open flags for a filesystem database file.
+///
+/// Explicitly omits `SQLITE_OPEN_URI` (present on [`OpenFlags::default`]) so a
+/// path cannot be reinterpreted as a SQLite URI (`file:…?mode=…`). `NOFOLLOW`
+/// refuses to open when the final path component is a symlink.
+fn open_flags(readonly: bool) -> OpenFlags {
+    let flags = OpenFlags::SQLITE_OPEN_NO_MUTEX | OpenFlags::SQLITE_OPEN_NOFOLLOW;
+    if readonly {
+        flags | OpenFlags::SQLITE_OPEN_READ_ONLY
+    } else {
+        flags | OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_CREATE
+    }
+}
+
+/// Validate a kindling database path before creating directories or opening
+/// SQLite.
+///
+/// Kindling is local-first: `--db` and `KINDLING_DB_PATH` are operator
+/// configuration and may point at any filesystem location. This helper does
+/// **not** confine the path to a single root (that would break legitimate
+/// local config and temp-dir tests). It rejects the cases that turn a path
+/// into an injection:
+///
+/// - empty / non-UTF-8 / embedded NUL
+/// - SQLite URI filenames (`file:…`) and special names (`:memory:`, `:temp:`)
+/// - `..` segments — the CodeQL `rust/path-injection` sanitizer guard
+///
+/// Daemon routing already confines per-project DBs: `X-Kindling-Project` is
+/// hashed to a 12-hex component under `kindling_home/projects/<id>/`.
+pub fn validate_db_path(path: &Path) -> StoreResult<PathBuf> {
+    let Some(raw) = path.to_str() else {
+        return Err(StoreError::InvalidDbPath {
+            path: path.display().to_string(),
+            reason: "path is not valid UTF-8",
+        });
+    };
+    if raw.is_empty() {
+        return Err(StoreError::InvalidDbPath {
+            path: raw.to_string(),
+            reason: "path is empty",
+        });
+    }
+    if raw.contains('\0') {
+        return Err(StoreError::InvalidDbPath {
+            path: raw.to_string(),
+            reason: "path contains a NUL byte",
+        });
+    }
+    if is_sqlite_special_filename(raw) {
+        return Err(StoreError::InvalidDbPath {
+            path: raw.to_string(),
+            reason: "SQLite URI and special filenames are not allowed",
+        });
+    }
+    // Sanitizer guard recognized by CodeQL rust/path-injection (DotDotCheck).
+    // Reconstruct the PathBuf from this checked string so the sink cannot
+    // observe the pre-check value.
+    if raw.contains("..") {
+        return Err(StoreError::InvalidDbPath {
+            path: raw.to_string(),
+            reason: "path must not contain '..' segments",
+        });
+    }
+    Ok(PathBuf::from(raw))
+}
+
+fn is_sqlite_special_filename(raw: &str) -> bool {
+    let trimmed = raw.trim();
+    let lower = trimmed.to_ascii_lowercase();
+    lower.starts_with("file:") || lower == ":memory:" || lower == ":temp:"
 }
 
 /// Open an in-memory database with the full schema applied. Test helper and
