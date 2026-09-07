@@ -95,15 +95,12 @@ pub fn resolve_db_path(explicit: Option<&str>) -> Result<PathBuf, CliError> {
     })
 }
 
-/// Open an in-process service at the resolved DB path, creating the parent
-/// directory if needed.
+/// Open an in-process service at the resolved DB path.
+///
+/// Parent directories are created by the store after [`kindling_store::validate_db_path`],
+/// so a `--db` / `KINDLING_DB_PATH` value cannot mkdir through `..` first.
 pub fn open_service(explicit_db: Option<&str>) -> Result<(KindlingService, PathBuf), CliError> {
     let path = resolve_db_path(explicit_db)?;
-    if let Some(parent) = path.parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent)?;
-        }
-    }
     let service = KindlingService::open(&path)?;
     Ok((service, path))
 }

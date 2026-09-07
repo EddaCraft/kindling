@@ -39,6 +39,9 @@ pub enum StoreError {
     #[error("database has no schema and the connection is read-only")]
     UninitializedDatabase,
 
+    #[error("invalid database path {path:?}: {reason}")]
+    InvalidDbPath { path: String, reason: &'static str },
+
     #[error("unexpected value {value:?} in column {column}")]
     UnexpectedRowValue { column: &'static str, value: String },
 }

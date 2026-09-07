@@ -14,7 +14,7 @@ mod paths;
 mod schema;
 mod store;
 
-pub use db::{open_database, open_in_memory, StoreOptions};
+pub use db::{open_database, open_in_memory, validate_db_path, StoreOptions};
 pub use error::{StoreError, StoreResult};
 pub use paths::{default_kindling_home, project_db_path, project_id, resolve_db_path};
 pub use schema::{schema_version, SchemaVersion, SCHEMA_SQL};

@@ -53,6 +53,9 @@ struct ClaudeCodeResult {
 
 pub fn run(args: InitArgs) -> CliResult {
     let db_path = resolve_db_path(args.db.as_deref())?;
+    // Validate before mkdir: `--skip-db` never opens the store, but must not
+    // create parent directories from a traversal / SQLite-URI path.
+    kindling_store::validate_db_path(&db_path)?;
     let kindling_dir = db_path
         .parent()
         .map(PathBuf::from)

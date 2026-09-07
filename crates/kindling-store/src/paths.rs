@@ -23,11 +23,26 @@ pub fn project_id(project_root: &str) -> String {
 
 /// Database path for a project under the given kindling home directory:
 /// `<kindling_home>/projects/<project_id>/kindling.db`.
+///
+/// `project_root` is never used as a path component. It is hashed to a
+/// 12-hex-char id, so values such as `../../../etc/passwd` cannot escape
+/// `kindling_home`.
 pub fn project_db_path(kindling_home: &Path, project_root: &str) -> PathBuf {
-    kindling_home
-        .join("projects")
-        .join(project_id(project_root))
-        .join("kindling.db")
+    let id = project_id(project_root);
+    debug_assert!(
+        is_safe_project_id(&id),
+        "project_id must be a single hex path component, got {id:?}"
+    );
+    kindling_home.join("projects").join(id).join("kindling.db")
+}
+
+/// True when `id` is a single 12-hex path component (no separators, no `..`).
+fn is_safe_project_id(id: &str) -> bool {
+    id.len() == 12
+        && id.bytes().all(|b| b.is_ascii_hexdigit())
+        && !id.contains("..")
+        && !id.contains('/')
+        && !id.contains('\\')
 }
 
 /// Default kindling home (`~/.kindling`), or `None` if no home directory can
@@ -72,6 +87,35 @@ mod tests {
         let path = project_db_path(Path::new("/home/u/.kindling"), "/tmp/example");
         let expected = format!("/home/u/.kindling/projects/{NODE_HASH_TMP_EXAMPLE}/kindling.db");
         assert_eq!(path, PathBuf::from(expected));
+    }
+
+    #[test]
+    fn project_id_is_a_single_hex_component() {
+        let id = project_id("../../../etc/passwd");
+        assert!(is_safe_project_id(&id), "{id}");
+        assert_ne!(id, project_id("/etc/passwd"));
+    }
+
+    #[test]
+    fn project_db_path_confines_traversal_like_roots() {
+        let home = Path::new("/home/u/.kindling");
+        for root in [
+            "../../../etc/passwd",
+            "/etc/passwd",
+            "foo/../../bar",
+            r"foo\..\bar",
+            "file:/tmp/evil",
+            ":memory:",
+        ] {
+            let path = project_db_path(home, root);
+            assert!(
+                path.starts_with(home),
+                "project root {root:?} escaped {home:?}: {path:?}"
+            );
+            let id = project_id(root);
+            assert!(is_safe_project_id(&id), "{id}");
+            assert_eq!(path, home.join("projects").join(id).join("kindling.db"));
+        }
     }
 
     /// Reference value produced by the Node.js implementation.

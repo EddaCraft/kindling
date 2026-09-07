@@ -729,6 +729,73 @@ fn concurrent_connections_share_a_wal_database() {
 }
 
 #[test]
+fn open_creates_nested_parent_directories() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("nested").join("dir").join("kindling.db");
+    let store = SqliteKindlingStore::open(&path).unwrap();
+    store
+        .insert_observation(&observation("obs-1", "hello", 1000, "sess-1"))
+        .unwrap();
+    assert!(path.exists());
+}
+
+#[test]
+fn open_rejects_parent_dir_segments() {
+    let dir = tempfile::tempdir().unwrap();
+    let traversal = dir.path().join("..").join("outside").join("kindling.db");
+    assert!(
+        traversal.to_string_lossy().contains(".."),
+        "test path must retain a '..' segment: {traversal:?}"
+    );
+    assert!(matches!(
+        SqliteKindlingStore::open(&traversal),
+        Err(StoreError::InvalidDbPath { .. })
+    ));
+    assert!(!dir.path().join("outside").exists());
+}
+
+#[test]
+fn open_rejects_sqlite_uri_and_special_names() {
+    for raw in [
+        "file:/tmp/kindling.db",
+        "file:///tmp/kindling.db",
+        "FILE:kindling.db",
+        "file:kindling.db?mode=rwc",
+        ":memory:",
+        ":MEMORY:",
+        ":temp:",
+    ] {
+        assert!(
+            matches!(
+                SqliteKindlingStore::open(Path::new(raw)),
+                Err(StoreError::InvalidDbPath { .. })
+            ),
+            "expected InvalidDbPath for {raw:?}"
+        );
+    }
+}
+
+#[test]
+fn open_rejects_empty_and_nul_paths() {
+    assert!(matches!(
+        SqliteKindlingStore::open(Path::new("")),
+        Err(StoreError::InvalidDbPath { .. })
+    ));
+    assert!(matches!(
+        SqliteKindlingStore::open(Path::new("kindling\0.db")),
+        Err(StoreError::InvalidDbPath { .. })
+    ));
+}
+
+#[test]
+fn validate_db_path_accepts_ordinary_local_paths() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("kindling.db");
+    let checked = kindling_store::validate_db_path(&path).unwrap();
+    assert_eq!(checked, path);
+}
+
+#[test]
 fn per_project_paths_isolate_databases() {
     let dir = tempfile::tempdir().unwrap();
     let home = dir.path();
